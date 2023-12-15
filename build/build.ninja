@@ -235,8 +235,8 @@ build CMakeFiles/main.dir/src/Window.cpp.o: CXX_COMPILER__main_unscanned_Debug /
   TARGET_COMPILE_PDB = CMakeFiles/main.dir/
   TARGET_PDB = main.pdb
 
-build CMakeFiles/main.dir/src/lucyvk/debug.cpp.o: CXX_COMPILER__main_unscanned_Debug /home/laperex/Programming/C++/LucyVK/src/lucyvk/debug.cpp || cmake_object_order_depends_target_main
-  DEP_FILE = CMakeFiles/main.dir/src/lucyvk/debug.cpp.o.d
+build CMakeFiles/main.dir/src/lucyvk/Instance.cpp.o: CXX_COMPILER__main_unscanned_Debug /home/laperex/Programming/C++/LucyVK/src/lucyvk/Instance.cpp || cmake_object_order_depends_target_main
+  DEP_FILE = CMakeFiles/main.dir/src/lucyvk/Instance.cpp.o.d
   FLAGS = -g -std=gnu++20
   INCLUDES = -I/home/laperex/Programming/C++/LucyVK/include -I/home/laperex/Programming/C++/LucyVK/src -isystem /usr/include/SDL2
   OBJECT_DIR = CMakeFiles/main.dir
@@ -244,8 +244,8 @@ build CMakeFiles/main.dir/src/lucyvk/debug.cpp.o: CXX_COMPILER__main_unscanned_D
   TARGET_COMPILE_PDB = CMakeFiles/main.dir/
   TARGET_PDB = main.pdb
 
-build CMakeFiles/main.dir/src/lucyvk/instance.cpp.o: CXX_COMPILER__main_unscanned_Debug /home/laperex/Programming/C++/LucyVK/src/lucyvk/instance.cpp || cmake_object_order_depends_target_main
-  DEP_FILE = CMakeFiles/main.dir/src/lucyvk/instance.cpp.o.d
+build CMakeFiles/main.dir/src/lucyvk/PhysicalDevice.cpp.o: CXX_COMPILER__main_unscanned_Debug /home/laperex/Programming/C++/LucyVK/src/lucyvk/PhysicalDevice.cpp || cmake_object_order_depends_target_main
+  DEP_FILE = CMakeFiles/main.dir/src/lucyvk/PhysicalDevice.cpp.o.d
   FLAGS = -g -std=gnu++20
   INCLUDES = -I/home/laperex/Programming/C++/LucyVK/include -I/home/laperex/Programming/C++/LucyVK/src -isystem /usr/include/SDL2
   OBJECT_DIR = CMakeFiles/main.dir
@@ -270,7 +270,7 @@ build CMakeFiles/main.dir/src/main.cpp.o: CXX_COMPILER__main_unscanned_Debug /ho
 #############################################
 # Link the executable main
 
-build main: CXX_EXECUTABLE_LINKER__main_Debug CMakeFiles/main.dir/src/Events.cpp.o CMakeFiles/main.dir/src/Window.cpp.o CMakeFiles/main.dir/src/lucyvk/debug.cpp.o CMakeFiles/main.dir/src/lucyvk/instance.cpp.o CMakeFiles/main.dir/src/main.cpp.o | /usr/lib/libSDL2main.a /usr/lib/libSDL2-2.0.so.0.2800.5 /lib/libvulkan.so
+build main: CXX_EXECUTABLE_LINKER__main_Debug CMakeFiles/main.dir/src/Events.cpp.o CMakeFiles/main.dir/src/Window.cpp.o CMakeFiles/main.dir/src/lucyvk/Instance.cpp.o CMakeFiles/main.dir/src/lucyvk/PhysicalDevice.cpp.o CMakeFiles/main.dir/src/main.cpp.o | /usr/lib/libSDL2main.a /usr/lib/libSDL2-2.0.so.0.2800.5 /lib/libvulkan.so
   FLAGS = -g
   LINK_FLAGS = -rdynamic
   LINK_LIBRARIES = /usr/lib/libSDL2main.a  /usr/lib/libSDL2-2.0.so.0.2800.5  -lvulkan

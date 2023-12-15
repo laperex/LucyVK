@@ -1,4 +1,4 @@
-#include "lucyvk/instance.h"
+#include "lucyvk/Instance.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_image.h>
@@ -24,9 +24,9 @@ int main(int count, char** args) {
 	lucy::Window window;
 	window.InitWindow();
 	
-	lucyvk::instance instance;
+	lucyvk::Instance instance;
 	
-	instance.init("lucy", window.sdl_window);
+	instance.Initialize("lucy", window.sdl_window);
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {

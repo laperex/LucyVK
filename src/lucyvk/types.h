@@ -1,10 +1,10 @@
-namespace lucy {
-	struct instance;
+namespace lucyvk {
+	struct Instance;
 
 	struct debugger;
 
 	struct physicaldevice;
-	struct logicaldevice;
+	struct LogicalDevice;
 	
 	struct uniformbuffer;
 	struct vertexbuffer;

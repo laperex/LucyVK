@@ -13,15 +13,15 @@
 },
 {
   "directory": "/home/laperex/Programming/C++/LucyVK/build",
-  "command": "/usr/bin/g++ -I/home/laperex/Programming/C++/LucyVK/include -I/home/laperex/Programming/C++/LucyVK/src -isystem /usr/include/SDL2 -g -std=gnu++20 -o CMakeFiles/main.dir/src/lucyvk/debug.cpp.o -c /home/laperex/Programming/C++/LucyVK/src/lucyvk/debug.cpp",
-  "file": "/home/laperex/Programming/C++/LucyVK/src/lucyvk/debug.cpp",
-  "output": "CMakeFiles/main.dir/src/lucyvk/debug.cpp.o"
+  "command": "/usr/bin/g++ -I/home/laperex/Programming/C++/LucyVK/include -I/home/laperex/Programming/C++/LucyVK/src -isystem /usr/include/SDL2 -g -std=gnu++20 -o CMakeFiles/main.dir/src/lucyvk/Instance.cpp.o -c /home/laperex/Programming/C++/LucyVK/src/lucyvk/Instance.cpp",
+  "file": "/home/laperex/Programming/C++/LucyVK/src/lucyvk/Instance.cpp",
+  "output": "CMakeFiles/main.dir/src/lucyvk/Instance.cpp.o"
 },
 {
   "directory": "/home/laperex/Programming/C++/LucyVK/build",
-  "command": "/usr/bin/g++ -I/home/laperex/Programming/C++/LucyVK/include -I/home/laperex/Programming/C++/LucyVK/src -isystem /usr/include/SDL2 -g -std=gnu++20 -o CMakeFiles/main.dir/src/lucyvk/instance.cpp.o -c /home/laperex/Programming/C++/LucyVK/src/lucyvk/instance.cpp",
-  "file": "/home/laperex/Programming/C++/LucyVK/src/lucyvk/instance.cpp",
-  "output": "CMakeFiles/main.dir/src/lucyvk/instance.cpp.o"
+  "command": "/usr/bin/g++ -I/home/laperex/Programming/C++/LucyVK/include -I/home/laperex/Programming/C++/LucyVK/src -isystem /usr/include/SDL2 -g -std=gnu++20 -o CMakeFiles/main.dir/src/lucyvk/PhysicalDevice.cpp.o -c /home/laperex/Programming/C++/LucyVK/src/lucyvk/PhysicalDevice.cpp",
+  "file": "/home/laperex/Programming/C++/LucyVK/src/lucyvk/PhysicalDevice.cpp",
+  "output": "CMakeFiles/main.dir/src/lucyvk/PhysicalDevice.cpp.o"
 },
 {
   "directory": "/home/laperex/Programming/C++/LucyVK/build",
