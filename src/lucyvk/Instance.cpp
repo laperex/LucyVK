@@ -13,7 +13,6 @@
 
 static bool DEBUG_MODE = true;
 
-
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData) {
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
@@ -57,15 +56,6 @@ static bool CheckValidationLayerSupport() {
 	}
 
 	return false;
-}
-
-
-lucyvk::Instance::Instance() {
-	
-}
-
-lucyvk::Instance::~Instance() {
-	
 }
 
 bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {

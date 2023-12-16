@@ -8,14 +8,14 @@
 #include "lucyvk/Instance.h"
 
 namespace lucyvk {
-	typedef std::function<VkPhysicalDevice(std::vector<VkPhysicalDevice>, VkInstance, VkSurfaceKHR)> SelectPhysicalDeviceFunction;
-	
-	struct QueueFamilyIndices {
-		std::optional<uint32_t> graphicsFamily;
-		std::optional<uint32_t> presentFamily;
+	typedef std::function<VkPhysicalDevice(const std::vector<VkPhysicalDevice>&, VkInstance, VkSurfaceKHR)> SelectPhysicalDeviceFunction;
 
-		operator bool() const { 
-			return graphicsFamily.has_value() && presentFamily.has_value(); 
+	struct QueueFamilyIndices {
+		std::optional<uint32_t> graphics;
+		std::optional<uint32_t> present;
+
+		operator bool() const {
+			return graphics.has_value() && present.has_value();
 		}
 	};
 
@@ -26,17 +26,15 @@ namespace lucyvk {
 	};
 	
 	struct PhysicalDevice {
-		std::vector<VkPhysicalDevice> available_physicaldevices;
 		VkPhysicalDevice _physicalDevice;
 
-		Instance instance;
+		Instance& instance;
+		
+		bool Initialize(SelectPhysicalDeviceFunction selectPhysicalDeviceFunction = nullptr);
 
-		LogicalDevice CreateLogicalDevice();
-
-		PhysicalDevice PickPhysicalDevice(SelectPhysicalDeviceFunction selectPhysicalDeviceFunction = nullptr);
 		std::vector<VkPhysicalDevice> GetAvailablePhysicalDevices();
+
 		bool CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice);
-		bool DefaultPhysicalDeviceSelection(VkPhysicalDevice physicalDevice);
 		QueueFamilyIndices FindQueueFamilyIndices(VkPhysicalDevice physicalDevice);
 		
 		VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);

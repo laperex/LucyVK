@@ -8,9 +8,6 @@
 
 namespace lucyvk {
 	struct Instance {
-		Instance();
-		~Instance();
-
 		VkDebugUtilsMessengerEXT _debugMessenger;
 		VkSurfaceKHR _surface;
 		VkInstance _instance;
@@ -21,7 +18,6 @@ namespace lucyvk {
 
 	private:
 		std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-		const std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation" };
-		// std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+		std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation" };
 	};
 }
