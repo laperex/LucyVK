@@ -1,5 +1,7 @@
 # ninja log v5
-3	699	1702590930104046334	CMakeFiles/main.dir/src/Window.cpp.o	1be976809ff1b8b6
-3	700	1702590930105046381	CMakeFiles/main.dir/src/Events.cpp.o	e30b029511c9b163
-11	1738	1702619575390170234	CMakeFiles/main.dir/src/main.cpp.o	f152486a1367987c
-1738	1804	1702619575456170467	main	3f7c97be688c9c2c
+1	391	1702646502714437572	CMakeFiles/main.dir/src/lucyvk/PhysicalDevice.cpp.o	a2b16c6922fd637e
+3	1224	1702647295781707321	CMakeFiles/main.dir/src/lucyvk/Instance.cpp.o	745739ba4114d2de
+1	1272	1702645020619485376	CMakeFiles/main.dir/src/Window.cpp.o	1be976809ff1b8b6
+1	1228	1702645020574482013	CMakeFiles/main.dir/src/Events.cpp.o	e30b029511c9b163
+3	1928	1702647312981272050	CMakeFiles/main.dir/src/main.cpp.o	f152486a1367987c
+1929	1998	1702647313049274159	main	3a67d762fac427a0

@@ -57,7 +57,7 @@ namespace util {
 
 	template <typename T>
 	inline void print(T a) {
-		std::cout << a;
+		std::cout << a << ' ';
 	}
 
 	// template <typename T, typename Tp>
