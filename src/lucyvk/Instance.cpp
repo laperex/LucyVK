@@ -59,6 +59,17 @@ static bool CheckValidationLayerSupport() {
 	return false;
 }
 
+lucyvk::Instance::Instance()
+{
+	
+}
+
+lucyvk::Instance::~Instance()
+{
+    vkDestroyInstance(_instance, nullptr);
+	std::cout << "Vulkan Instance Destroyed Succesfully\n";
+}
+
 bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
 	VkApplicationInfo appInfo = {
 		VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -83,12 +94,26 @@ bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
     std::vector<VkExtensionProperties> availableExtensionArray(extensionCount);
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensionArray.data());
-
+	
+	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {
+		VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+		nullptr,
+		0,
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | 
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+		DebugCallback,
+		nullptr
+	};
 
 	if (DEBUG_MODE) {
 		if (!CheckValidationLayerSupport()) {
 			throw std::runtime_error("validation layers requested, but not available!");
 		}
+		
+		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
 		
 		layers.push_back("VK_LAYER_KHRONOS_validation");
 
@@ -128,19 +153,6 @@ bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
 	dloggln("Instance Created");
 
 	if (DEBUG_MODE) {
-		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {
-			VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-			nullptr,
-			0,
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | 
-				VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
-			VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-				VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-			DebugCallback,
-			nullptr
-		};
-
 		if (CreateDebugUtilsMessengerEXT(_instance, &debugCreateInfo, nullptr, &_debugMessenger) != VK_SUCCESS) {
 			throw std::runtime_error("DEBUG MESSENGER CREATION FAILED!");
 		}
