@@ -5,9 +5,9 @@
 #include <unordered_map>
 #include <vector>
 
-#ifndef dlogg
-	#define dlogg(...) util::print(__VA_ARGS__)
-#endif
+// #ifndef dlogg
+// 	#define dlogg(...) util::print(__VA_ARGS__)
+// #endif
 #ifndef dloggln
 	#define dloggln(...) util::println(__VA_ARGS__)
 #endif

@@ -4,7 +4,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
-#include "device.h"
+#include <lucyvk/types.h>
 
 namespace lucyvk {
 	struct Instance {
@@ -14,9 +14,9 @@ namespace lucyvk {
 
 		bool Initialize(const char* name, SDL_Window* sdl_window);
 
-		LogicalDevice CreateLogicalDevice(VkPhysicalDevice physicalDevice);
+		PhysicalDevice CreatePhysicalDevice();
+		// LogicalDevice CreateLogicalDevice(VkPhysicalDevice physicalDevice);
 
-	private:
 		std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 		std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation" };
 	};

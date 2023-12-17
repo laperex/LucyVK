@@ -19,6 +19,12 @@
 },
 {
   "directory": "/home/laperex/Programming/C++/LucyVK/build",
+  "command": "/usr/bin/g++ -I/home/laperex/Programming/C++/LucyVK/include -I/home/laperex/Programming/C++/LucyVK/src -isystem /usr/include/SDL2 -g -std=gnu++20 -o CMakeFiles/main.dir/src/lucyvk/LogicalDevice.cpp.o -c /home/laperex/Programming/C++/LucyVK/src/lucyvk/LogicalDevice.cpp",
+  "file": "/home/laperex/Programming/C++/LucyVK/src/lucyvk/LogicalDevice.cpp",
+  "output": "CMakeFiles/main.dir/src/lucyvk/LogicalDevice.cpp.o"
+},
+{
+  "directory": "/home/laperex/Programming/C++/LucyVK/build",
   "command": "/usr/bin/g++ -I/home/laperex/Programming/C++/LucyVK/include -I/home/laperex/Programming/C++/LucyVK/src -isystem /usr/include/SDL2 -g -std=gnu++20 -o CMakeFiles/main.dir/src/lucyvk/PhysicalDevice.cpp.o -c /home/laperex/Programming/C++/LucyVK/src/lucyvk/PhysicalDevice.cpp",
   "file": "/home/laperex/Programming/C++/LucyVK/src/lucyvk/PhysicalDevice.cpp",
   "output": "CMakeFiles/main.dir/src/lucyvk/PhysicalDevice.cpp.o"

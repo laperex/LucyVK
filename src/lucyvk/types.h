@@ -1,18 +1,5 @@
 namespace lucyvk {
 	struct Instance;
-
-	struct debugger;
-
-	struct physicaldevice;
+	struct PhysicalDevice;
 	struct LogicalDevice;
-	
-	struct uniformbuffer;
-	struct vertexbuffer;
-	struct indexbuffer;
-
-	struct texturesampler;
-
-	struct pipeline;
-
-	struct shader;
 }

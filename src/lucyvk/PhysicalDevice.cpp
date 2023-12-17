@@ -1,8 +1,106 @@
-#include "PhysicalDevice.h"
+#include <set>
 #include <vulkan/vulkan_core.h>
+#include <string>
+#include <lucyvk/PhysicalDevice.h>
+#include <lucyvk/Instance.h>
+#include <util/logger.h>
 
-static VkPhysicalDevice DefaultPhysicalDeviceSelection(const std::vector<VkPhysicalDevice>& physicalDevice, VkInstance instance, VkSurfaceKHR surface) {
-	return nullptr;
+namespace lucyvk {
+	SwapchainSupportDetails QuerySwapchainSupportDetails(VkPhysicalDevice device, VkSurfaceKHR _surfaceKHR) {
+		SwapchainSupportDetails details;
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, _surfaceKHR, &details.capabilities);
+
+		uint32_t formatCount;
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surfaceKHR, &formatCount, nullptr);
+
+		if (formatCount != 0) {
+			details.formats.resize(formatCount);
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surfaceKHR, &formatCount, details.formats.data());
+		}
+
+		uint32_t presentModeCount;
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surfaceKHR, &presentModeCount, nullptr);
+
+		if (presentModeCount != 0) {
+			details.presentModes.resize(presentModeCount);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surfaceKHR, &presentModeCount, details.presentModes.data());
+		}
+		return details;
+	}
+
+	static lucyvk::QueueFamilyIndices QueryQueueFamilyIndices(VkPhysicalDevice physicalDevice, VkSurfaceKHR _surfaceKHR) {
+		uint32_t queueFamilyCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
+		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
+
+		QueueFamilyIndices indices;
+
+		for (int i = 0; i < queueFamilies.size(); i++) {
+			VkBool32 presentSupport = false;
+			vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, _surfaceKHR, &presentSupport);
+			if (queueFamilies[i].queueCount > 0 && presentSupport) {
+				indices.present = i;
+			}
+
+			if (queueFamilies[i].queueCount > 0 && queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+				indices.graphics = i;
+			}
+
+			if (indices) {
+				break;
+			}
+		}
+		
+		return indices;
+	}
+
+	static VkPhysicalDevice DefaultPhysicalDeviceSelection(const std::vector<VkPhysicalDevice>& physicalDeviceArray, const lucyvk::Instance& instance) {
+		for (const auto& physicalDevice: physicalDeviceArray) {
+			bool isRequiredDeviceExtensionsAvailable = false;
+			bool isIndicesComplete = false;
+			bool isSwapchainAdequate = false;
+
+			{
+				uint32_t availableExtensionCount;
+				vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &availableExtensionCount, nullptr);
+				std::vector<VkExtensionProperties> availableExtensions(availableExtensionCount);
+				vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &availableExtensionCount, availableExtensions.data());
+
+				std::set<std::string> requiredExtensions(instance.deviceExtensions.begin(), instance.deviceExtensions.end());
+
+				for (const auto& extension: availableExtensions) {
+					requiredExtensions.erase(extension.extensionName);
+				}
+				
+				isRequiredDeviceExtensionsAvailable = requiredExtensions.empty();
+			}
+
+			{
+				isIndicesComplete = QueryQueueFamilyIndices(physicalDevice, instance._surface);
+
+				if (isRequiredDeviceExtensionsAvailable) {
+					SwapchainSupportDetails swapchainSupport = QuerySwapchainSupportDetails(physicalDevice, instance._surface);
+					isSwapchainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
+				}
+
+				VkPhysicalDeviceFeatures supportedFeatures;
+				vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
+
+				if (isIndicesComplete && isRequiredDeviceExtensionsAvailable && isSwapchainAdequate && supportedFeatures.samplerAnisotropy) {
+					return physicalDevice;
+				}
+			}
+		}
+
+		return nullptr;
+	}
+}
+
+lucyvk::PhysicalDevice::PhysicalDevice(const Instance& instance)
+	: instance(instance)
+{
+	
 }
 
 bool lucyvk::PhysicalDevice::Initialize(SelectPhysicalDeviceFunction selectPhysicalDeviceFunction) {
@@ -12,12 +110,27 @@ bool lucyvk::PhysicalDevice::Initialize(SelectPhysicalDeviceFunction selectPhysi
 	vkEnumeratePhysicalDevices(instance._instance, &availableDeviceCount, availableDevices.data());
 
 	_physicalDevice = (selectPhysicalDeviceFunction == nullptr) ?
-		DefaultPhysicalDeviceSelection(availableDevices, instance._instance, instance._surface):
-		selectPhysicalDeviceFunction(availableDevices, instance._instance, instance._surface);
-
+		DefaultPhysicalDeviceSelection(availableDevices, instance):
+		selectPhysicalDeviceFunction(availableDevices, instance);
 	
+	if (_physicalDevice == nullptr) {
+		throw std::runtime_error("failed to pick PhysicalDevice");
+	}
+
+	_queueFamilyIndices = QueryQueueFamilyIndices(_physicalDevice, instance._surface);
+	_swapchainSupportDetails = QuerySwapchainSupportDetails(_physicalDevice, instance._surface);
+
+	vkGetPhysicalDeviceFeatures(_physicalDevice, &_features);
+	vkGetPhysicalDeviceProperties(_physicalDevice, &_properties);
 
 	return true;
 }
 
+const VkFormat lucyvk::PhysicalDevice::FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
+	
+}
+
+const uint32_t lucyvk::PhysicalDevice::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags) {
+	
+}
 

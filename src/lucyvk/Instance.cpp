@@ -1,5 +1,5 @@
-#include "Instance.h"
-#include "lucyvk/device.h"
+#include <lucyvk/Instance.h>
+#include <lucyvk/PhysicalDevice.h>
 #include <SDL_vulkan.h>
 #include <cstdlib>
 #include <set>
@@ -154,6 +154,10 @@ bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
 	}
 
 	return true;
+}
+
+lucyvk::PhysicalDevice lucyvk::Instance::CreatePhysicalDevice() {
+	return { *this };
 }
 
 // lucyvk::LogicalDevice lucyvk::Instance::CreateLogicalDevice(VkPhysicalDevice physicalDevice) {

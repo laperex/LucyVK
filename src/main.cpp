@@ -1,4 +1,5 @@
 #include "lucyvk/Instance.h"
+#include "lucyvk/PhysicalDevice.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_image.h>
@@ -21,12 +22,16 @@
 int main(int count, char** args) {
 	SDL_Init(SDL_INIT_VIDEO);
 
-	lucy::Window window;
+	lucy::Window window = {};
 	window.InitWindow();
+
+	lucyvk::Instance instance = {};
+
+	instance.Initialize("Lucy Framework", window.sdl_window);
+
+	lucyvk::PhysicalDevice physicalDevice = instance.CreatePhysicalDevice();
 	
-	lucyvk::Instance instance;
-	
-	instance.Initialize("lucy", window.sdl_window);
+	physicalDevice.Initialize();
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {

@@ -4,11 +4,10 @@
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include "device.h"
-#include "lucyvk/Instance.h"
+#include <lucyvk/types.h>
 
 namespace lucyvk {
-	typedef std::function<VkPhysicalDevice(const std::vector<VkPhysicalDevice>&, VkInstance, VkSurfaceKHR)> SelectPhysicalDeviceFunction;
+	typedef std::function<VkPhysicalDevice(const std::vector<VkPhysicalDevice>&, const lucyvk::Instance& instance)> SelectPhysicalDeviceFunction;
 
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphics;
@@ -24,23 +23,21 @@ namespace lucyvk {
 		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> presentModes;
 	};
-	
+
 	struct PhysicalDevice {
 		VkPhysicalDevice _physicalDevice;
+		QueueFamilyIndices _queueFamilyIndices;
+		SwapchainSupportDetails _swapchainSupportDetails;
+		VkPhysicalDeviceFeatures _features;
+		VkPhysicalDeviceProperties _properties;
 
-		Instance& instance;
+		const Instance& instance;
+
+		PhysicalDevice(const Instance& instance);
 		
 		bool Initialize(SelectPhysicalDeviceFunction selectPhysicalDeviceFunction = nullptr);
 
-		std::vector<VkPhysicalDevice> GetAvailablePhysicalDevices();
-
-		bool CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice);
-		QueueFamilyIndices FindQueueFamilyIndices(VkPhysicalDevice physicalDevice);
-		
-		VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags);
-
-		// SwapchainSupportDetails QuerySwapchainSupportDetails(VkPhysicalDevice device);
-		// VkPhysicalDevice PickPhysicalDevice(std::function<bool(VkPhysicalDevice, VkInstance, VkSurfaceKHR)> selectPhysicalDeviceFunction = nullptr);
+		const VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+		const uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags);
 	};
 }

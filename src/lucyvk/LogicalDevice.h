@@ -1,10 +1,8 @@
 #pragma once
 
-#include "lucyvk/types.h"
+#include <lucyvk/types.h>
 
 namespace lucyvk {
-	struct physicaldevice;
-
 	struct LogicalDevice {
 		Instance& _instance;
 
