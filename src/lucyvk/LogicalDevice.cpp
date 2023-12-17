@@ -45,7 +45,9 @@ bool lucyvk::LogicalDevice::Initialize() {
         throw std::runtime_error("logical device creation failed!");
     }
 	dloggln("Logical Device Created");
+
+    vkGetDeviceQueue(_device, physicalDevice._queueFamilyIndices.graphics.value(), 0, &_graphicsQueue);
+    vkGetDeviceQueue(_device, physicalDevice._queueFamilyIndices.present.value(), 0, &_presentQueue);
+
+	return true;
 }
-
-
-
