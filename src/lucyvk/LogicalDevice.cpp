@@ -47,7 +47,9 @@ bool lucyvk::LogicalDevice::Initialize() {
 	dloggln("Logical Device Created");
 
     vkGetDeviceQueue(_device, physicalDevice._queueFamilyIndices.graphics.value(), 0, &_graphicsQueue);
+	dloggln("Graphics Queue Created");
     vkGetDeviceQueue(_device, physicalDevice._queueFamilyIndices.present.value(), 0, &_presentQueue);
+	dloggln("Present Queue Created");
 
 	return true;
 }

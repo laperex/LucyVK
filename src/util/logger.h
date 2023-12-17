@@ -57,7 +57,11 @@ namespace util {
 
 	template <typename T>
 	inline void print(T a) {
-		std::cout << a << ' ';
+		std::cout << a;
+	}
+	template <typename T>
+	inline void println(T a) {
+		std::cout << a << '\n';
 	}
 
 	// template <typename T, typename Tp>
@@ -71,8 +75,9 @@ namespace util {
 		print(as...);
 	}
 
-	template <typename ...Ta>
-	void println(Ta ...as) {
-		print(as..., '\n');
+	template <typename T, typename ...Ta>
+	void println(T a, Ta ...as) {
+		println(a);
+		println(as...);
 	}
 }

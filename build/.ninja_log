@@ -37,3 +37,8 @@
 1	758	1702797824764351498	CMakeFiles/main.dir/src/lucyvk/Instance.cpp.o	745739ba4114d2de
 1	1409	1702797825416360235	CMakeFiles/main.dir/src/main.cpp.o	f152486a1367987c
 1409	1477	1702797825483361133	main	f6b3bb9c567ee244
+2	608	1702798951001726316	CMakeFiles/main.dir/src/lucyvk/LogicalDevice.cpp.o	8535e2d91cd67fbd
+2	668	1702798951061715670	CMakeFiles/main.dir/src/lucyvk/PhysicalDevice.cpp.o	a2b16c6922fd637e
+2	740	1702798951132703072	CMakeFiles/main.dir/src/lucyvk/Instance.cpp.o	745739ba4114d2de
+2	1414	1702798951806583480	CMakeFiles/main.dir/src/main.cpp.o	f152486a1367987c
+1414	1478	1702798951870572124	main	f6b3bb9c567ee244
