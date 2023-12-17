@@ -30,7 +30,7 @@ int main(int count, char** args) {
 	instance.Initialize("Lucy Framework", window.sdl_window);
 
 	lucyvk::PhysicalDevice physicalDevice = instance.CreatePhysicalDevice();
-	
+
 	physicalDevice.Initialize();
 
 	double dt = 0;
