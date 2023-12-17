@@ -1,5 +1,6 @@
 #include <lucyvk/Instance.h>
 #include <lucyvk/PhysicalDevice.h>
+#include <lucyvk/LogicalDevice.h>
 #include <SDL_vulkan.h>
 #include <cstdlib>
 #include <set>
@@ -88,14 +89,11 @@ bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
 		if (!CheckValidationLayerSupport()) {
 			throw std::runtime_error("validation layers requested, but not available!");
 		}
+		
+		layers.push_back("VK_LAYER_KHRONOS_validation");
 
 		requiredExtensionArray.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
-        createInfo.enabledLayerCount = static_cast<uint32_t>(std::size(layers));
-        createInfo.ppEnabledLayerNames = layers.data();
-
-        createInfo.pNext = nullptr;
-		
 		std::unordered_set<std::string> requiredExtensions, availableExtensions;
 		
 		for (const auto& extension: requiredExtensionArray) {
@@ -116,10 +114,10 @@ bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
 				throw std::runtime_error("missing required sdl2 extension");
 			}
 		}
-    } else {
-        createInfo.enabledLayerCount = 0;
-        createInfo.pNext = nullptr;
     }
+
+	createInfo.enabledLayerCount = std::size(layers);
+	createInfo.ppEnabledLayerNames = layers.data();
 
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensionArray.size());
 	createInfo.ppEnabledExtensionNames = requiredExtensionArray.data();
@@ -158,6 +156,10 @@ bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
 
 lucyvk::PhysicalDevice lucyvk::Instance::CreatePhysicalDevice() {
 	return { *this };
+}
+
+lucyvk::LogicalDevice lucyvk::Instance::CreateLogicalDevice(const PhysicalDevice& physicalDevice) {
+	return { *this, physicalDevice };
 }
 
 // lucyvk::LogicalDevice lucyvk::Instance::CreateLogicalDevice(VkPhysicalDevice physicalDevice) {

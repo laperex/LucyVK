@@ -12,12 +12,11 @@ namespace lucyvk {
 		VkSurfaceKHR _surface;
 		VkInstance _instance;
 
+		std::vector<const char*> layers = {};
+
 		bool Initialize(const char* name, SDL_Window* sdl_window);
 
 		PhysicalDevice CreatePhysicalDevice();
-		// LogicalDevice CreateLogicalDevice(VkPhysicalDevice physicalDevice);
-
-		std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-		std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation" };
+		LogicalDevice CreateLogicalDevice(const PhysicalDevice& physicalDevice);
 	};
 }

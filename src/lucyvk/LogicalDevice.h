@@ -1,12 +1,20 @@
 #pragma once
 
 #include <lucyvk/types.h>
+#include <vector>
+#include <vulkan/vulkan_core.h>
 
 namespace lucyvk {
 	struct LogicalDevice {
-		Instance& _instance;
+		VkDevice _device;
+		
+		const Instance& instance;
+		const PhysicalDevice& physicalDevice;
+		
+		std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-		LogicalDevice(Instance& _instance): _instance(_instance) {};
-		void init();
+		LogicalDevice(const Instance& instance, const PhysicalDevice& physicalDevice);
+
+		bool Initialize();
 	};
 }

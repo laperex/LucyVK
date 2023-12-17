@@ -1,5 +1,6 @@
 #include "lucyvk/Instance.h"
 #include "lucyvk/PhysicalDevice.h"
+#include "lucyvk/LogicalDevice.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_image.h>
@@ -32,6 +33,9 @@ int main(int count, char** args) {
 	lucyvk::PhysicalDevice physicalDevice = instance.CreatePhysicalDevice();
 
 	physicalDevice.Initialize();
+
+	lucyvk::LogicalDevice logicalDevice = physicalDevice.CreateLogicalDevice();
+	logicalDevice.Initialize();
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {

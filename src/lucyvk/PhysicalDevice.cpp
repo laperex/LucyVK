@@ -3,6 +3,7 @@
 #include <string>
 #include <lucyvk/PhysicalDevice.h>
 #include <lucyvk/Instance.h>
+#include <lucyvk/LogicalDevice.h>
 #include <util/logger.h>
 
 namespace lucyvk {
@@ -67,13 +68,12 @@ namespace lucyvk {
 				std::vector<VkExtensionProperties> availableExtensions(availableExtensionCount);
 				vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &availableExtensionCount, availableExtensions.data());
 
-				std::set<std::string> requiredExtensions(instance.deviceExtensions.begin(), instance.deviceExtensions.end());
-
 				for (const auto& extension: availableExtensions) {
-					requiredExtensions.erase(extension.extensionName);
+					if (strcmp(extension.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0) {
+						isRequiredDeviceExtensionsAvailable = true;
+						break;
+					}
 				}
-				
-				isRequiredDeviceExtensionsAvailable = requiredExtensions.empty();
 			}
 
 			{
@@ -124,6 +124,10 @@ bool lucyvk::PhysicalDevice::Initialize(SelectPhysicalDeviceFunction selectPhysi
 	vkGetPhysicalDeviceProperties(_physicalDevice, &_properties);
 
 	return true;
+}
+
+lucyvk::LogicalDevice lucyvk::PhysicalDevice::CreateLogicalDevice() {
+	return { instance, *this };
 }
 
 const VkFormat lucyvk::PhysicalDevice::FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
