@@ -1,6 +1,7 @@
 #include <lucyvk/LogicalDevice.h>
 #include <lucyvk/PhysicalDevice.h>
 #include <lucyvk/Instance.h>
+#include <lucyvk/Swapchain.h>
 #include <set>
 #include <stdexcept>
 #include <util/logger.h>
@@ -10,6 +11,10 @@ lucyvk::Device::Device(const Instance& instance, const PhysicalDevice& physicalD
 	physicalDevice(physicalDevice)
 {
 	
+}
+
+lucyvk::Swapchain lucyvk::Device::CreateSwapchain(int width, int height) {
+	return { *this, VkExtent2D { static_cast<uint32_t>(width), static_cast<uint32_t>(height) } };
 }
 
 bool lucyvk::Device::Initialize() {

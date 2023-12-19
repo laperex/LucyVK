@@ -31,6 +31,12 @@
 },
 {
   "directory": "/home/laperex/Programming/C++/LucyVK/build",
+  "command": "/usr/bin/g++ -I/home/laperex/Programming/C++/LucyVK/include -I/home/laperex/Programming/C++/LucyVK/src -isystem /usr/include/SDL2 -g -std=gnu++20 -o CMakeFiles/main.dir/src/lucyvk/Swapchain.cpp.o -c /home/laperex/Programming/C++/LucyVK/src/lucyvk/Swapchain.cpp",
+  "file": "/home/laperex/Programming/C++/LucyVK/src/lucyvk/Swapchain.cpp",
+  "output": "CMakeFiles/main.dir/src/lucyvk/Swapchain.cpp.o"
+},
+{
+  "directory": "/home/laperex/Programming/C++/LucyVK/build",
   "command": "/usr/bin/g++ -I/home/laperex/Programming/C++/LucyVK/include -I/home/laperex/Programming/C++/LucyVK/src -isystem /usr/include/SDL2 -g -std=gnu++20 -o CMakeFiles/main.dir/src/main.cpp.o -c /home/laperex/Programming/C++/LucyVK/src/main.cpp",
   "file": "/home/laperex/Programming/C++/LucyVK/src/main.cpp",
   "output": "CMakeFiles/main.dir/src/main.cpp.o"

@@ -18,6 +18,8 @@ namespace lucyvk {
 
 		Device(const Instance& instance, const PhysicalDevice& physicalDevice);
 
+		Swapchain CreateSwapchain(int width, int height);
+		
 		bool Initialize();
 		void WaitIdle();
 	};

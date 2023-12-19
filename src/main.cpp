@@ -36,8 +36,9 @@ int main(int count, char** args) {
 
 	lucyvk::Device device = physicalDevice.CreateLogicalDevice();
 	device.Initialize();
-	
-	lucyvk::Swapchain swapchain = device
+
+	lucyvk::Swapchain swapchain = device.CreateSwapchain(window.size.x, window.size.y);
+	swapchain.Initialize();
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
