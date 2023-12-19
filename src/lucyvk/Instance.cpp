@@ -170,7 +170,7 @@ lucyvk::PhysicalDevice lucyvk::Instance::CreatePhysicalDevice() {
 	return { *this };
 }
 
-lucyvk::LogicalDevice lucyvk::Instance::CreateLogicalDevice(const PhysicalDevice& physicalDevice) {
+lucyvk::Device lucyvk::Instance::CreateLogicalDevice(const PhysicalDevice& physicalDevice) {
 	return { *this, physicalDevice };
 }
 

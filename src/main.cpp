@@ -33,7 +33,7 @@ int main(int count, char** args) {
 	lucyvk::PhysicalDevice physicalDevice = instance.CreatePhysicalDevice();
 	physicalDevice.Initialize();
 
-	lucyvk::LogicalDevice logicalDevice = physicalDevice.CreateLogicalDevice();
+	lucyvk::Device logicalDevice = physicalDevice.CreateLogicalDevice();
 	logicalDevice.Initialize();
 
 	double dt = 0;

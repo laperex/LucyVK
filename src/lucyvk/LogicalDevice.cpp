@@ -5,14 +5,14 @@
 #include <stdexcept>
 #include <util/logger.h>
 
-lucyvk::LogicalDevice::LogicalDevice(const Instance& instance, const PhysicalDevice& physicalDevice):
+lucyvk::Device::Device(const Instance& instance, const PhysicalDevice& physicalDevice):
 	instance(instance),
 	physicalDevice(physicalDevice)
 {
 	
 }
 
-bool lucyvk::LogicalDevice::Initialize() {
+bool lucyvk::Device::Initialize() {
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoArray;
     std::set<uint32_t> uniqueQueueFamilies = { physicalDevice._queueFamilyIndices.graphics.value(), physicalDevice._queueFamilyIndices.present.value() };
 

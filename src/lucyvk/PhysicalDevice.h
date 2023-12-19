@@ -37,7 +37,7 @@ namespace lucyvk {
 		
 		bool Initialize(SelectPhysicalDeviceFunction selectPhysicalDeviceFunction = nullptr);
 		
-		LogicalDevice CreateLogicalDevice();
+		Device CreateLogicalDevice();
 
 		const VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 		const uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags);

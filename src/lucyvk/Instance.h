@@ -20,6 +20,6 @@ namespace lucyvk {
 		bool Initialize(const char* name, SDL_Window* sdl_window);
 
 		PhysicalDevice CreatePhysicalDevice();
-		LogicalDevice CreateLogicalDevice(const PhysicalDevice& physicalDevice);
+		Device CreateLogicalDevice(const PhysicalDevice& physicalDevice);
 	};
 }

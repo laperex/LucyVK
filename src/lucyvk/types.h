@@ -1,5 +1,5 @@
 namespace lucyvk {
 	struct Instance;
 	struct PhysicalDevice;
-	struct LogicalDevice;
+	struct Device;
 }

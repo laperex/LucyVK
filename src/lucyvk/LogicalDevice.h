@@ -5,7 +5,7 @@
 #include <vulkan/vulkan_core.h>
 
 namespace lucyvk {
-	struct LogicalDevice {
+	struct Device {
 		VkDevice _device;
 
 		VkQueue _graphicsQueue;
@@ -16,7 +16,7 @@ namespace lucyvk {
 
 		std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-		LogicalDevice(const Instance& instance, const PhysicalDevice& physicalDevice);
+		Device(const Instance& instance, const PhysicalDevice& physicalDevice);
 
 		bool Initialize();
 	};
