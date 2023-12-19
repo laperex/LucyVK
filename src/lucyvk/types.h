@@ -3,4 +3,5 @@ namespace lucyvk {
 	struct PhysicalDevice;
 	struct Device;
 	struct Swapchain;
+	struct ImageView;
 }

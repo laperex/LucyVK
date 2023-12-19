@@ -13,6 +13,12 @@
 },
 {
   "directory": "/home/laperex/Programming/C++/LucyVK/build",
+  "command": "/usr/bin/g++ -I/home/laperex/Programming/C++/LucyVK/include -I/home/laperex/Programming/C++/LucyVK/src -isystem /usr/include/SDL2 -g -std=gnu++20 -o CMakeFiles/main.dir/src/lucyvk/ImageView.cpp.o -c /home/laperex/Programming/C++/LucyVK/src/lucyvk/ImageView.cpp",
+  "file": "/home/laperex/Programming/C++/LucyVK/src/lucyvk/ImageView.cpp",
+  "output": "CMakeFiles/main.dir/src/lucyvk/ImageView.cpp.o"
+},
+{
+  "directory": "/home/laperex/Programming/C++/LucyVK/build",
   "command": "/usr/bin/g++ -I/home/laperex/Programming/C++/LucyVK/include -I/home/laperex/Programming/C++/LucyVK/src -isystem /usr/include/SDL2 -g -std=gnu++20 -o CMakeFiles/main.dir/src/lucyvk/Instance.cpp.o -c /home/laperex/Programming/C++/LucyVK/src/lucyvk/Instance.cpp",
   "file": "/home/laperex/Programming/C++/LucyVK/src/lucyvk/Instance.cpp",
   "output": "CMakeFiles/main.dir/src/lucyvk/Instance.cpp.o"

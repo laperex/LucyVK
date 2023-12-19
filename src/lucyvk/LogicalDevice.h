@@ -17,6 +17,7 @@ namespace lucyvk {
 		std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
 		Device(const Instance& instance, const PhysicalDevice& physicalDevice);
+		~Device();
 
 		Swapchain CreateSwapchain(int width, int height);
 		

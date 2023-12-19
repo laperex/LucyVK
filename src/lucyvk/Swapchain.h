@@ -6,17 +6,18 @@
 
 namespace lucyvk {
 	struct Swapchain {
-		const Device& device;
-		
 		VkSwapchainKHR _swapchain = VK_NULL_HANDLE;
-		VkExtent2D _swapchainExtent;
+		VkExtent2D _swapchainExtent = { 0, 0 };
 		VkSurfaceFormatKHR _swapchainSurfaceFormat;
 		VkPresentModeKHR _swapchainPresentMode;
 
 		std::vector<VkImage> _swapchainImages;
 		std::vector<VkImageView> _swapchainImageViews;
 
-		Swapchain(lucyvk::Device& device, VkExtent2D windowExtent);
+		const lucyvk::Device& device;
+
+		Swapchain(const lucyvk::Device& device, VkExtent2D windowExtent);
+		~Swapchain();
 
 		bool Initialize();
 		bool Destroy();
