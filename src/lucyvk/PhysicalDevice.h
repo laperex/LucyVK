@@ -16,6 +16,10 @@ namespace lucyvk {
 		operator bool() const {
 			return graphics.has_value() && present.has_value();
 		}
+
+		const bool unique() const {
+			return graphics.value() == present.value();
+		}
 	};
 
 	struct SwapchainSupportDetails {
@@ -25,7 +29,7 @@ namespace lucyvk {
 	};
 
 	struct PhysicalDevice {
-		VkPhysicalDevice _physicalDevice;
+		VkPhysicalDevice _physicalDevice = VK_NULL_HANDLE;
 		QueueFamilyIndices _queueFamilyIndices;
 		SwapchainSupportDetails _swapchainSupportDetails;
 		VkPhysicalDeviceFeatures _features;

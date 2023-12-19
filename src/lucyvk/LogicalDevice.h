@@ -6,10 +6,10 @@
 
 namespace lucyvk {
 	struct Device {
-		VkDevice _device;
+		VkDevice _device = VK_NULL_HANDLE;
 
-		VkQueue _graphicsQueue;
-		VkQueue _presentQueue;
+		VkQueue _graphicsQueue = VK_NULL_HANDLE;
+		VkQueue _presentQueue = VK_NULL_HANDLE;
 
 		const Instance& instance;
 		const PhysicalDevice& physicalDevice;

@@ -2,6 +2,7 @@
 #include <lucyvk/Instance.h>
 #include <lucyvk/PhysicalDevice.h>
 #include <lucyvk/LogicalDevice.h>
+#include <stdexcept>
 
 lucyvk::Swapchain::Swapchain(lucyvk::Device& device, VkExtent2D windowExtent): device(device)
 {
@@ -54,53 +55,36 @@ void lucyvk::Swapchain::Initialize() {
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		createInfo.imageSharingMode;
-		createInfo.queueFamilyIndexCount;
-		createInfo.pQueueFamilyIndices;
-		createInfo.preTransform;
-		createInfo.compositeAlpha;
-		createInfo.presentMode;
-		createInfo.clipped;
-		createInfo.oldSwapchain;
+		uint32_t queueFamilyIndices[] = {
+			device.physicalDevice._queueFamilyIndices.graphics.value(),
+			device.physicalDevice._queueFamilyIndices.present.value()
+		};
+
+		if (device.physicalDevice._queueFamilyIndices.unique()) {
+			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			createInfo.queueFamilyIndexCount = 2;
+			createInfo.pQueueFamilyIndices = queueFamilyIndices;
+		} else {
+			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0;
+			createInfo.pQueueFamilyIndices = nullptr;
+		}
+
+		createInfo.preTransform = capabilities.currentTransform;
+		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+
+		createInfo.presentMode = presentMode;
+		createInfo.clipped = VK_TRUE;
+		createInfo.oldSwapchain = _swapchain;
 	}
 
-	createInfo.minImageCount = imageCount;
-	createInfo.imageFormat = surfaceFormat.format;
-	createInfo.imageColorSpace = surfaceFormat.colorSpace;
-	createInfo.imageExtent = extent;
-	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-	uint32_t queueFamilyIndices[] = {
-		device.queueFamilyIndices.graphicsFamily.value(),
-		device.queueFamilyIndices.presentFamily.value()
-	};
-
-	if (device.queueFamilyIndices.graphicsFamily.value() != device.queueFamilyIndices.presentFamily.value()) {
-		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-		createInfo.queueFamilyIndexCount = 2;
-		createInfo.pQueueFamilyIndices = queueFamilyIndices;
-	} else {
-		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		createInfo.queueFamilyIndexCount = 0;
-		createInfo.pQueueFamilyIndices = nullptr;
-	}
-
-	createInfo.preTransform = capabilities.currentTransform;
-	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-
-	createInfo.presentMode = presentMode;
-	createInfo.clipped = VK_TRUE;
-
-	createInfo.oldSwapchain = VK_NULL_HANDLE;
-
-	if (vkCreateSwapchainKHR(device.device(), &createInfo, nullptr, &swapchain) != VK_SUCCESS) {
+	if (vkCreateSwapchainKHR(device._device, &createInfo, nullptr, &_swapchain) != VK_SUCCESS) {
 		throw std::runtime_error("FAILED TO CREATE SWAPCHAIN!");
 	}
 
-	vkGetSwapchainImagesKHR(device.device(), swapchain, &imageCount, nullptr);
+	vkGetSwapchainImagesKHR(device._device, _swapchain, &imageCount, nullptr);
 	_swapchainImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(device.device(), swapchain, &imageCount, _swapchainImages.data());
+	vkGetSwapchainImagesKHR(device._device, _swapchain, &imageCount, _swapchainImages.data());
 	
 	swapchainImageFormat = surfaceFormat.format;
 }
