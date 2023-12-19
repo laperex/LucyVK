@@ -21,6 +21,8 @@ namespace lucyvk {
 		Swapchain CreateSwapchain(int width, int height);
 		
 		bool Initialize();
+		bool Destroy();
+		
 		void WaitIdle();
 	};
 }

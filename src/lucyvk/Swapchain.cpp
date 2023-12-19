@@ -89,16 +89,43 @@ bool lucyvk::Swapchain::Initialize() {
 		createInfo.oldSwapchain = _swapchain;
 
 
-		if (vkCreateSwapchainKHR(device._device, &createInfo, nullptr, &_swapchain) != VK_SUCCESS) {
+		if (vkCreateSwapchainKHR(device._device, &createInfo, VK_NULL_HANDLE, &_swapchain) != VK_SUCCESS) {
 			throw std::runtime_error("FAILED TO CREATE SWAPCHAIN!");
 		}
 		dloggln("Created Swapchain");
 	}
 
+	// TODO: Move ImageViews to seperate structure
 
 	vkGetSwapchainImagesKHR(device._device, _swapchain, &imageCount, nullptr);
 	_swapchainImages.resize(imageCount);
 	vkGetSwapchainImagesKHR(device._device, _swapchain, &imageCount, _swapchainImages.data());
+
+	_swapchainImageViews.resize(_swapchainImages.size());
+
+	for (size_t i = 0; i < _swapchainImages.size(); i++) {
+		VkImageViewCreateInfo viewInfo{};
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.image = _swapchainImages[i];
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = _swapchainSurfaceFormat.format;
+		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+
+		if (vkCreateImageView(device._device, &viewInfo, nullptr, &_swapchainImageViews[i]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create image!");
+		}
+	}
+
+	return true;
+}
+
+bool lucyvk::Swapchain::Destroy() {
+	vkDestroySwapchainKHR(device._device, _swapchain, VK_NULL_HANDLE);
+	dloggln("Swapchain Destroyed");
 
 	return true;
 }

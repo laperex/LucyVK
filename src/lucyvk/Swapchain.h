@@ -12,10 +12,13 @@ namespace lucyvk {
 		VkExtent2D _swapchainExtent;
 		VkSurfaceFormatKHR _swapchainSurfaceFormat;
 		VkPresentModeKHR _swapchainPresentMode;
+
 		std::vector<VkImage> _swapchainImages;
+		std::vector<VkImageView> _swapchainImageViews;
 
 		Swapchain(lucyvk::Device& device, VkExtent2D windowExtent);
 
 		bool Initialize();
+		bool Destroy();
 	};
 }

@@ -126,6 +126,10 @@ bool lucyvk::PhysicalDevice::Initialize(SelectPhysicalDeviceFunction selectPhysi
 	return true;
 }
 
+bool lucyvk::PhysicalDevice::Destroy() {
+	
+}
+
 lucyvk::Device lucyvk::PhysicalDevice::CreateLogicalDevice() {
 	return { instance, *this };
 }

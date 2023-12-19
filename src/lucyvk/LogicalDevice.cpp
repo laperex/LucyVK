@@ -59,6 +59,12 @@ bool lucyvk::Device::Initialize() {
 	return true;
 }
 
+bool lucyvk::Device::Destroy() {
+	vkDestroyDevice(_device, VK_NULL_HANDLE);
+
+	return true;
+}
+
 void lucyvk::Device::WaitIdle() {
 	
 }
