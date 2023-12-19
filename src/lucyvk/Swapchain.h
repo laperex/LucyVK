@@ -16,6 +16,6 @@ namespace lucyvk {
 
 		Swapchain(lucyvk::Device& device, VkExtent2D windowExtent);
 
-		void Initialize();
+		bool Initialize();
 	};
 }

@@ -19,5 +19,6 @@ namespace lucyvk {
 		Device(const Instance& instance, const PhysicalDevice& physicalDevice);
 
 		bool Initialize();
+		void WaitIdle();
 	};
 }

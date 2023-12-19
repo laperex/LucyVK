@@ -1,6 +1,7 @@
 #include "lucyvk/Instance.h"
 #include "lucyvk/PhysicalDevice.h"
 #include "lucyvk/LogicalDevice.h"
+#include "lucyvk/Swapchain.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_image.h>
@@ -33,8 +34,10 @@ int main(int count, char** args) {
 	lucyvk::PhysicalDevice physicalDevice = instance.CreatePhysicalDevice();
 	physicalDevice.Initialize();
 
-	lucyvk::Device logicalDevice = physicalDevice.CreateLogicalDevice();
-	logicalDevice.Initialize();
+	lucyvk::Device device = physicalDevice.CreateLogicalDevice();
+	device.Initialize();
+	
+	lucyvk::Swapchain swapchain = device
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {

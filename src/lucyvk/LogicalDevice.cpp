@@ -53,3 +53,7 @@ bool lucyvk::Device::Initialize() {
 
 	return true;
 }
+
+void lucyvk::Device::WaitIdle() {
+	
+}
