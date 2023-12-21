@@ -103,6 +103,11 @@ lucyvk::PhysicalDevice::PhysicalDevice(const Instance& instance)
 	
 }
 
+lucyvk::PhysicalDevice::~PhysicalDevice()
+{
+	Destroy();
+}
+
 bool lucyvk::PhysicalDevice::Initialize(SelectPhysicalDeviceFunction selectPhysicalDeviceFunction) {
 	uint32_t availableDeviceCount = 0;
 	vkEnumeratePhysicalDevices(instance._instance, &availableDeviceCount, nullptr);
@@ -122,12 +127,16 @@ bool lucyvk::PhysicalDevice::Initialize(SelectPhysicalDeviceFunction selectPhysi
 
 	vkGetPhysicalDeviceFeatures(_physicalDevice, &_features);
 	vkGetPhysicalDeviceProperties(_physicalDevice, &_properties);
+	
+	dloggln("Physical Device - ", _properties.deviceName);
 
 	return true;
 }
 
 bool lucyvk::PhysicalDevice::Destroy() {
-	
+	dloggln("-PhysicalDevice");
+
+	return true;
 }
 
 lucyvk::Device lucyvk::PhysicalDevice::CreateLogicalDevice() {

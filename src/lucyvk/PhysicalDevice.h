@@ -38,6 +38,7 @@ namespace lucyvk {
 		const Instance& instance;
 
 		PhysicalDevice(const Instance& instance);
+		~PhysicalDevice();
 		
 		bool Initialize(SelectPhysicalDeviceFunction selectPhysicalDeviceFunction = nullptr);
 		bool Destroy();

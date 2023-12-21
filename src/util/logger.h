@@ -9,7 +9,7 @@
 // 	#define dlogg(...) util::print(__VA_ARGS__)
 // #endif
 #ifndef dloggln
-	#define dloggln(...) util::println(__VA_ARGS__)
+	#define dloggln(...) util::println(__VA_ARGS__, '\n')
 #endif
 
 template <typename T>
@@ -61,7 +61,7 @@ namespace util {
 	}
 	template <typename T>
 	inline void println(T a) {
-		std::cout << a << '\n';
+		std::cout << a;
 	}
 
 	// template <typename T, typename Tp>

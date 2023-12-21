@@ -1,3 +1,4 @@
+#include "util/logger.h"
 #include <lucyvk/CommandPool.h>
 #include <lucyvk/LogicalDevice.h>
 #include <lucyvk/PhysicalDevice.h>
@@ -23,4 +24,7 @@ lucyvk::CommandPool::~CommandPool()
 
 bool lucyvk::CommandPool::Destroy() {
 	vkDestroyCommandPool(device._device, _commandPool, VK_NULL_HANDLE);
+	dloggln("Command Pool Destroyed");
+	
+	return true;
 }

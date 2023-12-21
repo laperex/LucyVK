@@ -10,6 +10,11 @@ lucyvk::ImageView::ImageView(const lucyvk::Swapchain& swapchain):
 	
 }
 
+lucyvk::ImageView::~ImageView()
+{
+	Destroy();
+}
+
 bool lucyvk::ImageView::Initialize() {
 	uint32_t imageCount;
 	vkGetSwapchainImagesKHR(swapchain.device._device, swapchain._swapchain, &imageCount, nullptr);

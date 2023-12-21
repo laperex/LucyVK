@@ -15,7 +15,8 @@ lucyvk::Device::Device(const Instance& instance, const PhysicalDevice& physicalD
 
 lucyvk::Device::~Device()
 {
-	
+	dloggln("-Device");
+	Destroy();
 }
 
 lucyvk::Swapchain lucyvk::Device::CreateSwapchain(int width, int height) {
@@ -64,7 +65,7 @@ bool lucyvk::Device::Initialize() {
 	return true;
 }
 
-bool lucyvk::Device::Destroy() {
+bool lucyvk::Device::Destroy() {	
 	vkDestroyDevice(_device, VK_NULL_HANDLE);
 
 	return true;

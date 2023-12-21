@@ -12,7 +12,7 @@ lucyvk::Swapchain::Swapchain(const lucyvk::Device& device, VkExtent2D windowExte
 
 lucyvk::Swapchain::~Swapchain()
 {
-	
+	Destroy();
 }
 
 bool lucyvk::Swapchain::Initialize() {
@@ -95,7 +95,7 @@ bool lucyvk::Swapchain::Initialize() {
 
 
 		if (vkCreateSwapchainKHR(device._device, &createInfo, VK_NULL_HANDLE, &_swapchain) != VK_SUCCESS) {
-			throw std::runtime_error("FAILED TO CREATE SWAPCHAIN!");
+			throw std::runtime_error("failed to create swapchain!");
 		}
 		dloggln("Created Swapchain");
 	}

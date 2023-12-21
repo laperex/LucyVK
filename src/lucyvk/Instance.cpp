@@ -12,7 +12,7 @@
 #include <util/logger.h>
 #include <vulkan/vulkan_core.h>
 
-static bool DEBUG_MODE = true;
+static bool DEBUG_MODE = false;
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData) {
@@ -166,8 +166,18 @@ bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
 }
 
 bool lucyvk::Instance::Destroy() {
+	if (DEBUG_MODE) {
+        DestroyDebugUtilsMessengerEXT(_instance, _debugMessenger, nullptr);
+		dloggln("DebugUtilMessenger Destroyed");
+	}
+	
+	vkDestroySurfaceKHR(_instance, _surface, nullptr);
+	dloggln("SurfaceKHR Destroyed");
+
     vkDestroyInstance(_instance, nullptr);
-	std::cout << "Vulkan Instance Destroyed Succesfully\n";
+	dloggln("Instance Destroyed");
+
+	return true;
 }
 
 lucyvk::PhysicalDevice lucyvk::Instance::CreatePhysicalDevice() {

@@ -12,6 +12,7 @@ namespace lucyvk {
 		std::vector<VkImageView> _imageViewArray;
 		
 		ImageView(const lucyvk::Swapchain& swapchain);
+		~ImageView();
 		
 		bool Initialize();
 		bool Destroy();

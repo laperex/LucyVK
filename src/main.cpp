@@ -53,8 +53,9 @@ int main(int count, char** args) {
 		dt = std::chrono::duration<double, std::ratio<1, 60>>(end_time - start_time).count();
 	}
 
-	// vkDeviceWaitIdle(device.device());
-	
+	device.WaitIdle();
 
 	window.Destroy();
+
+	// instance.Destroy();
 }
