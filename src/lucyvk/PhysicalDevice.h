@@ -12,13 +12,15 @@ namespace lucyvk {
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphics;
 		std::optional<uint32_t> present;
+		// std::optional<uint32_t> compute;
+		// std::optional<uint32_t> sparse_binding;
 
 		operator bool() const {
 			return graphics.has_value() && present.has_value();
 		}
 
 		const bool unique() const {
-			return graphics.value() == present.value();
+			return (graphics.value() == present.value());
 		}
 	};
 
@@ -40,11 +42,13 @@ namespace lucyvk {
 		PhysicalDevice(const Instance& instance);
 		~PhysicalDevice();
 		
-		bool Initialize(SelectPhysicalDeviceFunction selectPhysicalDeviceFunction = nullptr);
-		bool Destroy();
-		
 		Device CreateLogicalDevice();
 
+	private:
+		bool Initialize(SelectPhysicalDeviceFunction selectPhysicalDeviceFunction = nullptr);
+		bool Destroy();
+
+	protected:
 		const VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 		const uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags);
 	};

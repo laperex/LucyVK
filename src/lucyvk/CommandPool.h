@@ -12,6 +12,7 @@ namespace lucyvk {
 		CommandPool(const Device& device);
 		~CommandPool();
 
+	private:
 		bool Initialize();
 		bool Destroy();
 	};

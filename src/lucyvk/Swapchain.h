@@ -19,6 +19,7 @@ namespace lucyvk {
 		Swapchain(const lucyvk::Device& device, VkExtent2D windowExtent);
 		~Swapchain();
 
+	private:
 		bool Initialize();
 		bool Destroy();
 	};

@@ -1,6 +1,7 @@
 #include "lucyvk/Instance.h"
 #include "lucyvk/PhysicalDevice.h"
 #include "lucyvk/LogicalDevice.h"
+#include "lucyvk/CommandPool.h"
 #include "lucyvk/Swapchain.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
@@ -27,19 +28,12 @@ int main(int count, char** args) {
 	lucy::Window window = {};
 	window.InitWindow();
 
-	lucyvk::Instance instance = {};
-
-	instance.Initialize("Lucy Framework", window.sdl_window);
-
+	lucyvk::Instance instance = { "Lucy Framework", window.sdl_window };
 	lucyvk::PhysicalDevice physicalDevice = instance.CreatePhysicalDevice();
-	physicalDevice.Initialize();
-	// physicalDevice.Initialize();
-
 	lucyvk::Device device = physicalDevice.CreateLogicalDevice();
-	device.Initialize();
 
 	lucyvk::Swapchain swapchain = device.CreateSwapchain(window.size.x, window.size.y);
-	swapchain.Initialize();
+	lucyvk::CommandPool commandPool = device.CreateCommandPool();
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
@@ -56,6 +50,4 @@ int main(int count, char** args) {
 	device.WaitIdle();
 
 	window.Destroy();
-
-	// instance.Destroy();
 }

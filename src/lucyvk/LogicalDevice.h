@@ -20,10 +20,12 @@ namespace lucyvk {
 		~Device();
 
 		Swapchain CreateSwapchain(int width, int height);
+		CommandPool CreateCommandPool();
 
+		void WaitIdle();
+
+	private:
 		bool Initialize();
 		bool Destroy();
-		
-		void WaitIdle();
 	};
 }

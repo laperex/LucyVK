@@ -40,9 +40,18 @@ namespace lucyvk {
 		for (int i = 0; i < queueFamilies.size(); i++) {
 			VkBool32 presentSupport = false;
 			vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, _surfaceKHR, &presentSupport);
+
 			if (queueFamilies[i].queueCount > 0 && presentSupport) {
 				indices.present = i;
 			}
+			
+			// if (queueFamilies[i].queueCount > 0 && queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
+			// 	indices.compute = i;
+			// }
+
+			// if (queueFamilies[i].queueCount > 0 && queueFamilies[i].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT) {
+			// 	indices.sparse_binding = i;
+			// }
 
 			if (queueFamilies[i].queueCount > 0 && queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 				indices.graphics = i;
@@ -100,7 +109,7 @@ namespace lucyvk {
 lucyvk::PhysicalDevice::PhysicalDevice(const Instance& instance)
 	: instance(instance)
 {
-	
+	Initialize();
 }
 
 lucyvk::PhysicalDevice::~PhysicalDevice()
@@ -134,7 +143,6 @@ bool lucyvk::PhysicalDevice::Initialize(SelectPhysicalDeviceFunction selectPhysi
 }
 
 bool lucyvk::PhysicalDevice::Destroy() {
-	dloggln("-PhysicalDevice");
 
 	return true;
 }

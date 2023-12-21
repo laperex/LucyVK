@@ -5,11 +5,12 @@
 #include <unordered_map>
 #include <vector>
 
-// #ifndef dlogg
-// 	#define dlogg(...) util::print(__VA_ARGS__)
-// #endif
-#ifndef dloggln
+#define DEBUG_ENABLE
+
+#ifdef DEBUG_ENABLE 
 	#define dloggln(...) util::println(__VA_ARGS__, '\n')
+#else
+	#define dloggln(...) ;
 #endif
 
 template <typename T>

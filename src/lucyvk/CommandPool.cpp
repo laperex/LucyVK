@@ -7,7 +7,16 @@
 lucyvk::CommandPool::CommandPool(const Device& device):
 	device(device)
 {
-    VkCommandPoolCreateInfo poolInfo = {};
+    Initialize();
+}
+
+lucyvk::CommandPool::~CommandPool()
+{
+	Destroy();
+}
+
+bool lucyvk::CommandPool::Initialize() {
+	VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex = device.physicalDevice._queueFamilyIndices.graphics.value();
     poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -15,11 +24,8 @@ lucyvk::CommandPool::CommandPool(const Device& device):
     if (vkCreateCommandPool(device._device, &poolInfo, nullptr, &_commandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create command pool!");
     }
-}
 
-lucyvk::CommandPool::~CommandPool()
-{
-	Destroy();
+	return true;
 }
 
 bool lucyvk::CommandPool::Destroy() {

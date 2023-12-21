@@ -7,7 +7,7 @@
 lucyvk::ImageView::ImageView(const lucyvk::Swapchain& swapchain):
 	swapchain(swapchain)
 {
-	
+	Initialize();
 }
 
 lucyvk::ImageView::~ImageView()

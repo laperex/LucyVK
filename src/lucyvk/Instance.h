@@ -13,8 +13,9 @@ namespace lucyvk {
 		VkInstance _instance;
 
 		std::vector<const char*> layers = {};
-		
+
 		Instance();
+		Instance(const char* name, SDL_Window* sdl_window);
 		~Instance();
 
 		bool Initialize(const char* name, SDL_Window* sdl_window);

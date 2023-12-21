@@ -12,7 +12,7 @@
 #include <util/logger.h>
 #include <vulkan/vulkan_core.h>
 
-static bool DEBUG_MODE = false;
+static bool DEBUG_MODE = true;
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData) {
@@ -62,6 +62,11 @@ static bool CheckValidationLayerSupport() {
 lucyvk::Instance::Instance()
 {
 	
+}
+
+lucyvk::Instance::Instance(const char* name, SDL_Window* sdl_window)
+{
+	Initialize(name, sdl_window);
 }
 
 lucyvk::Instance::~Instance()

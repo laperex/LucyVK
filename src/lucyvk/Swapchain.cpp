@@ -7,7 +7,7 @@
 
 lucyvk::Swapchain::Swapchain(const lucyvk::Device& device, VkExtent2D windowExtent): device(device)
 {
-	
+	Initialize();
 }
 
 lucyvk::Swapchain::~Swapchain()
@@ -73,13 +73,13 @@ bool lucyvk::Swapchain::Initialize() {
 		};
 
 		if (device.physicalDevice._queueFamilyIndices.unique()) {
-			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			createInfo.queueFamilyIndexCount = std::size(queueFamilyIndices);
-			createInfo.pQueueFamilyIndices = queueFamilyIndices;
-		} else {
 			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			createInfo.queueFamilyIndexCount = 0;
 			createInfo.pQueueFamilyIndices = nullptr;
+		} else {
+			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			createInfo.queueFamilyIndexCount = std::size(queueFamilyIndices);
+			createInfo.pQueueFamilyIndices = queueFamilyIndices;
 		}
 
 		createInfo.preTransform = capabilities.currentTransform;

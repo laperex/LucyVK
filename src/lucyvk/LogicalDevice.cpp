@@ -2,6 +2,7 @@
 #include <lucyvk/PhysicalDevice.h>
 #include <lucyvk/Instance.h>
 #include <lucyvk/Swapchain.h>
+#include <lucyvk/CommandPool.h>
 #include <set>
 #include <stdexcept>
 #include <util/logger.h>
@@ -10,17 +11,20 @@ lucyvk::Device::Device(const Instance& instance, const PhysicalDevice& physicalD
 	instance(instance),
 	physicalDevice(physicalDevice)
 {
-	
+	Initialize();
 }
 
 lucyvk::Device::~Device()
 {
-	dloggln("-Device");
 	Destroy();
 }
 
 lucyvk::Swapchain lucyvk::Device::CreateSwapchain(int width, int height) {
 	return { *this, VkExtent2D { static_cast<uint32_t>(width), static_cast<uint32_t>(height) } };
+}
+
+lucyvk::CommandPool lucyvk::Device::CreateCommandPool() {
+	return { *this };
 }
 
 bool lucyvk::Device::Initialize() {
@@ -65,8 +69,9 @@ bool lucyvk::Device::Initialize() {
 	return true;
 }
 
-bool lucyvk::Device::Destroy() {	
+bool lucyvk::Device::Destroy() {
 	vkDestroyDevice(_device, VK_NULL_HANDLE);
+	dloggln("Device Destroyed");
 
 	return true;
 }
