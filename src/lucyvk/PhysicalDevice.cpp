@@ -151,7 +151,7 @@ lucyvk::Device lucyvk::PhysicalDevice::CreateLogicalDevice() {
 	return { instance, *this };
 }
 
-const VkFormat lucyvk::PhysicalDevice::FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
+const VkFormat lucyvk::PhysicalDevice::FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const {
 	for (VkFormat format: candidates) {
         VkFormatProperties props;
         vkGetPhysicalDeviceFormatProperties(_physicalDevice, format, &props);
@@ -167,7 +167,7 @@ const VkFormat lucyvk::PhysicalDevice::FindSupportedFormat(const std::vector<VkF
     throw std::runtime_error("failed to find supported format!");
 }
 
-const uint32_t lucyvk::PhysicalDevice::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags) {
+const uint32_t lucyvk::PhysicalDevice::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags) const {
 	VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(_physicalDevice, &memoryProperties);
 

@@ -22,6 +22,8 @@ namespace lucyvk {
 		Swapchain CreateSwapchain(int width, int height);
 		CommandPool CreateCommandPool();
 
+		void CreateImage(const VkImageCreateInfo &imageInfo, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory) const;
+
 		void WaitIdle();
 
 	private:

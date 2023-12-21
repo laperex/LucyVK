@@ -2,6 +2,7 @@
 #include "lucyvk/PhysicalDevice.h"
 #include "lucyvk/LogicalDevice.h"
 #include "lucyvk/CommandPool.h"
+#include "lucyvk/ImageView.h"
 #include "lucyvk/Swapchain.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
@@ -34,6 +35,8 @@ int main(int count, char** args) {
 
 	lucyvk::Swapchain swapchain = device.CreateSwapchain(window.size.x, window.size.y);
 	lucyvk::CommandPool commandPool = device.CreateCommandPool();
+	
+	// lucyvk::ImageView imageView =  swapchain.cr;
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {

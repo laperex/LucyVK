@@ -27,6 +27,33 @@ lucyvk::CommandPool lucyvk::Device::CreateCommandPool() {
 	return { *this };
 }
 
+void lucyvk::Device::CreateImage(const VkImageCreateInfo &imageInfo, VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory) const {
+    if (vkCreateImage(_device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create image!");
+    }
+
+    VkMemoryRequirements memRequirements;
+    vkGetImageMemoryRequirements(_device, image, &memRequirements);
+
+    VkMemoryAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = physicalDevice.FindMemoryType(memRequirements.memoryTypeBits, properties);
+
+    if (vkAllocateMemory(_device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate image memory!");
+    }
+
+    if (vkBindImageMemory(_device, image, imageMemory, 0) != VK_SUCCESS) {
+        throw std::runtime_error("failed to bind image memory!");
+    }
+}
+
+void lucyvk::Device::WaitIdle() {
+	vkDeviceWaitIdle(_device);
+}
+
+
 bool lucyvk::Device::Initialize() {
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoArray;
     std::set<uint32_t> uniqueQueueFamilies = { physicalDevice._queueFamilyIndices.graphics.value(), physicalDevice._queueFamilyIndices.present.value() };
@@ -74,8 +101,4 @@ bool lucyvk::Device::Destroy() {
 	dloggln("Device Destroyed");
 
 	return true;
-}
-
-void lucyvk::Device::WaitIdle() {
-	
 }

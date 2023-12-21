@@ -3,6 +3,7 @@
 #include <lucyvk/Instance.h>
 #include <lucyvk/PhysicalDevice.h>
 #include <lucyvk/LogicalDevice.h>
+#include <lucyvk/ImageView.h>
 #include <stdexcept>
 
 lucyvk::Swapchain::Swapchain(const lucyvk::Device& device, VkExtent2D windowExtent): device(device)
@@ -13,6 +14,10 @@ lucyvk::Swapchain::Swapchain(const lucyvk::Device& device, VkExtent2D windowExte
 lucyvk::Swapchain::~Swapchain()
 {
 	Destroy();
+}
+
+lucyvk::ImageView lucyvk::Swapchain::CreateImageView() {
+	return { *this };
 }
 
 bool lucyvk::Swapchain::Initialize() {

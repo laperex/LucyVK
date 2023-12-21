@@ -18,6 +18,8 @@ namespace lucyvk {
 
 		Swapchain(const lucyvk::Device& device, VkExtent2D windowExtent);
 		~Swapchain();
+		
+		ImageView CreateImageView();
 
 	private:
 		bool Initialize();
