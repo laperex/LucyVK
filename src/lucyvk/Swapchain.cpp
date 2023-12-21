@@ -74,7 +74,7 @@ bool lucyvk::Swapchain::Initialize() {
 
 		if (device.physicalDevice._queueFamilyIndices.unique()) {
 			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			createInfo.queueFamilyIndexCount = 2;
+			createInfo.queueFamilyIndexCount = std::size(queueFamilyIndices);
 			createInfo.pQueueFamilyIndices = queueFamilyIndices;
 		} else {
 			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;

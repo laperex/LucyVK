@@ -20,7 +20,7 @@ namespace lucyvk {
 		~Device();
 
 		Swapchain CreateSwapchain(int width, int height);
-		
+
 		bool Initialize();
 		bool Destroy();
 		

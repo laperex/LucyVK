@@ -1,3 +1,4 @@
+#include "util/logger.h"
 #include <lucyvk/ImageView.h>
 #include <lucyvk/Swapchain.h>
 #include <lucyvk/LogicalDevice.h>
@@ -13,7 +14,7 @@ bool lucyvk::ImageView::Initialize() {
 	uint32_t imageCount;
 	vkGetSwapchainImagesKHR(swapchain.device._device, swapchain._swapchain, &imageCount, nullptr);
 	_images.resize(imageCount);
-	_imageViews.resize(_images.size());
+	_imageViewArray.resize(_images.size());
 	vkGetSwapchainImagesKHR(swapchain.device._device, swapchain._swapchain, &imageCount, _images.data());
 
 	for (size_t i = 0; i < _images.size(); i++) {
@@ -30,11 +31,20 @@ bool lucyvk::ImageView::Initialize() {
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = 1;
 
-		if (vkCreateImageView(swapchain.device._device, &viewInfo, VK_NULL_HANDLE, &_imageViews[i]) != VK_SUCCESS) {
+		if (vkCreateImageView(swapchain.device._device, &viewInfo, VK_NULL_HANDLE, &_imageViewArray[i]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create image!");
 		}
 	}
 	
+	return true;
+}
+
+bool lucyvk::ImageView::Destroy() {
+	for (auto& imageView: _imageViewArray) {
+		vkDestroyImageView(swapchain.device._device, imageView, nullptr);
+	}
+	dloggln("ImageViews Destroyed");
+
 	return true;
 }
 

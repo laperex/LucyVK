@@ -66,8 +66,7 @@ lucyvk::Instance::Instance()
 
 lucyvk::Instance::~Instance()
 {
-    vkDestroyInstance(_instance, nullptr);
-	std::cout << "Vulkan Instance Destroyed Succesfully\n";
+	Destroy();
 }
 
 bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
@@ -154,7 +153,7 @@ bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
 
 	if (DEBUG_MODE) {
 		if (CreateDebugUtilsMessengerEXT(_instance, &debugCreateInfo, nullptr, &_debugMessenger) != VK_SUCCESS) {
-			throw std::runtime_error("DEBUG MESSENGER CREATION FAILED!");
+			throw std::runtime_error("debug messenger creation failed!");
 		}
 		dloggln("Debug Messenger Created");
 	}
@@ -164,6 +163,11 @@ bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
 	}
 
 	return true;
+}
+
+bool lucyvk::Instance::Destroy() {
+    vkDestroyInstance(_instance, nullptr);
+	std::cout << "Vulkan Instance Destroyed Succesfully\n";
 }
 
 lucyvk::PhysicalDevice lucyvk::Instance::CreatePhysicalDevice() {

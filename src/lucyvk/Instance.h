@@ -18,6 +18,7 @@ namespace lucyvk {
 		~Instance();
 
 		bool Initialize(const char* name, SDL_Window* sdl_window);
+		bool Destroy();
 
 		PhysicalDevice CreatePhysicalDevice();
 		Device CreateLogicalDevice(const PhysicalDevice& physicalDevice);

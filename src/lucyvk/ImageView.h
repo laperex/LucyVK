@@ -9,10 +9,11 @@ namespace lucyvk {
 		const Swapchain& swapchain;
 
 		std::vector<VkImage> _images;
-		std::vector<VkImageView> _imageViews;
+		std::vector<VkImageView> _imageViewArray;
 		
 		ImageView(const lucyvk::Swapchain& swapchain);
 		
 		bool Initialize();
+		bool Destroy();
 	};
 }
