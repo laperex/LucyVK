@@ -12,8 +12,6 @@
 #include <util/logger.h>
 #include <vulkan/vulkan_core.h>
 
-static bool DEBUG_MODE = true;
-
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData) {
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
@@ -64,17 +62,8 @@ lucyvk::Instance::Instance()
 	
 }
 
-lucyvk::Instance::Instance(const char* name, SDL_Window* sdl_window)
+lucyvk::Instance::Instance(const char* name, SDL_Window* sdl_window, bool debug_mode, std::vector<const char*> layers)
 {
-	Initialize(name, sdl_window);
-}
-
-lucyvk::Instance::~Instance()
-{
-	Destroy();
-}
-
-bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
 	VkApplicationInfo appInfo = {
 		VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		nullptr,
@@ -112,7 +101,7 @@ bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
 		nullptr
 	};
 
-	if (DEBUG_MODE) {
+	if (debug_mode) {
 		if (!CheckValidationLayerSupport()) {
 			throw std::runtime_error("validation layers requested, but not available!");
 		}
@@ -156,7 +145,7 @@ bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
     }
 	dloggln("Instance Created");
 
-	if (DEBUG_MODE) {
+	if (debug_mode) {
 		if (CreateDebugUtilsMessengerEXT(_instance, &debugCreateInfo, nullptr, &_debugMessenger) != VK_SUCCESS) {
 			throw std::runtime_error("debug messenger creation failed!");
 		}
@@ -166,32 +155,30 @@ bool lucyvk::Instance::Initialize(const char* name, SDL_Window* sdl_window) {
 	if (SDL_Vulkan_CreateSurface(sdl_window, _instance, &_surface)) {
 		dloggln("Surface Created");
 	}
-
-	return true;
+	
 }
 
-bool lucyvk::Instance::Destroy() {
-	if (DEBUG_MODE) {
+lucyvk::Instance::~Instance()
+{
+	if (_debugMessenger != VK_NULL_HANDLE) {
         DestroyDebugUtilsMessengerEXT(_instance, _debugMessenger, nullptr);
 		dloggln("DebugUtilMessenger Destroyed");
 	}
-	
+
 	vkDestroySurfaceKHR(_instance, _surface, nullptr);
 	dloggln("SurfaceKHR Destroyed");
 
     vkDestroyInstance(_instance, nullptr);
 	dloggln("Instance Destroyed");
-
-	return true;
 }
 
-lucyvk::PhysicalDevice lucyvk::Instance::CreatePhysicalDevice() {
-	return { *this };
-}
+// lucyvk::PhysicalDevice lucyvk::Instance::CreatePhysicalDevice() {
+// 	return { *this };
+// }
 
-lucyvk::Device lucyvk::Instance::CreateLogicalDevice(const PhysicalDevice& physicalDevice) {
-	return { *this, physicalDevice };
-}
+// lucyvk::Device lucyvk::Instance::CreateLogicalDevice(const PhysicalDevice& physicalDevice) {
+// 	return { *this, physicalDevice };
+// }
 
 // lucyvk::LogicalDevice lucyvk::Instance::CreateLogicalDevice(VkPhysicalDevice physicalDevice) {
 // 	// QueueFamilyIndices indices = FindQueueFamilies(physicalDevice);

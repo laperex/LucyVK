@@ -7,27 +7,10 @@
 #include <stdexcept>
 #include <util/logger.h>
 
-lucyvk::Device::Device(const Instance& instance, const PhysicalDevice& physicalDevice):
-	instance(instance),
+lucyvk::Device::Device(const PhysicalDevice& physicalDevice, const std::vector<const char*>& deviceExtensions, const std::vector<const char*>& layers):
+	instance(physicalDevice.instance),
 	physicalDevice(physicalDevice)
 {
-	Initialize();
-}
-
-lucyvk::Device::~Device()
-{
-	Destroy();
-}
-
-lucyvk::Swapchain lucyvk::Device::CreateSwapchain(int width, int height) {
-	return { *this, VkExtent2D { static_cast<uint32_t>(width), static_cast<uint32_t>(height) } };
-}
-
-lucyvk::CommandPool lucyvk::Device::CreateCommandPool() {
-	return { *this };
-}
-
-bool lucyvk::Device::Initialize() {
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoArray;
     std::set<uint32_t> uniqueQueueFamilies = { physicalDevice._queueFamilyIndices.graphics.value(), physicalDevice._queueFamilyIndices.present.value() };
 
@@ -49,8 +32,8 @@ bool lucyvk::Device::Initialize() {
 		0,
 		static_cast<uint32_t>(std::size(queueCreateInfoArray)),
 		queueCreateInfoArray.data(),
-		static_cast<uint32_t>(std::size(instance.layers)),
-		instance.layers.data(),
+		static_cast<uint32_t>(std::size(layers)),
+		layers.data(),
 		static_cast<uint32_t>(std::size(deviceExtensions)),
 		deviceExtensions.data(),
 		&physicalDevice._features
@@ -65,15 +48,12 @@ bool lucyvk::Device::Initialize() {
 	dloggln("Graphics Queue Created");
     vkGetDeviceQueue(_device, physicalDevice._queueFamilyIndices.present.value(), 0, &_presentQueue);
 	dloggln("Present Queue Created");
-
-	return true;
 }
 
-bool lucyvk::Device::Destroy() {
+lucyvk::Device::~Device()
+{
 	vkDestroyDevice(_device, VK_NULL_HANDLE);
 	dloggln("Device Destroyed");
-
-	return true;
 }
 
 void lucyvk::Device::WaitIdle() {

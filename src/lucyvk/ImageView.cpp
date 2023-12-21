@@ -7,15 +7,6 @@
 lucyvk::ImageView::ImageView(const lucyvk::Swapchain& swapchain):
 	swapchain(swapchain)
 {
-	Initialize();
-}
-
-lucyvk::ImageView::~ImageView()
-{
-	Destroy();
-}
-
-bool lucyvk::ImageView::Initialize() {
 	uint32_t imageCount;
 	vkGetSwapchainImagesKHR(swapchain.device._device, swapchain._swapchain, &imageCount, nullptr);
 	_images.resize(imageCount);
@@ -40,16 +31,12 @@ bool lucyvk::ImageView::Initialize() {
 			throw std::runtime_error("failed to create image!");
 		}
 	}
-	
-	return true;
 }
 
-bool lucyvk::ImageView::Destroy() {
+lucyvk::ImageView::~ImageView()
+{
 	for (auto& imageView: _imageViewArray) {
 		vkDestroyImageView(swapchain.device._device, imageView, nullptr);
 	}
 	dloggln("ImageViews Destroyed");
-
-	return true;
 }
-

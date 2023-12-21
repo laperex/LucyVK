@@ -64,68 +64,57 @@ namespace lucyvk {
 		
 		return indices;
 	}
+}
 
-	static VkPhysicalDevice DefaultPhysicalDeviceSelection(const std::vector<VkPhysicalDevice>& physicalDeviceArray, const lucyvk::Instance& instance) {
-		for (const auto& physicalDevice: physicalDeviceArray) {
-			bool isRequiredDeviceExtensionsAvailable = false;
-			bool isIndicesComplete = false;
-			bool isSwapchainAdequate = false;
+VkPhysicalDevice lucyvk::PhysicalDevice::DefaultPhysicalDeviceFunction(const std::vector<VkPhysicalDevice>& physicalDeviceArray, const lucyvk::Instance& instance) {
+	for (const auto& physicalDevice: physicalDeviceArray) {
+		bool isRequiredDeviceExtensionsAvailable = false;
+		bool isIndicesComplete = false;
+		bool isSwapchainAdequate = false;
 
-			{
-				uint32_t availableExtensionCount;
-				vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &availableExtensionCount, nullptr);
-				std::vector<VkExtensionProperties> availableExtensions(availableExtensionCount);
-				vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &availableExtensionCount, availableExtensions.data());
+		{
+			uint32_t availableExtensionCount;
+			vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &availableExtensionCount, nullptr);
+			std::vector<VkExtensionProperties> availableExtensions(availableExtensionCount);
+			vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &availableExtensionCount, availableExtensions.data());
 
-				for (const auto& extension: availableExtensions) {
-					if (strcmp(extension.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0) {
-						isRequiredDeviceExtensionsAvailable = true;
-						break;
-					}
-				}
-			}
-
-			{
-				isIndicesComplete = QueryQueueFamilyIndices(physicalDevice, instance._surface);
-
-				if (isRequiredDeviceExtensionsAvailable) {
-					SwapchainSupportDetails swapchainSupport = QuerySwapchainSupportDetails(physicalDevice, instance._surface);
-					isSwapchainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
-				}
-
-				VkPhysicalDeviceFeatures supportedFeatures;
-				vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
-
-				if (isIndicesComplete && isRequiredDeviceExtensionsAvailable && isSwapchainAdequate && supportedFeatures.samplerAnisotropy) {
-					return physicalDevice;
+			for (const auto& extension: availableExtensions) {
+				if (strcmp(extension.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0) {
+					isRequiredDeviceExtensionsAvailable = true;
+					break;
 				}
 			}
 		}
 
-		return nullptr;
+		{
+			isIndicesComplete = QueryQueueFamilyIndices(physicalDevice, instance._surface);
+
+			if (isRequiredDeviceExtensionsAvailable) {
+				SwapchainSupportDetails swapchainSupport = QuerySwapchainSupportDetails(physicalDevice, instance._surface);
+				isSwapchainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
+			}
+
+			VkPhysicalDeviceFeatures supportedFeatures;
+			vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
+
+			if (isIndicesComplete && isRequiredDeviceExtensionsAvailable && isSwapchainAdequate && supportedFeatures.samplerAnisotropy) {
+				return physicalDevice;
+			}
+		}
 	}
+
+	return nullptr;
 }
 
-lucyvk::PhysicalDevice::PhysicalDevice(const Instance& instance)
+lucyvk::PhysicalDevice::PhysicalDevice(const Instance& instance, SelectPhysicalDeviceFunction select_physical_device_function)
 	: instance(instance)
 {
-	Initialize();
-}
-
-lucyvk::PhysicalDevice::~PhysicalDevice()
-{
-	Destroy();
-}
-
-bool lucyvk::PhysicalDevice::Initialize(SelectPhysicalDeviceFunction selectPhysicalDeviceFunction) {
 	uint32_t availableDeviceCount = 0;
 	vkEnumeratePhysicalDevices(instance._instance, &availableDeviceCount, nullptr);
 	std::vector<VkPhysicalDevice> availableDevices(availableDeviceCount);
 	vkEnumeratePhysicalDevices(instance._instance, &availableDeviceCount, availableDevices.data());
 
-	_physicalDevice = (selectPhysicalDeviceFunction == nullptr) ?
-		DefaultPhysicalDeviceSelection(availableDevices, instance):
-		selectPhysicalDeviceFunction(availableDevices, instance);
+	_physicalDevice = (select_physical_device_function != nullptr) ? select_physical_device_function(availableDevices, instance): DefaultPhysicalDeviceFunction(availableDevices, instance);
 	
 	if (_physicalDevice == nullptr) {
 		throw std::runtime_error("failed to find suitable PhysicalDevice!");
@@ -136,19 +125,13 @@ bool lucyvk::PhysicalDevice::Initialize(SelectPhysicalDeviceFunction selectPhysi
 
 	vkGetPhysicalDeviceFeatures(_physicalDevice, &_features);
 	vkGetPhysicalDeviceProperties(_physicalDevice, &_properties);
-	
+
 	dloggln("Physical Device - ", _properties.deviceName);
-
-	return true;
 }
 
-bool lucyvk::PhysicalDevice::Destroy() {
-
-	return true;
-}
-
-lucyvk::Device lucyvk::PhysicalDevice::CreateLogicalDevice() {
-	return { instance, *this };
+lucyvk::PhysicalDevice::~PhysicalDevice()
+{
+	
 }
 
 const VkFormat lucyvk::PhysicalDevice::FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {

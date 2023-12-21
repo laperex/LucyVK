@@ -14,18 +14,12 @@ namespace lucyvk {
 		const Instance& instance;
 		const PhysicalDevice& physicalDevice;
 
-		std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-
-		Device(const Instance& instance, const PhysicalDevice& physicalDevice);
+		Device(const PhysicalDevice& physicalDevice, const std::vector<const char*>& deviceExtensions, const std::vector<const char*>& layers);
 		~Device();
 
 		Swapchain CreateSwapchain(int width, int height);
 		CommandPool CreateCommandPool();
 
 		void WaitIdle();
-
-	private:
-		bool Initialize();
-		bool Destroy();
 	};
 }

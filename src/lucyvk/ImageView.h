@@ -13,8 +13,5 @@ namespace lucyvk {
 		
 		ImageView(const lucyvk::Swapchain& swapchain);
 		~ImageView();
-		
-		bool Initialize();
-		bool Destroy();
 	};
 }

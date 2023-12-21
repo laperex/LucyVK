@@ -9,11 +9,7 @@ namespace lucyvk {
 		
 		const Device& device;
 
-		CommandPool(const Device& device);
+		CommandPool(const Device& device, VkCommandPoolCreateFlags flags);
 		~CommandPool();
-
-	private:
-		bool Initialize();
-		bool Destroy();
 	};
 }

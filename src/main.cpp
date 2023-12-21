@@ -27,13 +27,36 @@ int main(int count, char** args) {
 
 	lucy::Window window = {};
 	window.InitWindow();
+	
+	const std::vector<const char*> layers = {};
+	const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-	lucyvk::Instance instance = { "Lucy Framework", window.sdl_window };
-	lucyvk::PhysicalDevice physicalDevice = instance.CreatePhysicalDevice();
-	lucyvk::Device device = physicalDevice.CreateLogicalDevice();
+	lucyvk::Instance instance = {
+		"Lucy Framework",
+		window.sdl_window,
+		true,
+		layers
+	};
 
-	lucyvk::Swapchain swapchain = device.CreateSwapchain(window.size.x, window.size.y);
-	lucyvk::CommandPool commandPool = device.CreateCommandPool();
+	lucyvk::PhysicalDevice physicalDevice = {
+		instance
+	};
+	
+	lucyvk::Device device = {
+		physicalDevice,
+		deviceExtensions,
+		layers
+	};
+
+	lucyvk::Swapchain swapchain = {
+		device,
+		VkExtent2D { static_cast<uint32_t>(window.size.x), static_cast<uint32_t>(window.size.y) }
+	};
+
+	lucyvk::CommandPool commandPool = {
+		device,
+		VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT
+	};
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {

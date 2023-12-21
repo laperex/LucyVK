@@ -8,18 +8,13 @@
 
 namespace lucyvk {
 	struct Instance {
-		VkDebugUtilsMessengerEXT _debugMessenger;
-		VkSurfaceKHR _surface;
-		VkInstance _instance;
-
-		std::vector<const char*> layers = {};
+		VkDebugUtilsMessengerEXT _debugMessenger = VK_NULL_HANDLE;
+		VkSurfaceKHR _surface = VK_NULL_HANDLE;
+		VkInstance _instance = VK_NULL_HANDLE;
 
 		Instance();
-		Instance(const char* name, SDL_Window* sdl_window);
+		Instance(const char* name, SDL_Window* sdl_window, bool debug_mode, std::vector<const char*> layers = {});
 		~Instance();
-
-		bool Initialize(const char* name, SDL_Window* sdl_window);
-		bool Destroy();
 
 		PhysicalDevice CreatePhysicalDevice();
 		Device CreateLogicalDevice(const PhysicalDevice& physicalDevice);

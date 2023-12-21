@@ -32,6 +32,7 @@ namespace lucyvk {
 
 	struct PhysicalDevice {
 		VkPhysicalDevice _physicalDevice = VK_NULL_HANDLE;
+
 		QueueFamilyIndices _queueFamilyIndices;
 		SwapchainSupportDetails _swapchainSupportDetails;
 		VkPhysicalDeviceFeatures _features;
@@ -39,17 +40,14 @@ namespace lucyvk {
 
 		const Instance& instance;
 
-		PhysicalDevice(const Instance& instance);
+		PhysicalDevice(const Instance& instance, SelectPhysicalDeviceFunction select_physical_device_function = nullptr);
 		~PhysicalDevice();
 		
 		Device CreateLogicalDevice();
 
-	private:
-		bool Initialize(SelectPhysicalDeviceFunction selectPhysicalDeviceFunction = nullptr);
-		bool Destroy();
-
-	protected:
 		const VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 		const uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags propertyFlags);
+
+		VkPhysicalDevice DefaultPhysicalDeviceFunction(const std::vector<VkPhysicalDevice>& physicalDeviceArray, const lucyvk::Instance& instance);
 	};
 }
