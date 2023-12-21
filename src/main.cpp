@@ -35,7 +35,7 @@ int main(int count, char** args) {
 
 	lucyvk::Swapchain swapchain = device.CreateSwapchain(window.size.x, window.size.y);
 	lucyvk::CommandPool commandPool = device.CreateCommandPool();
-	
+
 	// lucyvk::ImageView imageView =  swapchain.cr;
 
 	double dt = 0;
