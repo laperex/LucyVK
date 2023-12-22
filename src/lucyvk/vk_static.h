@@ -14,6 +14,8 @@ struct lvk_command_buffer;
 struct lvk_swapchain;
 struct lvk_render_pass;
 struct lvk_framebuffer;
+struct lvk_semaphore;
+struct lvk_fence;
 
 namespace lvk {
 	struct queue_family_indices {
@@ -112,6 +114,9 @@ struct lvk_device {
 	
 	lvk_render_pass init_render_pass();
 	
+	lvk_semaphore init_semaphore(VkSemaphoreCreateFlags flags = 0);
+	lvk_fence init_fence(VkFenceCreateFlags flags = 0);
+	
 	void wait_idle();
 };
 
@@ -135,9 +140,6 @@ struct lvk_swapchain {
 	const lvk_device* device;
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
-	
-	
-	lvk_render_pass init_render_pass();
 };
 
 
@@ -182,7 +184,44 @@ struct lvk_command_buffer {
 
 
 struct lvk_render_pass {
-	VkRenderPass _renderpass;
+	VkRenderPass _render_pass;
+	
+	~lvk_render_pass();
+	
+	const lvk_device* device;
+	const lvk_physical_device* physical_device;
+	const lvk_instance* instance;
+
+	lvk_framebuffer* create_framebuffer(uint32_t width, uint32_t height, std::vector<VkImageView> image_view_array);
+	void destroy_framebuffer(lvk_framebuffer* framebuffer);
+};
+
+
+// |--------------------------------------------------
+// ----------------> SEMAPHORE
+// |--------------------------------------------------
+
+
+struct lvk_semaphore {
+	VkSemaphore _semaphore;
+
+	const lvk_device* device;
+	
+	~lvk_semaphore();
+};
+
+
+// |--------------------------------------------------
+// ----------------> FENCE
+// |--------------------------------------------------
+
+
+struct lvk_fence {
+	VkFence _fence;
+
+	const lvk_device* device;
+
+	~lvk_fence();
 };
 
 
@@ -192,5 +231,12 @@ struct lvk_render_pass {
 
 
 struct lvk_framebuffer {
-	VkFramebuffer _framebuffer;
+	std::vector<VkFramebuffer> _framebuffer_array;
+	
+	~lvk_framebuffer();
+	
+	const lvk_device* device;
+	const lvk_physical_device* physical_device;
+	const lvk_instance* instance;
+	const lvk_render_pass* render_pass;
 };

@@ -377,6 +377,17 @@ lvk_device::~lvk_device()
 // |--------------------------------------------------
 
 
+static VkSurfaceFormatKHR get_swapchain_surface_format(const std::vector<VkSurfaceFormatKHR>& format_array) {
+	for (const auto& availableFormat: format_array) {
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			return availableFormat;
+		}
+	}
+	
+	return format_array[0];
+}
+
+
 lvk_swapchain* lvk_device::create_swapchain(uint32_t width, uint32_t height) {
 	auto* self = new lvk_swapchain();
 
@@ -390,13 +401,7 @@ lvk_swapchain* lvk_device::create_swapchain(uint32_t width, uint32_t height) {
 	const auto& present_modes = physical_device->_swapchain_support_details.present_modes;
 	const auto& capabilities = physical_device->_swapchain_support_details.capabilities;
 
-	self->_surface_format = physical_device->_swapchain_support_details.formats[0];
-	for (const auto& availableFormat: physical_device->_swapchain_support_details.formats) {
-		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-			self->_surface_format = availableFormat;
-			break;
-		}
-	}
+	self->_surface_format = get_swapchain_surface_format(self->physical_device->_swapchain_support_details.formats);
 
 	uint32_t imageCount = (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount) ? capabilities.maxImageCount: capabilities.minImageCount + 1;
 
@@ -561,8 +566,8 @@ lvk_command_buffer lvk_command_pool::init_command_buffer(uint32_t count, VkComma
 	
 	self.command_pool = this;
 	self.device = this->device;
-	self.instance = this->instance;
-	self.physical_device = this->physical_device;
+	// self.instance = this->instance;
+	// self.physical_device = this->physical_device;
 	
 	VkCommandBufferAllocateInfo allocateInfo = {};
 
@@ -572,7 +577,7 @@ lvk_command_buffer lvk_command_pool::init_command_buffer(uint32_t count, VkComma
 	allocateInfo.level = level;
 	allocateInfo.commandBufferCount = count;
 
-	if (vkAllocateCommandBuffers(this->device->_device, &allocateInfo, &self._command_buffer) != VK_SUCCESS) {
+	if (vkAllocateCommandBuffers(device->_device, &allocateInfo, &self._command_buffer) != VK_SUCCESS) {
 		throw std::runtime_error("command buffer allocation failed!");
 	}
 	dloggln("Command Buffer Allocated: ", &self._command_buffer);
@@ -592,6 +597,184 @@ lvk_command_buffer::~lvk_command_buffer()
 // |--------------------------------------------------
 
 
-lvk_render_pass lvk_swapchain::init_render_pass() {
+lvk_render_pass lvk_device::init_render_pass() {
+	lvk_render_pass self = {};
 	
+	self.device = this;
+	self.instance = this->instance;
+	self.physical_device = this->physical_device;
+	
+	VkAttachmentDescription attachment = {};
+	attachment.flags = 0;
+    attachment.format = get_swapchain_surface_format(physical_device->_swapchain_support_details.formats).format;
+	// 1 sample = No MSAA
+    attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	// clear attachment when loaded
+    attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	// store attachment when renderpass ends
+    attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	// no stencil
+    attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	
+    attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	VkAttachmentReference attachment_reference = {};
+	attachment_reference.attachment = 0;
+    attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass = {};
+	subpass.flags = 0;
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	// subpassDesc.inputAttachmentCount;
+	// subpassDesc.pInputAttachments;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &attachment_reference;
+	// subpassDesc.pResolveAttachments;
+	// subpassDesc.pDepthStencilAttachment;
+	// subpassDesc.preserveAttachmentCount;
+	// subpassDesc.pPreserveAttachments;
+
+	// VkSubpassDependency dependency = {};
+	// dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	// dependency.srcAccessMask = 0;
+	// dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	// dependency.dstSubpass = 0;
+	// dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	// dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+	VkRenderPassCreateInfo createInfo = {};
+	createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	createInfo.pNext = nullptr;
+	createInfo.flags = 0;
+	createInfo.attachmentCount = 1;
+	createInfo.pAttachments = &attachment;
+	createInfo.subpassCount = 1;
+	createInfo.pSubpasses = &subpass;
+	createInfo.dependencyCount = 0;
+	createInfo.pDependencies = nullptr;
+
+	if (vkCreateRenderPass(_device, &createInfo, VK_NULL_HANDLE, &self._render_pass) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create renderpass!");
+	}
+	dloggln("RenderPass Created");
+
+	return self;
 }
+
+lvk_render_pass::~lvk_render_pass()
+{
+	vkDestroyRenderPass(device->_device, _render_pass, VK_NULL_HANDLE);
+	dloggln("RenderPass Destroyed");
+}
+
+
+// |--------------------------------------------------
+// ----------------> SEMAPHORE
+// |--------------------------------------------------
+
+
+lvk_semaphore lvk_device::init_semaphore(VkSemaphoreCreateFlags flags) {
+	lvk_semaphore self = {};
+	
+	self.device = this;
+
+	VkSemaphoreCreateInfo createInfo;
+	createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	createInfo.pNext = nullptr;
+	createInfo.flags = flags;
+
+	if (vkCreateSemaphore(_device, &createInfo, VK_NULL_HANDLE, &self._semaphore) != VK_SUCCESS) {
+		throw std::runtime_error("semaphore creation failed");
+	}
+	dloggln("Semaphore Created");
+	
+	return self;
+}
+
+
+lvk_semaphore::~lvk_semaphore()
+{
+	vkDestroySemaphore(device->_device, _semaphore, VK_NULL_HANDLE);
+	dloggln("Semaphore Destroyed");
+}
+
+
+// |--------------------------------------------------
+// ----------------> FENCE
+// |--------------------------------------------------
+
+
+lvk_fence lvk_device::init_fence(VkFenceCreateFlags flags) {
+	lvk_fence self = {};
+	
+	self.device = this;
+
+	VkFenceCreateInfo createInfo;
+	createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	createInfo.pNext = nullptr;
+	createInfo.flags = flags;
+
+	if (vkCreateFence(_device, &createInfo, VK_NULL_HANDLE, &self._fence) != VK_SUCCESS) {
+		throw std::runtime_error("fence creation failed");
+	}
+	dloggln("Fence Created");
+	
+	return self;
+}
+
+
+lvk_fence::~lvk_fence()
+{
+	vkDestroyFence(device->_device, _fence, VK_NULL_HANDLE);
+	dloggln("Fence Destroyed");
+}
+
+
+// |--------------------------------------------------
+// ----------------> FRAMEBUFFER
+// |--------------------------------------------------
+
+
+lvk_framebuffer* lvk_render_pass::create_framebuffer(uint32_t width, uint32_t height, std::vector<VkImageView> image_view_array) {
+	auto* self = new lvk_framebuffer();
+
+	self->render_pass = this;
+	self->device = this->device;
+	self->physical_device = this->physical_device;
+	self->instance = this->instance;
+
+	self->_framebuffer_array.resize(image_view_array.size());
+	
+	VkFramebufferCreateInfo createInfo = {};
+	createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	createInfo.renderPass = _render_pass;
+	createInfo.attachmentCount = 1;
+	createInfo.width = width;
+	createInfo.height = height;
+	createInfo.layers = 1;
+
+	for (int i = 0; i < self->_framebuffer_array.size(); i++) {
+		createInfo.pAttachments = &image_view_array[i];
+		if (vkCreateFramebuffer(device->_device, &createInfo, VK_NULL_HANDLE, &self->_framebuffer_array[i]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create framebuffer");
+		}
+	}
+	dloggln("Framebuffers Created");
+
+	return self;
+}
+
+void lvk_render_pass::destroy_framebuffer(lvk_framebuffer* framebuffer) {
+	delete framebuffer;
+}
+
+lvk_framebuffer::~lvk_framebuffer()
+{
+	for (auto& framebuffer: _framebuffer_array) {
+		vkDestroyFramebuffer(device->_device, framebuffer, VK_NULL_HANDLE);
+	}
+	dloggln("Framebuffers Destroyed");
+}
+

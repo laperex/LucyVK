@@ -35,31 +35,14 @@ int main(int count, char** args) {
 	auto device = physical_device.init_device();
 	auto command_pool = device.init_command_pool();
 	auto main_command_buffer = command_pool.init_command_buffer();
+	auto render_pass = device.init_render_pass();
 
 	auto* swapchain = device.create_swapchain(window.size.x, window.size.y);
-
-	// VkCommandBufferBeginInfo beginInfo = {};
+	auto* framebuffer = render_pass.create_framebuffer(window.size.x, window.size.y, swapchain->_image_view_array);
 	
-	// beginInfo.pInheritanceInfo = nullptr;
-	// beginInfo.flags
-	
-	// vkBeginCommandBuffer(main_command_buffer._command_buffer, beginInfo);
-	
-	// VkSubpassDescription desc;
-	
-	// VkRenderPassCreateInfo createInfo = {};
-	// createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	// createInfo.pNext = nullptr;
-	// createInfo.flags = 0;
-	// createInfo.attachmentCount = 
-	// createInfo.pAttachments = 
-	// createInfo.subpassCount = 
-	// createInfo.pSubpasses = 
-	// createInfo.dependencyCount = 
-	// createInfo.pDependencies = 
-	// info.pSubpasses
-	
-	// vkCreateRenderPass(device, )
+	auto render_fence = device.init_fence(VK_FENCE_CREATE_SIGNALED_BIT);
+	auto present_semaphore = device.init_semaphore();
+	auto render_semaphore = device.init_semaphore();
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
@@ -73,6 +56,7 @@ int main(int count, char** args) {
 		dt = std::chrono::duration<double, std::ratio<1, 60>>(end_time - start_time).count();
 	}
 	
+	render_pass.destroy_framebuffer(framebuffer);
 	device.destroy_swapchain(swapchain);
 
 	device.wait_idle();
