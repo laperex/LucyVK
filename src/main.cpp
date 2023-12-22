@@ -34,7 +34,32 @@ int main(int count, char** args) {
 	auto physical_device = instance.init_physical_device();
 	auto device = physical_device.init_device();
 	auto command_pool = device.init_command_pool();
-	auto command_buffer = command_pool.init_command_buffer();
+	auto main_command_buffer = command_pool.init_command_buffer();
+
+	auto* swapchain = device.create_swapchain(window.size.x, window.size.y);
+
+	// VkCommandBufferBeginInfo beginInfo = {};
+	
+	// beginInfo.pInheritanceInfo = nullptr;
+	// beginInfo.flags
+	
+	// vkBeginCommandBuffer(main_command_buffer._command_buffer, beginInfo);
+	
+	// VkSubpassDescription desc;
+	
+	// VkRenderPassCreateInfo createInfo = {};
+	// createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	// createInfo.pNext = nullptr;
+	// createInfo.flags = 0;
+	// createInfo.attachmentCount = 
+	// createInfo.pAttachments = 
+	// createInfo.subpassCount = 
+	// createInfo.pSubpasses = 
+	// createInfo.dependencyCount = 
+	// createInfo.pDependencies = 
+	// info.pSubpasses
+	
+	// vkCreateRenderPass(device, )
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
@@ -47,8 +72,10 @@ int main(int count, char** args) {
 		const auto& end_time = std::chrono::high_resolution_clock::now();
 		dt = std::chrono::duration<double, std::ratio<1, 60>>(end_time - start_time).count();
 	}
+	
+	device.destroy_swapchain(swapchain);
 
-	// device.WaitIdle();
+	device.wait_idle();
 
 	window.Destroy();
 }

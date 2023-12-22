@@ -53,9 +53,9 @@ static bool CheckValidationLayerSupport() {
 }
 
 
-// ###################################################
-// ################# INSTANCE ########################
-// ###################################################
+// |--------------------------------------------------
+// ----------------> INSTANCE
+// |--------------------------------------------------
 
 
 lvk_instance lvk::initialize(const char* name, SDL_Window* sdl_window, bool debug_enable) {
@@ -175,9 +175,9 @@ bool lvk_instance::is_debug_enable() {
 }
 
 
-// ###################################################
-// ################# PHYSICAL DEVICE #################
-// ###################################################
+// |--------------------------------------------------
+// ----------------> PHYSICAL DEVICE
+// |--------------------------------------------------
 
 
 static lvk::swapchain_support_details QuerySwapchainSupportDetails(VkPhysicalDevice physical_device, VkSurfaceKHR surface) {
@@ -309,9 +309,9 @@ lvk_physical_device lvk_instance::init_physical_device(lvk::SelectPhysicalDevice
 }
 
 
-// ###################################################
-// ################# DEVICE ##########################
-// ###################################################
+// |--------------------------------------------------
+// ----------------> DEVICE
+// |--------------------------------------------------
 
 
 lvk_device lvk_physical_device::init_device() {
@@ -361,6 +361,10 @@ lvk_device lvk_physical_device::init_device() {
 	return self;
 }
 
+void lvk_device::wait_idle() {
+	vkDeviceWaitIdle(_device);
+}
+
 lvk_device::~lvk_device()
 {
 	vkDestroyDevice(_device, VK_NULL_HANDLE);
@@ -368,9 +372,152 @@ lvk_device::~lvk_device()
 }
 
 
-// ###################################################
-// ################# COMMAND POOL ####################
-// ###################################################
+// |--------------------------------------------------
+// ----------------> SWAPCHAIN
+// |--------------------------------------------------
+
+
+lvk_swapchain* lvk_device::create_swapchain(uint32_t width, uint32_t height) {
+	auto* self = new lvk_swapchain();
+
+	self->device = this;
+	self->physical_device = this->physical_device;
+	self->instance = this->instance;
+
+	self->_extent.width = width;
+	self->_extent.height = height;
+
+	const auto& present_modes = physical_device->_swapchain_support_details.present_modes;
+	const auto& capabilities = physical_device->_swapchain_support_details.capabilities;
+
+	self->_surface_format = physical_device->_swapchain_support_details.formats[0];
+	for (const auto& availableFormat: physical_device->_swapchain_support_details.formats) {
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			self->_surface_format = availableFormat;
+			break;
+		}
+	}
+
+	uint32_t imageCount = (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount) ? capabilities.maxImageCount: capabilities.minImageCount + 1;
+
+	VkExtent2D extent = (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) ?
+		capabilities.currentExtent:
+		VkExtent2D {
+			std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, self->_extent.width)),
+			std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, self->_extent.height))
+		};
+
+
+	// TODO: support for more presentMode types
+	// * VK_PRESENT_MODE_FIFO_KHR = V-Sync
+	// * VK_PRESENT_MODE_MAILBOX_KHR = Mailbox
+
+	self->_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+	for (const auto& availablePresentMode: present_modes) {
+		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+			self->_present_mode = availablePresentMode;
+			break;
+		}
+	}
+
+
+	VkSwapchainCreateInfoKHR createInfo = {};
+	{
+		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		createInfo.pNext = nullptr;
+		createInfo.flags = 0;
+		createInfo.surface = instance->_surface;
+
+		createInfo.minImageCount = imageCount;
+		createInfo.imageFormat = self->_surface_format.format;
+		createInfo.imageColorSpace = self->_surface_format.colorSpace;
+		createInfo.imageExtent = extent;
+		createInfo.imageArrayLayers = 1;
+		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+		// TODO: better approach
+		uint32_t queueFamilyIndices[] = {
+			physical_device->_queue_family_indices.graphics.value(),
+			physical_device->_queue_family_indices.present.value()
+		};
+
+		if (physical_device->_queue_family_indices.unique()) {
+			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0;
+			createInfo.pQueueFamilyIndices = nullptr;
+		} else {
+			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			createInfo.queueFamilyIndexCount = std::size(queueFamilyIndices);
+			createInfo.pQueueFamilyIndices = queueFamilyIndices;
+		}
+
+		createInfo.preTransform = capabilities.currentTransform;
+		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+
+		createInfo.presentMode = self->_present_mode;
+
+		// TODO: user defined clipping state
+		createInfo.clipped = VK_TRUE;
+
+		// TODO: remains to be tested
+		createInfo.oldSwapchain = self->_swapchain;
+
+
+		if (vkCreateSwapchainKHR(_device, &createInfo, VK_NULL_HANDLE, &self->_swapchain) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create swapchain!");
+		}
+		dloggln("Created Swapchain");
+	}
+	
+	// ImageViews
+	
+	vkGetSwapchainImagesKHR(_device, self->_swapchain, &imageCount, nullptr);
+	self->_images.resize(imageCount);
+	self->_image_view_array.resize(self->_images.size());
+	assert(vkGetSwapchainImagesKHR(_device, self->_swapchain, &imageCount, self->_images.data()) == VK_SUCCESS);
+
+	for (size_t i = 0; i < self->_images.size(); i++) {
+		VkImageViewCreateInfo viewInfo = {};
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+
+		viewInfo.image = self->_images[i];
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = self->_surface_format.format;
+
+		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+
+		if (vkCreateImageView(_device, &viewInfo, VK_NULL_HANDLE, &self->_image_view_array[i]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create image!");
+		}
+	}
+	dloggln("ImageViews Created");
+	
+	return self;
+}
+
+void lvk_device::destroy_swapchain(lvk_swapchain* swapchain) {
+	delete swapchain;
+}
+
+lvk_swapchain::~lvk_swapchain()
+{
+	vkDestroySwapchainKHR(device->_device, _swapchain, VK_NULL_HANDLE);
+	dloggln("Swapchain Destroyed");
+
+	for (int i = 0; i < _image_view_array.size(); i++) {
+		vkDestroyImageView(device->_device, _image_view_array[i], VK_NULL_HANDLE);
+	}
+	dloggln("ImageViews Destroyed");
+}
+
+
+// |--------------------------------------------------
+// ----------------> COMMAND POOL
+// |--------------------------------------------------
 
 
 lvk_command_pool lvk_device::init_command_pool() {
@@ -404,9 +551,9 @@ lvk_command_pool::~lvk_command_pool()
 }
 
 
-// ###################################################
-// ################# COMMAND BUFFER ##################
-// ###################################################
+// |--------------------------------------------------
+// ----------------> COMMAND BUFFER
+// |--------------------------------------------------
 
 
 lvk_command_buffer lvk_command_pool::init_command_buffer(uint32_t count, VkCommandBufferLevel level) {
@@ -435,5 +582,16 @@ lvk_command_buffer lvk_command_pool::init_command_buffer(uint32_t count, VkComma
 
 lvk_command_buffer::~lvk_command_buffer()
 {
+	vkFreeCommandBuffers(device->_device, command_pool->_command_pool, 1, &_command_buffer);
+	dloggln("Command Buffer Destroyed");
+}
+
+
+// |--------------------------------------------------
+// ----------------> RENDER PASS
+// |--------------------------------------------------
+
+
+lvk_render_pass lvk_swapchain::init_render_pass() {
 	
 }

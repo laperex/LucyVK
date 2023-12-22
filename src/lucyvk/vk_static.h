@@ -11,10 +11,11 @@ struct lvk_physical_device;
 struct lvk_device;
 struct lvk_command_pool;
 struct lvk_command_buffer;
+struct lvk_swapchain;
+struct lvk_render_pass;
+struct lvk_framebuffer;
 
 namespace lvk {
-	struct swapchain;
-	
 	struct queue_family_indices {
 		std::optional<uint32_t> graphics;
 		std::optional<uint32_t> present;
@@ -42,9 +43,9 @@ namespace lvk {
 }
 
 
-// ###################################################
-// ################# INSTANCE ########################
-// ###################################################
+// |--------------------------------------------------
+// ----------------> INSTANCE
+// |--------------------------------------------------
 
 
 struct lvk_instance {
@@ -62,9 +63,9 @@ struct lvk_instance {
 };
 
 
-// ###################################################
-// ################# PHYSICAL DEVICE #################
-// ###################################################
+// |--------------------------------------------------
+// ----------------> PHYSICAL DEVICE
+// |--------------------------------------------------
 
 
 struct lvk_physical_device {
@@ -85,9 +86,9 @@ struct lvk_physical_device {
 };
 
 
-// ###################################################
-// ################# DEVICE ##########################
-// ###################################################
+// |--------------------------------------------------
+// ----------------> DEVICE
+// |--------------------------------------------------
 
 
 struct lvk_device {
@@ -103,14 +104,46 @@ struct lvk_device {
 	const lvk_instance* instance;
 	const lvk_physical_device* physical_device;
 	
+	lvk_swapchain* create_swapchain(uint32_t width, uint32_t height);
+	void destroy_swapchain(lvk_swapchain* swapchain);
+	
 	lvk_command_pool init_command_pool();
 	lvk_command_pool init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
+	
+	lvk_render_pass init_render_pass();
+	
+	void wait_idle();
 };
 
 
-// ###################################################
-// ################# COMMAND POOL ####################
-// ###################################################
+// |--------------------------------------------------
+// ----------------> SWAPCHAIN
+// |--------------------------------------------------
+
+
+struct lvk_swapchain {
+	VkSwapchainKHR _swapchain = VK_NULL_HANDLE;
+	VkExtent2D _extent = { 0, 0 };
+	VkSurfaceFormatKHR _surface_format;
+	VkPresentModeKHR _present_mode;
+
+	std::vector<VkImage> _images;
+	std::vector<VkImageView> _image_view_array;
+	
+	~lvk_swapchain();
+	
+	const lvk_device* device;
+	const lvk_physical_device* physical_device;
+	const lvk_instance* instance;
+	
+	
+	lvk_render_pass init_render_pass();
+};
+
+
+// |--------------------------------------------------
+// ----------------> COMMAND POOL
+// |--------------------------------------------------
 
 
 struct lvk_command_pool {
@@ -126,9 +159,9 @@ struct lvk_command_pool {
 };
 
 
-// ###################################################
-// ################# COMMAND BUFFER ##################
-// ###################################################
+// |--------------------------------------------------
+// ----------------> COMMAND BUFFER
+// |--------------------------------------------------
 
 
 struct lvk_command_buffer {
@@ -140,4 +173,24 @@ struct lvk_command_buffer {
 	const lvk_physical_device* physical_device;
 	const lvk_device* device;
 	const lvk_command_pool* command_pool;
+};
+
+
+// |--------------------------------------------------
+// ----------------> RENDER PASS
+// |--------------------------------------------------
+
+
+struct lvk_render_pass {
+	VkRenderPass _renderpass;
+};
+
+
+// |--------------------------------------------------
+// ----------------> FRAMEBUFFER
+// |--------------------------------------------------
+
+
+struct lvk_framebuffer {
+	VkFramebuffer _framebuffer;
 };
