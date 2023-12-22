@@ -508,6 +508,12 @@ void lvk_device::destroy_swapchain(lvk_swapchain* swapchain) {
 	delete swapchain;
 }
 
+uint32_t lvk_swapchain::acquire_next_image(uint64_t timeout, VkSemaphore semaphore, VkFence fence) {
+	uint32_t index;
+	vkAcquireNextImageKHR(device->_device, _swapchain, timeout, semaphore, fence, &index);
+	return index;
+}
+
 lvk_swapchain::~lvk_swapchain()
 {
 	vkDestroySwapchainKHR(device->_device, _swapchain, VK_NULL_HANDLE);
@@ -583,6 +589,10 @@ lvk_command_buffer lvk_command_pool::init_command_buffer(uint32_t count, VkComma
 	dloggln("Command Buffer Allocated: ", &self._command_buffer);
 	
 	return self;
+}
+
+void lvk_command_buffer::reset(VkCommandBufferResetFlags flags) {
+	vkResetCommandBuffer(_command_buffer, flags);
 }
 
 lvk_command_buffer::~lvk_command_buffer()
@@ -724,6 +734,13 @@ lvk_fence lvk_device::init_fence(VkFenceCreateFlags flags) {
 	return self;
 }
 
+VkResult lvk_fence::wait(bool wait_all, uint64_t timeout) {
+	return vkWaitForFences(device->_device, 1, &_fence, wait_all, timeout);
+}
+
+VkResult lvk_fence::reset() {
+	return vkResetFences(device->_device, 1, &_fence);
+}
 
 lvk_fence::~lvk_fence()
 {

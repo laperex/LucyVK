@@ -135,6 +135,8 @@ struct lvk_swapchain {
 	std::vector<VkImage> _images;
 	std::vector<VkImageView> _image_view_array;
 	
+	uint32_t acquire_next_image(uint64_t timeout, VkSemaphore semaphore = VK_NULL_HANDLE, VkFence fence = VK_NULL_HANDLE);
+	
 	~lvk_swapchain();
 	
 	const lvk_device* device;
@@ -169,12 +171,14 @@ struct lvk_command_pool {
 struct lvk_command_buffer {
 	VkCommandBuffer _command_buffer;
 
-	~lvk_command_buffer();
-
 	const lvk_instance* instance;
 	const lvk_physical_device* physical_device;
 	const lvk_device* device;
 	const lvk_command_pool* command_pool;
+	
+	void reset(VkCommandBufferResetFlags flags = 0);
+
+	~lvk_command_buffer();
 };
 
 
@@ -220,6 +224,9 @@ struct lvk_fence {
 	VkFence _fence;
 
 	const lvk_device* device;
+	
+	VkResult wait(bool wait_all = true, uint64_t timeout = 1000000000);
+	VkResult reset();
 
 	~lvk_fence();
 };
