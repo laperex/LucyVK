@@ -10,31 +10,9 @@ struct lvk_instance;
 struct lvk_physical_device;
 struct lvk_device;
 
-// ###################################################
-// ################# INSTANCE ########################
-// ###################################################
-
-typedef std::function<VkPhysicalDevice(const std::vector<VkPhysicalDevice>&, const lvk_instance* instance)> SelectPhysicalDeviceFunction;
-
-lvk_instance lvk_initialize(const char* name, SDL_Window* sdl_window, bool debug_enable, std::vector<const char*> layers = {});
-
-struct lvk_instance {
-	VkDebugUtilsMessengerEXT _debug_messenger;
-	VkSurfaceKHR _surface;
-	VkInstance _instance;
-
-	std::vector<const char*> layers = {};
-
-	bool is_debug_enable();
-
-	lvk_physical_device init_physical_device(SelectPhysicalDeviceFunction function);
-};
-
-// ###################################################
-// ################# PHYSICAL DEVICE #################
-// ###################################################
-
 namespace lvk {
+	struct swapchain;
+	
 	struct queue_family_indices {
 		std::optional<uint32_t> graphics;
 		std::optional<uint32_t> present;
@@ -55,7 +33,32 @@ namespace lvk {
 		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> present_modes;
 	};
+
+	typedef std::function<VkPhysicalDevice(const std::vector<VkPhysicalDevice>&, const lvk_instance* instance)> SelectPhysicalDeviceFunction;
+
+	lvk_instance initialize(const char* name, SDL_Window* sdl_window, bool debug_enable);
 }
+// ###################################################
+// ################# INSTANCE ########################
+// ###################################################
+
+struct lvk_instance {
+	VkDebugUtilsMessengerEXT _debug_messenger;
+	VkSurfaceKHR _surface;
+	VkInstance _instance;
+
+	std::vector<const char*> layers = {};
+	
+	~lvk_instance();
+
+	bool is_debug_enable();
+
+	lvk_physical_device init_physical_device(lvk::SelectPhysicalDeviceFunction function = nullptr);
+};
+
+// ###################################################
+// ################# PHYSICAL DEVICE #################
+// ###################################################
 
 struct lvk_physical_device {
 	VkPhysicalDevice _physical_device;
@@ -80,6 +83,13 @@ struct lvk_physical_device {
 
 struct lvk_device {
 	VkDevice _device;
+	
+	VkQueue _graphicsQueue;
+	VkQueue _presentQueue;
+	
+	std::vector<const char*> extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+	
+	~lvk_device();
 
 	const lvk_instance* instance;
 	const lvk_physical_device* physical_device;

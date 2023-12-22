@@ -38,8 +38,9 @@ int main(int count, char** args) {
 	// lucyvk::CommandPool commandPool = device.CreateCommandPool();
 
 	// // lucyvk::ImageView imageView =  swapchain.cr;
-	auto instance = lvk_initialize("Lucy", window.sdl_window, true);
-	instance.init_physical_device()
+	auto instance = lvk::initialize("Lucy", window.sdl_window, true);
+	auto physical_device = instance.init_physical_device();
+	auto device = physical_device.init_device();
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
