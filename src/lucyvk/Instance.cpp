@@ -57,13 +57,21 @@ static bool CheckValidationLayerSupport() {
 	return false;
 }
 
-lucyvk::Instance::Instance()
+lucyvk::Instance::~Instance()
 {
-	
+	if (_debugMessenger != VK_NULL_HANDLE) {
+        DestroyDebugUtilsMessengerEXT(_instance, _debugMessenger, nullptr);
+		dloggln("DebugUtilMessenger Destroyed");
+	}
+
+	vkDestroySurfaceKHR(_instance, _surface, nullptr);
+	dloggln("SurfaceKHR Destroyed");
+
+    vkDestroyInstance(_instance, nullptr);
+	dloggln("Instance Destroyed");
 }
 
-lucyvk::Instance::Instance(const char* name, SDL_Window* sdl_window, bool debug_mode, std::vector<const char*> layers)
-{
+lucyvk::Instance lucyvk::Initialize(const char* name, SDL_Window* sdl_window, bool debug_mode, std::vector<const char*> layers) {
 	VkApplicationInfo appInfo = {
 		VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		nullptr,
@@ -139,37 +147,26 @@ lucyvk::Instance::Instance(const char* name, SDL_Window* sdl_window, bool debug_
 
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensionArray.size());
 	createInfo.ppEnabledExtensionNames = requiredExtensionArray.data();
+	
+	Instance instance = {};
 
-	if (vkCreateInstance(&createInfo, nullptr, &_instance) != VK_SUCCESS) {
+	if (vkCreateInstance(&createInfo, nullptr, &instance._instance) != VK_SUCCESS) {
         throw std::runtime_error("failed to create instance!");
     }
 	dloggln("Instance Created");
 
 	if (debug_mode) {
-		if (CreateDebugUtilsMessengerEXT(_instance, &debugCreateInfo, nullptr, &_debugMessenger) != VK_SUCCESS) {
+		if (CreateDebugUtilsMessengerEXT(instance._instance, &debugCreateInfo, nullptr, &instance._debugMessenger) != VK_SUCCESS) {
 			throw std::runtime_error("debug messenger creation failed!");
 		}
 		dloggln("Debug Messenger Created");
 	}
 
-	if (SDL_Vulkan_CreateSurface(sdl_window, _instance, &_surface)) {
+	if (SDL_Vulkan_CreateSurface(sdl_window, instance._instance, &instance._surface)) {
 		dloggln("Surface Created");
 	}
 	
-}
-
-lucyvk::Instance::~Instance()
-{
-	if (_debugMessenger != VK_NULL_HANDLE) {
-        DestroyDebugUtilsMessengerEXT(_instance, _debugMessenger, nullptr);
-		dloggln("DebugUtilMessenger Destroyed");
-	}
-
-	vkDestroySurfaceKHR(_instance, _surface, nullptr);
-	dloggln("SurfaceKHR Destroyed");
-
-    vkDestroyInstance(_instance, nullptr);
-	dloggln("Instance Destroyed");
+	return instance;
 }
 
 // lucyvk::PhysicalDevice lucyvk::Instance::CreatePhysicalDevice() {

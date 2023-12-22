@@ -12,11 +12,8 @@ namespace lucyvk {
 		VkSurfaceKHR _surface = VK_NULL_HANDLE;
 		VkInstance _instance = VK_NULL_HANDLE;
 
-		Instance();
-		Instance(const char* name, SDL_Window* sdl_window, bool debug_mode, std::vector<const char*> layers = {});
 		~Instance();
-
-		PhysicalDevice CreatePhysicalDevice();
-		Device CreateLogicalDevice(const PhysicalDevice& physicalDevice);
 	};
+
+	Instance Initialize(const char* name, SDL_Window* sdl_window, bool debug_mode, std::vector<const char*> layers = {});
 }

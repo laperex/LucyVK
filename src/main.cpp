@@ -31,27 +31,13 @@ int main(int count, char** args) {
 	const std::vector<const char*> layers = {};
 	const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-	lucyvk::Instance instance = {
-		"Lucy Framework",
-		window.sdl_window,
-		true,
-		layers
-	};
+	lucyvk::Instance instance = lucyvk::Initialize("Lucy Framework", window.sdl_window, true, layers);
 
-	lucyvk::PhysicalDevice physicalDevice = {
-		instance
-	};
+	lucyvk::PhysicalDevice physicalDevice = { instance };
 	
-	lucyvk::Device device = {
-		physicalDevice,
-		deviceExtensions,
-		layers
-	};
+	lucyvk::Device device = { physicalDevice, deviceExtensions, layers };
 
-	lucyvk::Swapchain swapchain = {
-		device,
-		VkExtent2D { static_cast<uint32_t>(window.size.x), static_cast<uint32_t>(window.size.y) }
-	};
+	auto swapchain = std::make_unique<lucyvk::Swapchain>(device, VkExtent2D { static_cast<uint32_t>(window.size.x), static_cast<uint32_t>(window.size.y) } );
 
 	lucyvk::CommandPool commandPool = {
 		device,
