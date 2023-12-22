@@ -21,7 +21,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include <util/logger.h>
-#include <lucyvk/vk_init.h>
+#include <lucyvk/vk_static.h>
 
 
 int main(int count, char** args) {
@@ -30,17 +30,11 @@ int main(int count, char** args) {
 	lucy::Window window = {};
 	window.InitWindow();
 
-	// lucyvk::Instance instance = { "Lucy Framework", window.sdl_window };
-	// lucyvk::PhysicalDevice physicalDevice = instance.CreatePhysicalDevice();
-	// lucyvk::Device device = physicalDevice.CreateLogicalDevice();
-
-	// lucyvk::Swapchain swapchain = device.CreateSwapchain(window.size.x, window.size.y);
-	// lucyvk::CommandPool commandPool = device.CreateCommandPool();
-
-	// // lucyvk::ImageView imageView =  swapchain.cr;
 	auto instance = lvk::initialize("Lucy", window.sdl_window, true);
 	auto physical_device = instance.init_physical_device();
 	auto device = physical_device.init_device();
+	auto command_pool = device.init_command_pool();
+	auto command_buffer = command_pool.init_command_buffer();
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {

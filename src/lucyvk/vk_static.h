@@ -9,6 +9,8 @@
 struct lvk_instance;
 struct lvk_physical_device;
 struct lvk_device;
+struct lvk_command_pool;
+struct lvk_command_buffer;
 
 namespace lvk {
 	struct swapchain;
@@ -38,9 +40,12 @@ namespace lvk {
 
 	lvk_instance initialize(const char* name, SDL_Window* sdl_window, bool debug_enable);
 }
+
+
 // ###################################################
 // ################# INSTANCE ########################
 // ###################################################
+
 
 struct lvk_instance {
 	VkDebugUtilsMessengerEXT _debug_messenger;
@@ -56,9 +61,11 @@ struct lvk_instance {
 	lvk_physical_device init_physical_device(lvk::SelectPhysicalDeviceFunction function = nullptr);
 };
 
+
 // ###################################################
 // ################# PHYSICAL DEVICE #################
 // ###################################################
+
 
 struct lvk_physical_device {
 	VkPhysicalDevice _physical_device;
@@ -77,9 +84,11 @@ struct lvk_physical_device {
 	const uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags property_flags) const;
 };
 
+
 // ###################################################
 // ################# DEVICE ##########################
 // ###################################################
+
 
 struct lvk_device {
 	VkDevice _device;
@@ -93,4 +102,42 @@ struct lvk_device {
 
 	const lvk_instance* instance;
 	const lvk_physical_device* physical_device;
+	
+	lvk_command_pool init_command_pool();
+	lvk_command_pool init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
+};
+
+
+// ###################################################
+// ################# COMMAND POOL ####################
+// ###################################################
+
+
+struct lvk_command_pool {
+	VkCommandPool _command_pool;
+
+	~lvk_command_pool();
+
+	const lvk_instance* instance;
+	const lvk_physical_device* physical_device;
+	const lvk_device* device;
+
+	lvk_command_buffer init_command_buffer(uint32_t count = 1, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+};
+
+
+// ###################################################
+// ################# COMMAND BUFFER ##################
+// ###################################################
+
+
+struct lvk_command_buffer {
+	VkCommandBuffer _command_buffer;
+
+	~lvk_command_buffer();
+
+	const lvk_instance* instance;
+	const lvk_physical_device* physical_device;
+	const lvk_device* device;
+	const lvk_command_pool* command_pool;
 };

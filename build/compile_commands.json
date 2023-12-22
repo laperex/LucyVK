@@ -55,9 +55,9 @@
 },
 {
   "directory": "/home/laperex/Programming/C++/LucyVK/build",
-  "command": "/usr/bin/g++ -I/home/laperex/Programming/C++/LucyVK/include -I/home/laperex/Programming/C++/LucyVK/src -isystem /usr/include/SDL2 -g -std=gnu++20 -o CMakeFiles/main.dir/src/lucyvk/vk_init.cpp.o -c /home/laperex/Programming/C++/LucyVK/src/lucyvk/vk_init.cpp",
-  "file": "/home/laperex/Programming/C++/LucyVK/src/lucyvk/vk_init.cpp",
-  "output": "CMakeFiles/main.dir/src/lucyvk/vk_init.cpp.o"
+  "command": "/usr/bin/g++ -I/home/laperex/Programming/C++/LucyVK/include -I/home/laperex/Programming/C++/LucyVK/src -isystem /usr/include/SDL2 -g -std=gnu++20 -o CMakeFiles/main.dir/src/lucyvk/vk_static.cpp.o -c /home/laperex/Programming/C++/LucyVK/src/lucyvk/vk_static.cpp",
+  "file": "/home/laperex/Programming/C++/LucyVK/src/lucyvk/vk_static.cpp",
+  "output": "CMakeFiles/main.dir/src/lucyvk/vk_static.cpp.o"
 },
 {
   "directory": "/home/laperex/Programming/C++/LucyVK/build",

@@ -1,4 +1,4 @@
-#include "lucyvk/vk_init.h"
+#include "lucyvk/vk_static.h"
 #include "util/logger.h"
 #include <SDL_vulkan.h>
 #include <cassert>
@@ -52,6 +52,10 @@ static bool CheckValidationLayerSupport() {
 	return false;
 }
 
+
+// ###################################################
+// ################# INSTANCE ########################
+// ###################################################
 
 
 lvk_instance lvk::initialize(const char* name, SDL_Window* sdl_window, bool debug_enable) {
@@ -170,9 +174,11 @@ bool lvk_instance::is_debug_enable() {
 	return (_debug_messenger != VK_NULL_HANDLE);
 }
 
+
 // ###################################################
 // ################# PHYSICAL DEVICE #################
 // ###################################################
+
 
 static lvk::swapchain_support_details QuerySwapchainSupportDetails(VkPhysicalDevice physical_device, VkSurfaceKHR surface) {
 	lvk::swapchain_support_details details;
@@ -303,6 +309,11 @@ lvk_physical_device lvk_instance::init_physical_device(lvk::SelectPhysicalDevice
 }
 
 
+// ###################################################
+// ################# DEVICE ##########################
+// ###################################################
+
+
 lvk_device lvk_physical_device::init_device() {
 	lvk_device self = {};
 	
@@ -352,6 +363,77 @@ lvk_device lvk_physical_device::init_device() {
 
 lvk_device::~lvk_device()
 {
-	// vkDestroyDevice(_device, VK_NULL_HANDLE);
-	// dloggln("Device Destroyed");
+	vkDestroyDevice(_device, VK_NULL_HANDLE);
+	dloggln("Device Destroyed");
+}
+
+
+// ###################################################
+// ################# COMMAND POOL ####################
+// ###################################################
+
+
+lvk_command_pool lvk_device::init_command_pool() {
+	return init_command_pool(physical_device->_queue_family_indices.graphics.value(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+}
+
+lvk_command_pool lvk_device::init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags) {
+	lvk_command_pool self = {};
+	
+	self.device = this;
+	self.physical_device = this->physical_device;
+	self.instance = this->instance;
+	
+	VkCommandPoolCreateInfo poolInfo = {};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+
+    poolInfo.queueFamilyIndex = queue_family_index;
+    poolInfo.flags = flags;
+
+    if (vkCreateCommandPool(_device, &poolInfo, VK_NULL_HANDLE, &self._command_pool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create command pool!");
+    }
+
+	return self;
+}
+
+lvk_command_pool::~lvk_command_pool()
+{
+	vkDestroyCommandPool(device->_device, _command_pool, VK_NULL_HANDLE);
+	dloggln("Command Pool Destroyed");
+}
+
+
+// ###################################################
+// ################# COMMAND BUFFER ##################
+// ###################################################
+
+
+lvk_command_buffer lvk_command_pool::init_command_buffer(uint32_t count, VkCommandBufferLevel level) {
+	lvk_command_buffer self;
+	
+	self.command_pool = this;
+	self.device = this->device;
+	self.instance = this->instance;
+	self.physical_device = this->physical_device;
+	
+	VkCommandBufferAllocateInfo allocateInfo = {};
+
+	allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocateInfo.pNext = nullptr;
+	allocateInfo.commandPool = _command_pool;
+	allocateInfo.level = level;
+	allocateInfo.commandBufferCount = count;
+
+	if (vkAllocateCommandBuffers(this->device->_device, &allocateInfo, &self._command_buffer) != VK_SUCCESS) {
+		throw std::runtime_error("command buffer allocation failed!");
+	}
+	dloggln("Command Buffer Allocated: ", &self._command_buffer);
+	
+	return self;
+}
+
+lvk_command_buffer::~lvk_command_buffer()
+{
+	
 }
