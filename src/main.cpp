@@ -1,9 +1,9 @@
-#include "lucyvk/Instance.h"
-#include "lucyvk/PhysicalDevice.h"
-#include "lucyvk/LogicalDevice.h"
-#include "lucyvk/CommandPool.h"
-#include "lucyvk/ImageView.h"
-#include "lucyvk/Swapchain.h"
+// #include "lucyvk/Instance.h"
+// #include "lucyvk/PhysicalDevice.h"
+// #include "lucyvk/LogicalDevice.h"
+// #include "lucyvk/CommandPool.h"
+// #include "lucyvk/ImageView.h"
+// #include "lucyvk/Swapchain.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_image.h>
@@ -21,6 +21,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include <util/logger.h>
+#include <lucyvk/vk_init.h>
 
 
 int main(int count, char** args) {
@@ -29,14 +30,16 @@ int main(int count, char** args) {
 	lucy::Window window = {};
 	window.InitWindow();
 
-	lucyvk::Instance instance = { "Lucy Framework", window.sdl_window };
-	lucyvk::PhysicalDevice physicalDevice = instance.CreatePhysicalDevice();
-	lucyvk::Device device = physicalDevice.CreateLogicalDevice();
+	// lucyvk::Instance instance = { "Lucy Framework", window.sdl_window };
+	// lucyvk::PhysicalDevice physicalDevice = instance.CreatePhysicalDevice();
+	// lucyvk::Device device = physicalDevice.CreateLogicalDevice();
 
-	lucyvk::Swapchain swapchain = device.CreateSwapchain(window.size.x, window.size.y);
-	lucyvk::CommandPool commandPool = device.CreateCommandPool();
+	// lucyvk::Swapchain swapchain = device.CreateSwapchain(window.size.x, window.size.y);
+	// lucyvk::CommandPool commandPool = device.CreateCommandPool();
 
-	// lucyvk::ImageView imageView =  swapchain.cr;
+	// // lucyvk::ImageView imageView =  swapchain.cr;
+	auto instance = lvk_initialize("Lucy", window.sdl_window, true);
+	instance.init_physical_device()
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
@@ -50,7 +53,7 @@ int main(int count, char** args) {
 		dt = std::chrono::duration<double, std::ratio<1, 60>>(end_time - start_time).count();
 	}
 
-	device.WaitIdle();
+	// device.WaitIdle();
 
 	window.Destroy();
 }
