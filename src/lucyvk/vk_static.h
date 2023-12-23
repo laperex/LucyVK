@@ -118,7 +118,7 @@ struct lvk_device {
 	
 	lvk_render_pass init_render_pass();
 	
-	lvk_semaphore init_semaphore(VkSemaphoreCreateFlags flags = 0);
+	lvk_semaphore init_semaphore(const uint32_t count, VkSemaphoreCreateFlags flags = 0);
 	lvk_fence init_fence(uint32_t count, VkFenceCreateFlags flags = 0);
 	
 	void wait_idle();
@@ -216,7 +216,8 @@ struct lvk_render_pass {
 
 
 struct lvk_semaphore {
-	VkSemaphore _semaphore;
+	VkSemaphore* _semaphore;
+	const uint32_t _count;
 
 	const lvk_device* device;
 	

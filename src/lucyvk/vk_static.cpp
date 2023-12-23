@@ -701,28 +701,34 @@ lvk_render_pass::~lvk_render_pass()
 // |--------------------------------------------------
 
 
-lvk_semaphore lvk_device::init_semaphore(VkSemaphoreCreateFlags flags) {
-	lvk_semaphore self = {};
-	
-	self.device = this;
+lvk_semaphore lvk_device::init_semaphore(const uint32_t count, VkSemaphoreCreateFlags flags) {
+	lvk_semaphore semaphore = {
+		new VkSemaphore[count],
+		count,
+		this
+	};
 
 	VkSemaphoreCreateInfo createInfo;
 	createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 	createInfo.pNext = nullptr;
 	createInfo.flags = flags;
 
-	if (vkCreateSemaphore(_device, &createInfo, VK_NULL_HANDLE, &self._semaphore) != VK_SUCCESS) {
-		throw std::runtime_error("semaphore creation failed");
+	for (int i = 0; i < count; i++) {
+		if (vkCreateSemaphore(_device, &createInfo, VK_NULL_HANDLE, &semaphore._semaphore[i]) != VK_SUCCESS) {
+			throw std::runtime_error("semaphore creation failed");
+		}
 	}
 	dloggln("Semaphore Created");
 	
-	return self;
+	return semaphore;
 }
 
 
 lvk_semaphore::~lvk_semaphore()
 {
-	vkDestroySemaphore(device->_device, _semaphore, VK_NULL_HANDLE);
+	for (int i = 0; i < _count; i++) {
+		vkDestroySemaphore(device->_device, _semaphore[i], VK_NULL_HANDLE);
+	}
 	dloggln("Semaphore Destroyed");
 }
 
