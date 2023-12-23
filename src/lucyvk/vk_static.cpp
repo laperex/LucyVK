@@ -568,14 +568,14 @@ lvk_command_pool::~lvk_command_pool()
 
 
 lvk_command_buffer lvk_command_pool::init_command_buffer(uint32_t count, VkCommandBufferLevel level) {
-	lvk_command_buffer self;
-	
-	self.command_pool = this;
-	self.device = this->device;
-	// self.instance = this->instance;
-	// self.physical_device = this->physical_device;
-
-	self._command_buffers.reserve(count);
+	lvk_command_buffer self = {
+		new VkCommandBuffer[count],
+		count,
+		instance,
+		physical_device,
+		device,
+		this
+	};
 
 	VkCommandBufferAllocateInfo allocateInfo = {};
 
@@ -584,8 +584,7 @@ lvk_command_buffer lvk_command_pool::init_command_buffer(uint32_t count, VkComma
 	allocateInfo.commandPool = _command_pool;
 	allocateInfo.level = level;
 	allocateInfo.commandBufferCount = count;
-
-	if (vkAllocateCommandBuffers(device->_device, &allocateInfo, self._command_buffers.data()) != VK_SUCCESS) {
+	if (vkAllocateCommandBuffers(device->_device, &allocateInfo, self._command_buffers) != VK_SUCCESS) {
 		throw std::runtime_error("command buffer allocation failed!");
 	}
 	dloggln("Command Buffer Allocated: ", &self._command_buffers);
@@ -594,11 +593,12 @@ lvk_command_buffer lvk_command_pool::init_command_buffer(uint32_t count, VkComma
 }
 
 void lvk_command_buffer::reset(uint32_t index, VkCommandBufferResetFlags flags) {
+	
 	vkResetCommandBuffer(_command_buffers[index], flags);
 }
 
 void lvk_command_buffer::reset_all(VkCommandBufferResetFlags flags) {
-	for (int i = 0; i < _command_buffers.size(); i++)
+	for (int i = 0; i < _count; i++)
 		vkResetCommandBuffer(_command_buffers[i], flags);
 }
 
@@ -612,8 +612,9 @@ void lvk_command_buffer::end(uint32_t index) {
 
 lvk_command_buffer::~lvk_command_buffer()
 {
-	vkFreeCommandBuffers(device->_device, command_pool->_command_pool, _command_buffers.size(), _command_buffers.data());
+	vkFreeCommandBuffers(device->_device, command_pool->_command_pool, _count, _command_buffers);
 	dloggln("Command Buffer Destroyed");
+	delete [] _command_buffers;
 }
 
 
@@ -731,35 +732,40 @@ lvk_semaphore::~lvk_semaphore()
 // |--------------------------------------------------
 
 
-lvk_fence lvk_device::init_fence(VkFenceCreateFlags flags) {
-	lvk_fence self = {};
-	
-	self.device = this;
+lvk_fence lvk_device::init_fence(uint32_t count, VkFenceCreateFlags flags) {
+	lvk_fence self = {
+		new VkFence[count],
+		count,
+		this
+	};
 
 	VkFenceCreateInfo createInfo;
 	createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	createInfo.pNext = nullptr;
 	createInfo.flags = flags;
 
-	if (vkCreateFence(_device, &createInfo, VK_NULL_HANDLE, &self._fence) != VK_SUCCESS) {
-		throw std::runtime_error("fence creation failed");
+	for (int i = 0; i < count; i++) {
+		if (vkCreateFence(_device, &createInfo, VK_NULL_HANDLE, &self._fence[i]) != VK_SUCCESS) {
+			throw std::runtime_error("fence creation failed");
+		}
 	}
 	dloggln("Fence Created");
-	
+
 	return self;
 }
 
 VkResult lvk_fence::wait(bool wait_all, uint64_t timeout) {
-	return vkWaitForFences(device->_device, 1, &_fence, wait_all, timeout);
+	return vkWaitForFences(device->_device, _count, _fence, wait_all, timeout);
 }
 
 VkResult lvk_fence::reset() {
-	return vkResetFences(device->_device, 1, &_fence);
+	return vkResetFences(device->_device, _count, _fence);
 }
 
 lvk_fence::~lvk_fence()
 {
-	vkDestroyFence(device->_device, _fence, VK_NULL_HANDLE);
+	for (int i = 0; i < _count; i++)
+		vkDestroyFence(device->_device, _fence[i], VK_NULL_HANDLE);
 	dloggln("Fence Destroyed");
 }
 
@@ -769,7 +775,7 @@ lvk_fence::~lvk_fence()
 // |--------------------------------------------------
 
 
-lvk_framebuffer* lvk_render_pass::create_framebuffer(uint32_t width, uint32_t height, std::vector<VkImageView> image_view_array) {
+lvk_framebuffer* lvk_render_pass::create_framebuffer(uint32_t width, uint32_t height, const std::vector<VkImageView>& image_view_array) {
 	auto* self = new lvk_framebuffer();
 
 	self->render_pass = this;

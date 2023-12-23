@@ -6,6 +6,10 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
+#define LVK_EXCEPT(assertion, message)	\
+	if ((assertion) != true)	\
+		throw std::runtime_error(message);
+
 struct lvk_instance;
 struct lvk_physical_device;
 struct lvk_device;
@@ -115,7 +119,7 @@ struct lvk_device {
 	lvk_render_pass init_render_pass();
 	
 	lvk_semaphore init_semaphore(VkSemaphoreCreateFlags flags = 0);
-	lvk_fence init_fence(VkFenceCreateFlags flags = 0);
+	lvk_fence init_fence(uint32_t count, VkFenceCreateFlags flags = 0);
 	
 	void wait_idle();
 };
@@ -169,7 +173,9 @@ struct lvk_command_pool {
 
 
 struct lvk_command_buffer {
-	std::vector<VkCommandBuffer> _command_buffers;
+	VkCommandBuffer* _command_buffers;
+	
+	const uint32_t _count;
 
 	const lvk_instance* instance;
 	const lvk_physical_device* physical_device;
@@ -199,7 +205,7 @@ struct lvk_render_pass {
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
 
-	lvk_framebuffer* create_framebuffer(uint32_t width, uint32_t height, std::vector<VkImageView> image_view_array);
+	lvk_framebuffer* create_framebuffer(uint32_t width, uint32_t height, const std::vector<VkImageView>& image_view_array);
 	void destroy_framebuffer(lvk_framebuffer* framebuffer);
 };
 
@@ -224,10 +230,11 @@ struct lvk_semaphore {
 
 
 struct lvk_fence {
-	VkFence _fence;
+	VkFence* _fence;
+	const uint32_t _count;
 
 	const lvk_device* device;
-	
+
 	VkResult wait(bool wait_all = true, uint64_t timeout = 1000000000);
 	VkResult reset();
 
