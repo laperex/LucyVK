@@ -169,14 +169,17 @@ struct lvk_command_pool {
 
 
 struct lvk_command_buffer {
-	VkCommandBuffer _command_buffer;
+	std::vector<VkCommandBuffer> _command_buffers;
 
 	const lvk_instance* instance;
 	const lvk_physical_device* physical_device;
 	const lvk_device* device;
 	const lvk_command_pool* command_pool;
 	
-	void reset(VkCommandBufferResetFlags flags = 0);
+	void reset(uint32_t index = 0, VkCommandBufferResetFlags flags = 0);
+	void reset_all(VkCommandBufferResetFlags flags = 0);
+	void begin(uint32_t index, const VkCommandBufferBeginInfo* beginInfo);
+	void end(uint32_t index);
 
 	~lvk_command_buffer();
 };

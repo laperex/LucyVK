@@ -574,7 +574,9 @@ lvk_command_buffer lvk_command_pool::init_command_buffer(uint32_t count, VkComma
 	self.device = this->device;
 	// self.instance = this->instance;
 	// self.physical_device = this->physical_device;
-	
+
+	self._command_buffers.reserve(count);
+
 	VkCommandBufferAllocateInfo allocateInfo = {};
 
 	allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -583,21 +585,34 @@ lvk_command_buffer lvk_command_pool::init_command_buffer(uint32_t count, VkComma
 	allocateInfo.level = level;
 	allocateInfo.commandBufferCount = count;
 
-	if (vkAllocateCommandBuffers(device->_device, &allocateInfo, &self._command_buffer) != VK_SUCCESS) {
+	if (vkAllocateCommandBuffers(device->_device, &allocateInfo, self._command_buffers.data()) != VK_SUCCESS) {
 		throw std::runtime_error("command buffer allocation failed!");
 	}
-	dloggln("Command Buffer Allocated: ", &self._command_buffer);
+	dloggln("Command Buffer Allocated: ", &self._command_buffers);
 	
 	return self;
 }
 
-void lvk_command_buffer::reset(VkCommandBufferResetFlags flags) {
-	vkResetCommandBuffer(_command_buffer, flags);
+void lvk_command_buffer::reset(uint32_t index, VkCommandBufferResetFlags flags) {
+	vkResetCommandBuffer(_command_buffers[index], flags);
+}
+
+void lvk_command_buffer::reset_all(VkCommandBufferResetFlags flags) {
+	for (int i = 0; i < _command_buffers.size(); i++)
+		vkResetCommandBuffer(_command_buffers[i], flags);
+}
+
+void lvk_command_buffer::begin(uint32_t index, const VkCommandBufferBeginInfo* beginInfo) {
+	vkBeginCommandBuffer(_command_buffers[index], beginInfo);
+}
+
+void lvk_command_buffer::end(uint32_t index) {
+	vkEndCommandBuffer(_command_buffers[index]);
 }
 
 lvk_command_buffer::~lvk_command_buffer()
 {
-	vkFreeCommandBuffers(device->_device, command_pool->_command_pool, 1, &_command_buffer);
+	vkFreeCommandBuffers(device->_device, command_pool->_command_pool, _command_buffers.size(), _command_buffers.data());
 	dloggln("Command Buffer Destroyed");
 }
 

@@ -43,7 +43,7 @@ int main(int count, char** args) {
 	auto present_semaphore = device.init_semaphore();
 	auto render_semaphore = device.init_semaphore();
 
-	auto command_buffers = command_pool.init_command_buffer(1);
+	auto command_buffers = command_pool.init_command_buffer(swapchain->_images.size());
 
 	command_buffers.reset();
 	
@@ -88,15 +88,15 @@ int main(int count, char** args) {
 			uint32_t image_index = swapchain->acquire_next_image(1000000000, present_semaphore._semaphore);
 			
 			{
-				assert(vkBeginCommandBuffer(command_buffers._command_buffer, &cmdBeginInfo) == VK_SUCCESS);
+				assert(vkBeginCommandBuffer(command_buffers._command_buffers, &cmdBeginInfo) == VK_SUCCESS);
 
 				rpInfo.framebuffer = framebuffer->_framebuffer_array[image_index];
 				
-				vkCmdBeginRenderPass(command_buffers._command_buffer, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
+				vkCmdBeginRenderPass(command_buffers._command_buffers, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
 				
-				vkCmdEndRenderPass(command_buffers._command_buffer);
+				vkCmdEndRenderPass(command_buffers._command_buffers);
 				
-				assert(vkEndCommandBuffer(command_buffers._command_buffer) == VK_SUCCESS);
+				assert(vkEndCommandBuffer(command_buffers._command_buffers) == VK_SUCCESS);
 			}
 			{
 				VkSubmitInfo submit = {};
@@ -114,7 +114,7 @@ int main(int count, char** args) {
 				submit.pSignalSemaphores = &render_semaphore._semaphore;
 
 				submit.commandBufferCount = 1;
-				submit.pCommandBuffers = &command_buffers._command_buffer;
+				submit.pCommandBuffers = &command_buffers._command_buffers;
 
 				//submit command buffer to the queue and execute it.
 				// _renderFence will now block until the graphic commands finish execution
