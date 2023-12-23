@@ -556,7 +556,7 @@ void lvk_device::destroy_swapchain(lvk_swapchain* swapchain) {
 	delete swapchain;
 }
 
-uint32_t lvk_swapchain::acquire_next_image(uint64_t timeout, VkSemaphore semaphore, VkFence fence) {
+uint32_t lvk_swapchain::acquire_next_image(const uint64_t timeout, VkSemaphore semaphore, VkFence fence) {
 	uint32_t index;
 	vkAcquireNextImageKHR(device->_device, _swapchain, timeout, semaphore, fence, &index);
 	return index;
@@ -803,6 +803,8 @@ lvk_semaphore::~lvk_semaphore()
 		vkDestroySemaphore(device->_device, _semaphore[i], VK_NULL_HANDLE);
 	}
 	dloggln("Semaphore Destroyed");
+	
+	delete [] _semaphore;
 }
 
 
@@ -811,8 +813,8 @@ lvk_semaphore::~lvk_semaphore()
 // |--------------------------------------------------
 
 
-lvk_fence lvk_device::init_fence(uint32_t count, VkFenceCreateFlags flags) {
-	lvk_fence self = {
+lvk_fence lvk_device::init_fence(const uint32_t count, VkFenceCreateFlags flags) {
+	lvk_fence fence = {
 		new VkFence[count],
 		count,
 		this
@@ -824,13 +826,13 @@ lvk_fence lvk_device::init_fence(uint32_t count, VkFenceCreateFlags flags) {
 	createInfo.flags = flags;
 
 	for (int i = 0; i < count; i++) {
-		if (vkCreateFence(_device, &createInfo, VK_NULL_HANDLE, &self._fence[i]) != VK_SUCCESS) {
+		if (vkCreateFence(_device, &createInfo, VK_NULL_HANDLE, &fence._fence[i]) != VK_SUCCESS) {
 			throw std::runtime_error("fence creation failed");
 		}
 	}
 	dloggln("Fence Created");
 
-	return self;
+	return fence;
 }
 
 VkResult lvk_fence::wait(bool wait_all, uint64_t timeout) {
@@ -846,6 +848,8 @@ lvk_fence::~lvk_fence()
 	for (int i = 0; i < _count; i++)
 		vkDestroyFence(device->_device, _fence[i], VK_NULL_HANDLE);
 	dloggln("Fence Destroyed");
+	
+	delete [] _fence;
 }
 
 
@@ -859,8 +863,6 @@ lvk_framebuffer* lvk_render_pass::create_framebuffer(uint32_t width, uint32_t he
 
 	self->render_pass = this;
 	self->device = this->device;
-	self->physical_device = this->physical_device;
-	self->instance = this->instance;
 
 	self->_framebuffer_array.resize(image_view_array.size());
 	
@@ -895,3 +897,17 @@ lvk_framebuffer::~lvk_framebuffer()
 	dloggln("Framebuffers Destroyed");
 }
 
+
+// |--------------------------------------------------
+// ----------------> PIPELINE
+// |--------------------------------------------------
+
+
+lvk_pipeline lvk_device::init_pipeline() {
+	lvk_pipeline pipeline = {
+		VK_NULL_HANDLE,
+		this
+	};
+
+	return pipeline;
+}

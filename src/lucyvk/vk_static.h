@@ -10,6 +10,9 @@
 	if ((assertion) != true)	\
 		throw std::runtime_error(message);
 
+
+#define LVK_TIMEOUT 1000000000
+
 struct lvk_instance;
 struct lvk_physical_device;
 struct lvk_device;
@@ -20,6 +23,7 @@ struct lvk_render_pass;
 struct lvk_framebuffer;
 struct lvk_semaphore;
 struct lvk_fence;
+struct lvk_pipeline;
 
 namespace lvk {
 	struct queue_family_indices {
@@ -120,8 +124,10 @@ struct lvk_device {
 	lvk_render_pass init_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform = false);
 	
 	lvk_semaphore init_semaphore(const uint32_t count, VkSemaphoreCreateFlags flags = 0);
-	lvk_fence init_fence(uint32_t count, VkFenceCreateFlags flags = 0);
+	lvk_fence init_fence(const uint32_t count, VkFenceCreateFlags flags = 0);
 	
+	lvk_pipeline init_pipeline();
+
 	void wait_idle();
 };
 
@@ -140,7 +146,7 @@ struct lvk_swapchain {
 	std::vector<VkImage> _images;
 	std::vector<VkImageView> _image_view_array;
 	
-	uint32_t acquire_next_image(uint64_t timeout, VkSemaphore semaphore = VK_NULL_HANDLE, VkFence fence = VK_NULL_HANDLE);
+	uint32_t acquire_next_image(const uint64_t timeout = LVK_TIMEOUT, VkSemaphore semaphore = VK_NULL_HANDLE, VkFence fence = VK_NULL_HANDLE);
 	
 	~lvk_swapchain();
 	
@@ -241,7 +247,7 @@ struct lvk_fence {
 
 	const lvk_device* device;
 
-	VkResult wait(bool wait_all = true, uint64_t timeout = 1000000000);
+	VkResult wait(bool wait_all = true, uint64_t timeout = LVK_TIMEOUT);
 	VkResult reset();
 
 	~lvk_fence();
@@ -257,9 +263,22 @@ struct lvk_framebuffer {
 	std::vector<VkFramebuffer> _framebuffer_array;
 	
 	~lvk_framebuffer();
+
+	const lvk_render_pass* render_pass;
+	const lvk_device* device;
+};
+
+
+// |--------------------------------------------------
+// ----------------> PIPELINE
+// |--------------------------------------------------
+
+
+struct lvk_pipeline {
+	VkPipeline _pipeline;
+	
+	~lvk_pipeline();
 	
 	const lvk_device* device;
-	const lvk_physical_device* physical_device;
-	const lvk_instance* instance;
-	const lvk_render_pass* render_pass;
 };
+
