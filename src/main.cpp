@@ -88,7 +88,7 @@ int main(int count, char** args) {
 			uint32_t image_index = swapchain->acquire_next_image(1000000000, present_semaphore._semaphore[0]);
 			
 			{
-				command_buffers.begin(0, &cmdBeginInfo);
+				command_buffers.cmd_begin(0, &cmdBeginInfo);
 
 				rpInfo.framebuffer = framebuffer->_framebuffer_array[image_index];
 				
@@ -96,7 +96,7 @@ int main(int count, char** args) {
 				
 				vkCmdEndRenderPass(command_buffers._command_buffers[0]);
 				
-				command_buffers.end(0);
+				command_buffers.cmd_end(0);
 			}
 			{
 				VkSubmitInfo submit = {};

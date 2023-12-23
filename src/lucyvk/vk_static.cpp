@@ -239,10 +239,50 @@ static lvk::queue_family_indices QueryQueueFamilyIndices(VkPhysicalDevice physic
 }
 
 static VkPhysicalDevice DefaultPhysicalDeviceSelection(const std::vector<VkPhysicalDevice>& physicalDeviceArray, const lvk_instance* instance) {
+	dloggln("");
+	dloggln("Available GPUs:");
+	
+	VkPhysicalDeviceProperties properties;
+	for (const auto& physical_device: physicalDeviceArray) {
+		vkGetPhysicalDeviceProperties(physical_device, &properties);
+		
+		dloggln(properties.deviceName);
+		
+		for (const auto& mode: QuerySwapchainSupportDetails(physical_device, instance->_surface).present_modes) {
+			switch (mode) {
+				case VK_PRESENT_MODE_IMMEDIATE_KHR:
+					dloggln("	VK_PRESENT_MODE_IMMEDIATE_KHR");
+					break;
+				case VK_PRESENT_MODE_MAILBOX_KHR:
+					dloggln("	VK_PRESENT_MODE_MAILBOX_KHR");
+					break;
+				case VK_PRESENT_MODE_FIFO_KHR:
+					dloggln("	VK_PRESENT_MODE_FIFO_KHR");
+					break;
+				case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
+					dloggln("	VK_PRESENT_MODE_FIFO_RELAXED_KHR");
+					break;
+				case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:
+					dloggln("	VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR");
+					break;
+				case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:
+					dloggln("	VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR");
+					break;
+				case VK_PRESENT_MODE_MAX_ENUM_KHR:
+					dloggln("	VK_PRESENT_MODE_MAX_ENUM_KHR");
+					break;
+			}
+		}
+	}
+
+	dloggln("");
+
 	for (const auto& physicalDevice: physicalDeviceArray) {
 		bool isRequiredDeviceExtensionsAvailable = false;
 		bool isIndicesComplete = false;
 		bool isSwapchainAdequate = false;
+		
+		return physicalDeviceArray.back();
 
 		{
 			uint32_t availableExtensionCount;
@@ -279,9 +319,9 @@ static VkPhysicalDevice DefaultPhysicalDeviceSelection(const std::vector<VkPhysi
 }
 
 lvk_physical_device lvk_instance::init_physical_device(lvk::SelectPhysicalDeviceFunction function) {
-	lvk_physical_device self = {};
+	lvk_physical_device physical_device = {};
 	
-	self.instance = this;
+	physical_device.instance = this;
 
 	uint32_t availableDeviceCount = 0;
 
@@ -289,23 +329,23 @@ lvk_physical_device lvk_instance::init_physical_device(lvk::SelectPhysicalDevice
 	std::vector<VkPhysicalDevice> availableDevices(availableDeviceCount);
 	vkEnumeratePhysicalDevices(_instance, &availableDeviceCount, availableDevices.data());
 
-	self._physical_device = (function == nullptr) ?
+	physical_device._physical_device = (function == nullptr) ?
 		DefaultPhysicalDeviceSelection(availableDevices, this):
 		function(availableDevices, this);
 	
-	if (self._physical_device == nullptr) {
+	if (physical_device._physical_device == nullptr) {
 		throw std::runtime_error("failed to find suitable PhysicalDevice!");
 	}
 
-	self._queue_family_indices = QueryQueueFamilyIndices(self._physical_device, _surface);
-	self._swapchain_support_details = QuerySwapchainSupportDetails(self._physical_device, _surface);
+	physical_device._queue_family_indices = QueryQueueFamilyIndices(physical_device._physical_device, _surface);
+	physical_device._swapchain_support_details = QuerySwapchainSupportDetails(physical_device._physical_device, _surface);
 
-	vkGetPhysicalDeviceFeatures(self._physical_device, &self._features);
-	vkGetPhysicalDeviceProperties(self._physical_device, &self._properties);
+	vkGetPhysicalDeviceFeatures(physical_device._physical_device, &physical_device._features);
+	vkGetPhysicalDeviceProperties(physical_device._physical_device, &physical_device._properties);
 	
-	dloggln("Physical Device - ", self._properties.deviceName);
+	dloggln(physical_device._physical_device, " Physical Device - ", physical_device._properties.deviceName);
 
-	return self;
+	return physical_device;
 }
 
 
@@ -315,10 +355,10 @@ lvk_physical_device lvk_instance::init_physical_device(lvk::SelectPhysicalDevice
 
 
 lvk_device lvk_physical_device::init_device() {
-	lvk_device self = {};
+	lvk_device device = {};
 	
-	self.instance = this->instance;
-	self.physical_device = this;
+	device.instance = this->instance;
+	device.physical_device = this;
 	
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoArray;
     std::set<uint32_t> uniqueQueueFamilies = { _queue_family_indices.graphics.value(), _queue_family_indices.present.value() };
@@ -343,22 +383,22 @@ lvk_device lvk_physical_device::init_device() {
 		queueCreateInfoArray.data(),
 		static_cast<uint32_t>(std::size(instance->layers)),
 		instance->layers.data(),
-		static_cast<uint32_t>(std::size(self.extensions)),
-		self.extensions.data(),
+		static_cast<uint32_t>(std::size(device.extensions)),
+		device.extensions.data(),
 		&_features
 	};
 
-    if (vkCreateDevice(_physical_device, &createInfo, nullptr, &self._device) != VK_SUCCESS) {
+    if (vkCreateDevice(_physical_device, &createInfo, nullptr, &device._device) != VK_SUCCESS) {
         throw std::runtime_error("logical device creation failed!");
     }
 	dloggln("Logical Device Created");
 
-    vkGetDeviceQueue(self._device, _queue_family_indices.graphics.value(), 0, &self._graphicsQueue);
+    vkGetDeviceQueue(device._device, _queue_family_indices.graphics.value(), 0, &device._graphicsQueue);
 	dloggln("Graphics Queue Created");
-    vkGetDeviceQueue(self._device, _queue_family_indices.present.value(), 0, &self._presentQueue);
+    vkGetDeviceQueue(device._device, _queue_family_indices.present.value(), 0, &device._presentQueue);
 	dloggln("Present Queue Created");
 	
-	return self;
+	return device;
 }
 
 void lvk_device::wait_idle() {
@@ -414,8 +454,12 @@ lvk_swapchain* lvk_device::create_swapchain(uint32_t width, uint32_t height) {
 
 
 	// TODO: support for more presentMode types
-	// * VK_PRESENT_MODE_FIFO_KHR = V-Sync
+	// * VK_PRESENT_MODE_IMMEDIATE_KHR
 	// * VK_PRESENT_MODE_MAILBOX_KHR = Mailbox
+	// * VK_PRESENT_MODE_FIFO_KHR = V-sync
+	// * VK_PRESENT_MODE_FIFO_RELAXED_KHR
+	// * VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR
+	// * VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR
 
 	self->_present_mode = VK_PRESENT_MODE_FIFO_KHR;
 	for (const auto& availablePresentMode: present_modes) {
@@ -423,6 +467,10 @@ lvk_swapchain* lvk_device::create_swapchain(uint32_t width, uint32_t height) {
 			self->_present_mode = availablePresentMode;
 			break;
 		}
+		// if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+		// 	self->_present_mode = availablePresentMode;
+		// 	break;
+		// }
 	}
 
 
@@ -592,7 +640,7 @@ lvk_command_buffer lvk_command_pool::init_command_buffer(uint32_t count, VkComma
 	return self;
 }
 
-void lvk_command_buffer::reset(uint32_t index, VkCommandBufferResetFlags flags) {
+void lvk_command_buffer::reset(const uint32_t index, VkCommandBufferResetFlags flags) {
 	
 	vkResetCommandBuffer(_command_buffers[index], flags);
 }
@@ -602,12 +650,20 @@ void lvk_command_buffer::reset_all(VkCommandBufferResetFlags flags) {
 		vkResetCommandBuffer(_command_buffers[i], flags);
 }
 
-void lvk_command_buffer::begin(uint32_t index, const VkCommandBufferBeginInfo* beginInfo) {
+void lvk_command_buffer::cmd_begin(const uint32_t index, const VkCommandBufferBeginInfo* beginInfo) {
 	vkBeginCommandBuffer(_command_buffers[index], beginInfo);
 }
 
-void lvk_command_buffer::end(uint32_t index) {
+void lvk_command_buffer::cmd_end(const uint32_t index) {
 	vkEndCommandBuffer(_command_buffers[index]);
+}
+
+void lvk_command_buffer::cmd_render_pass_begin(const uint32_t index, const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents) {
+	vkCmdBeginRenderPass(_command_buffers[index], beginInfo, subpass_contents);
+}
+
+void lvk_command_buffer::cmd_render_pass_end(const uint32_t index) {
+	vkCmdEndRenderPass(_command_buffers[index]);
 }
 
 lvk_command_buffer::~lvk_command_buffer()
@@ -623,13 +679,7 @@ lvk_command_buffer::~lvk_command_buffer()
 // |--------------------------------------------------
 
 
-lvk_render_pass lvk_device::init_render_pass() {
-	lvk_render_pass self = {};
-	
-	self.device = this;
-	self.instance = this->instance;
-	self.physical_device = this->physical_device;
-	
+lvk_render_pass lvk_device::init_render_pass() {	
 	VkAttachmentDescription attachment = {};
 	attachment.flags = 0;
     attachment.format = get_swapchain_surface_format(physical_device->_swapchain_support_details.formats).format;
@@ -670,54 +720,53 @@ lvk_render_pass lvk_device::init_render_pass() {
 	// dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 	// dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
+	return init_render_pass(&attachment, 1, &subpass, 1, nullptr, 0);
+}
+
+lvk_render_pass lvk_device::init_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform) {
+	lvk_render_pass render_pass = {
+		VK_NULL_HANDLE,
+		this,
+		physical_device,
+		instance
+	};
+
 	VkRenderPassCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	createInfo.pNext = nullptr;
-	createInfo.flags = 0;
-	createInfo.attachmentCount = 1;
-	createInfo.pAttachments = &attachment;
-	createInfo.subpassCount = 1;
-	createInfo.pSubpasses = &subpass;
-	createInfo.dependencyCount = 0;
-	createInfo.pDependencies = nullptr;
+	createInfo.flags = (enable_transform) * VK_RENDER_PASS_CREATE_TRANSFORM_BIT_QCOM;
+	createInfo.attachmentCount = attachment_count;
+	createInfo.pAttachments = attachment;
+	createInfo.subpassCount = subpass_count;
+	createInfo.pSubpasses = subpass;
+	createInfo.dependencyCount = dependency_count;
+	createInfo.pDependencies = dependency;
 
-	if (vkCreateRenderPass(_device, &createInfo, VK_NULL_HANDLE, &self._render_pass) != VK_SUCCESS) {
+	if (vkCreateRenderPass(_device, &createInfo, VK_NULL_HANDLE, &render_pass._render_pass) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create renderpass!");
 	}
 	dloggln("RenderPass Created");
 
-	return self;
+	return render_pass;
 }
-
-// lvk_render_pass lvk_device::init_render_pass() {
-// 	lvk_render_pass render_pass = {
-		
-// 	};
-
-// 	VkRenderPassCreateInfo createInfo = {};
-// 	createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-// 	createInfo.pNext = nullptr;
-// 	createInfo.flags = 0;
-// 	createInfo.attachmentCount = 1;
-// 	createInfo.pAttachments = &attachment;
-// 	createInfo.subpassCount = 1;
-// 	createInfo.pSubpasses = &subpass;
-// 	createInfo.dependencyCount = 0;
-// 	createInfo.pDependencies = nullptr;
-
-// 	if (vkCreateRenderPass(_device, &createInfo, VK_NULL_HANDLE, &render_pass._render_pass) != VK_SUCCESS) {
-// 		throw std::runtime_error("failed to create renderpass!");
-// 	}
-// 	dloggln("RenderPass Created");
-
-// 	return render_pass;
-// }
 
 lvk_render_pass::~lvk_render_pass()
 {
 	vkDestroyRenderPass(device->_device, _render_pass, VK_NULL_HANDLE);
 	dloggln("RenderPass Destroyed");
 }
+
+// VkRenderPassBeginInfo lvk_render_pass::begin_info(VkFramebuffer framebuffer) {
+// 	return {
+// 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+// 		VK_NULL_HANDLE,
+// 		_render_pass,
+// 		framebuffer,
+// 		render_area,
+// 		clear_values.size(),
+// 		clear_values.data()
+// 	}
+// }
 
 
 // |--------------------------------------------------

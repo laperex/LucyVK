@@ -117,6 +117,7 @@ struct lvk_device {
 	lvk_command_pool init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
 	
 	lvk_render_pass init_render_pass();
+	lvk_render_pass init_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform = false);
 	
 	lvk_semaphore init_semaphore(const uint32_t count, VkSemaphoreCreateFlags flags = 0);
 	lvk_fence init_fence(uint32_t count, VkFenceCreateFlags flags = 0);
@@ -182,10 +183,12 @@ struct lvk_command_buffer {
 	const lvk_device* device;
 	const lvk_command_pool* command_pool;
 	
-	void reset(uint32_t index = 0, VkCommandBufferResetFlags flags = 0);
+	void reset(const uint32_t index = 0, VkCommandBufferResetFlags flags = 0);
 	void reset_all(VkCommandBufferResetFlags flags = 0);
-	void begin(uint32_t index, const VkCommandBufferBeginInfo* beginInfo);
-	void end(uint32_t index);
+	void cmd_begin(const uint32_t index, const VkCommandBufferBeginInfo* beginInfo);
+	void cmd_end(const uint32_t index);
+	void cmd_render_pass_begin(const uint32_t index, const VkRenderPassBeginInfo* beginInfo, VkSubpassContents subpass_contents);
+	void cmd_render_pass_end(const uint32_t index);
 
 	~lvk_command_buffer();
 };
@@ -204,6 +207,8 @@ struct lvk_render_pass {
 	const lvk_device* device;
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
+	
+	// VkRenderPassBeginInfo begin_info();
 
 	lvk_framebuffer* create_framebuffer(uint32_t width, uint32_t height, const std::vector<VkImageView>& image_view_array);
 	void destroy_framebuffer(lvk_framebuffer* framebuffer);
