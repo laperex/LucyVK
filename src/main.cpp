@@ -40,8 +40,8 @@ int main(int count, char** args) {
 	auto* framebuffer = render_pass.create_framebuffer(window.size.x, window.size.y, swapchain->_image_view_array);
 	
 	auto render_fence = device.init_fence(1, VK_FENCE_CREATE_SIGNALED_BIT);
-	auto present_semaphore = device.init_semaphore();
-	auto render_semaphore = device.init_semaphore();
+	auto present_semaphore = device.init_semaphore(1);
+	auto render_semaphore = device.init_semaphore(1);
 	
 	auto command_buffers = command_pool.init_command_buffer(1);
 	// auto command_buffers = command_pool.init_command_buffer(swapchain->_images.size());
@@ -85,7 +85,7 @@ int main(int count, char** args) {
 		{
 			render_fence.wait();
 			render_fence.reset();
-			uint32_t image_index = swapchain->acquire_next_image(1000000000, present_semaphore._semaphore);
+			uint32_t image_index = swapchain->acquire_next_image(1000000000, present_semaphore._semaphore[0]);
 			
 			{
 				command_buffers.begin(0, &cmdBeginInfo);
@@ -108,10 +108,10 @@ int main(int count, char** args) {
 				submit.pWaitDstStageMask = &waitStage;
 
 				submit.waitSemaphoreCount = 1;
-				submit.pWaitSemaphores = &present_semaphore._semaphore;
+				submit.pWaitSemaphores = present_semaphore._semaphore;
 
 				submit.signalSemaphoreCount = 1;
-				submit.pSignalSemaphores = &render_semaphore._semaphore;
+				submit.pSignalSemaphores = render_semaphore._semaphore;
 
 				submit.commandBufferCount = command_buffers._count;
 				submit.pCommandBuffers = command_buffers._command_buffers;
@@ -127,7 +127,7 @@ int main(int count, char** args) {
 				presentInfo.pSwapchains = &swapchain->_swapchain;
 				presentInfo.swapchainCount = 1;
 
-				presentInfo.pWaitSemaphores = &render_semaphore._semaphore;
+				presentInfo.pWaitSemaphores = render_semaphore._semaphore;
 				presentInfo.waitSemaphoreCount = 1;
 
 				presentInfo.pImageIndices = &image_index;

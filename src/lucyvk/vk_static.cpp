@@ -689,6 +689,30 @@ lvk_render_pass lvk_device::init_render_pass() {
 	return self;
 }
 
+// lvk_render_pass lvk_device::init_render_pass() {
+// 	lvk_render_pass render_pass = {
+		
+// 	};
+
+// 	VkRenderPassCreateInfo createInfo = {};
+// 	createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+// 	createInfo.pNext = nullptr;
+// 	createInfo.flags = 0;
+// 	createInfo.attachmentCount = 1;
+// 	createInfo.pAttachments = &attachment;
+// 	createInfo.subpassCount = 1;
+// 	createInfo.pSubpasses = &subpass;
+// 	createInfo.dependencyCount = 0;
+// 	createInfo.pDependencies = nullptr;
+
+// 	if (vkCreateRenderPass(_device, &createInfo, VK_NULL_HANDLE, &render_pass._render_pass) != VK_SUCCESS) {
+// 		throw std::runtime_error("failed to create renderpass!");
+// 	}
+// 	dloggln("RenderPass Created");
+
+// 	return render_pass;
+// }
+
 lvk_render_pass::~lvk_render_pass()
 {
 	vkDestroyRenderPass(device->_device, _render_pass, VK_NULL_HANDLE);
