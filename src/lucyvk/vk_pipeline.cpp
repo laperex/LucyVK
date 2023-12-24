@@ -41,3 +41,15 @@ VkPipelineShaderStageCreateInfo lvk::shader_stage_create_info(VkShaderStageFlagB
 VkPipelineShaderStageCreateInfo lvk::shader_stage_create_info(const lvk_shader_module* shader_module, const VkSpecializationInfo* specialization) {
 	return shader_stage_create_info(shader_module->_stage, shader_module->_shader_module, specialization);
 }
+
+VkPipelineVertexInputStateCreateInfo lvk::vertex_input_state_create_info() {
+	return {
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+		VK_NULL_HANDLE,
+		0,
+		0,
+		VK_NULL_HANDLE,
+		0,
+		VK_NULL_HANDLE
+	};
+}

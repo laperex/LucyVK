@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lucyvk/vk_static.h"
+#include "lucyvk/vk_types.h"
 #include <vulkan/vulkan_core.h>
 
 namespace lvk {
@@ -21,5 +21,5 @@ namespace lvk {
 	VkPipelineShaderStageCreateInfo shader_stage_create_info(VkShaderStageFlagBits flag, VkShaderModule shader_module, const VkSpecializationInfo* specialization = nullptr);
 	VkPipelineShaderStageCreateInfo shader_stage_create_info(const lvk_shader_module* shader_module, const VkSpecializationInfo* specialization = nullptr);
 	
-	
+	VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info();
 }
