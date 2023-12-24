@@ -24,18 +24,18 @@ struct lvk_framebuffer;
 struct lvk_semaphore;
 struct lvk_fence;
 struct lvk_shader_module;
-struct lvk_pipeline;
+struct lvk_graphics_pipeline;
 
 
-enum LVK_SHADER_STAGE_FLAG {
-	LVK_SHADER_STAGE_VERTEX = 0x00000001,					// VK_SHADER_STAGE_VERTEX_BIT,
-	LVK_SHADER_STAGE_TESSELLATION_CONTROL = 0x00000002,		// VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-	LVK_SHADER_STAGE_TESSELLATION_EVALUATION = 0x00000004,	// VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-	LVK_SHADER_STAGE_GEOMETRY = 0x00000008,					// VK_SHADER_STAGE_GEOMETRY_BIT,
-	LVK_SHADER_STAGE_FRAGMENT = 0x00000010,					// VK_SHADER_STAGE_FRAGMENT_BIT,
-	LVK_SHADER_STAGE_COMPUTE = 0x00000020,					// VK_SHADER_STAGE_COMPUTE_BIT,
-	LVK_SHADER_STAGE_ALL_GRAPHICS = 0x0000001F,				// VK_SHADER_STAGE_ALL_GRAPHICS,
-};
+// enum LVK_SHADER_STAGE_FLAG {
+// 	LVK_SHADER_STAGE_VERTEX = 0x00000001,					// VK_SHADER_STAGE_VERTEX_BIT,
+// 	LVK_SHADER_STAGE_TESSELLATION_CONTROL = 0x00000002,		// VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+// 	LVK_SHADER_STAGE_TESSELLATION_EVALUATION = 0x00000004,	// VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+// 	LVK_SHADER_STAGE_GEOMETRY = 0x00000008,					// VK_SHADER_STAGE_GEOMETRY_BIT,
+// 	LVK_SHADER_STAGE_FRAGMENT = 0x00000010,					// VK_SHADER_STAGE_FRAGMENT_BIT,
+// 	LVK_SHADER_STAGE_COMPUTE = 0x00000020,					// VK_SHADER_STAGE_COMPUTE_BIT,
+// 	LVK_SHADER_STAGE_ALL_GRAPHICS = 0x0000001F,				// VK_SHADER_STAGE_ALL_GRAPHICS,
+// };
 
 
 namespace lvk {
@@ -140,13 +140,22 @@ struct lvk_device {
 	lvk_semaphore init_semaphore(const uint32_t count, VkSemaphoreCreateFlags flags = 0);
 	lvk_fence init_fence(const uint32_t count, VkFenceCreateFlags flags = 0);
 	
-	lvk_pipeline init_pipeline();
+	lvk_graphics_pipeline init_graphics_pipeline(
+	const VkPipelineShaderStageCreateInfo* shader_stage, const uint32_t shader_stage_count,
+	const VkPipelineVertexInputStateCreateInfo*      vertex_input_state,
+	const VkPipelineInputAssemblyStateCreateInfo*    input_assembly_state,
+	const VkPipelineTessellationStateCreateInfo*     tessellation_state,
+	const VkPipelineViewportStateCreateInfo*         viewport_state,
+	const VkPipelineRasterizationStateCreateInfo*    rasterization_state,
+	const VkPipelineMultisampleStateCreateInfo*      multisample_state,
+	const VkPipelineDepthStencilStateCreateInfo*     depth_stencil_state,
+	const VkPipelineColorBlendStateCreateInfo*       color_blend_state,
+	const VkPipelineDynamicStateCreateInfo*          dynamic_state
+);
 	
 	void wait_idle();
 
-	lvk_shader_module init_shader_module(LVK_SHADER_STAGE_FLAG stage, const char* filename);
-
-	std::vector<VkPipelineShaderStageCreateInfo> create_shader_stage_array(std::vector<lvk_shader_module> shader_module);
+	lvk_shader_module init_shader_module(VkShaderStageFlagBits stage, const char* filename);
 };
 
 
@@ -164,7 +173,7 @@ struct lvk_swapchain {
 	std::vector<VkImage> _images;
 	std::vector<VkImageView> _image_view_array;
 	
-	uint32_t acquire_next_image(const uint64_t timeout = LVK_TIMEOUT, VkSemaphore semaphore = VK_NULL_HANDLE, VkFence fence = VK_NULL_HANDLE);
+	uint32_t acquire_next_image(VkSemaphore semaphore = VK_NULL_HANDLE, VkFence fence = VK_NULL_HANDLE, const uint64_t timeout = LVK_TIMEOUT);
 	
 	~lvk_swapchain();
 	
@@ -293,7 +302,8 @@ struct lvk_framebuffer {
 
 struct lvk_shader_module {
 	VkShaderModule _shader_module;
-	const LVK_SHADER_STAGE_FLAG stage;
+	
+	const VkShaderStageFlagBits _stage;
 
 	~lvk_shader_module();
 
@@ -302,14 +312,26 @@ struct lvk_shader_module {
 
 
 // |--------------------------------------------------
-// ----------------> PIPELINE
+// ----------------> GRAPHICS PIPELINE
 // |--------------------------------------------------
 
 
-struct lvk_pipeline {
+struct lvk_graphics_shaders {
+	VkShaderModule _vertex_shader = VK_NULL_HANDLE;
+	VkShaderModule _testallation_control_shader = VK_NULL_HANDLE;
+	VkShaderModule _testallation_evaluation_shader = VK_NULL_HANDLE;
+	VkShaderModule _geometry_shader = VK_NULL_HANDLE;
+	VkShaderModule _fragment_shader = VK_NULL_HANDLE;
+
+	~lvk_graphics_shaders();
+
+	const lvk_device* device;
+};
+
+struct lvk_graphics_pipeline {
 	VkPipeline _pipeline;
 	
-	~lvk_pipeline();
+	~lvk_graphics_pipeline();
 	
 	const lvk_device* device;
 };

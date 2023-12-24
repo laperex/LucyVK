@@ -424,7 +424,7 @@ void lvk_device::destroy_swapchain(lvk_swapchain* swapchain) {
 	swapchain_count -= 1;
 }
 
-uint32_t lvk_swapchain::acquire_next_image(const uint64_t timeout, VkSemaphore semaphore, VkFence fence) {
+uint32_t lvk_swapchain::acquire_next_image(VkSemaphore semaphore, VkFence fence, const uint64_t timeout) {
 	uint32_t index;
 	vkAcquireNextImageKHR(device->_device, _swapchain, timeout, semaphore, fence, &index);
 	return index;
@@ -771,7 +771,7 @@ lvk_framebuffer::~lvk_framebuffer()
 // |--------------------------------------------------
 
 
-lvk_shader_module lvk_device::init_shader_module(LVK_SHADER_STAGE_FLAG stage, const char* filename) {
+lvk_shader_module lvk_device::init_shader_module(VkShaderStageFlagBits stage, const char* filename) {
 	lvk_shader_module shader_module = {
 		VK_NULL_HANDLE,
 		stage,
@@ -798,42 +798,81 @@ lvk_shader_module::~lvk_shader_module()
 
 
 // |--------------------------------------------------
-// ----------------> PIPELINE
+// ----------------> GRAPHICS PIPELINE
 // |--------------------------------------------------
 
 
-std::vector<VkPipelineShaderStageCreateInfo> lvk_device::create_shader_stage_array(std::vector<lvk_shader_module> shader_module) {
-	
+lvk_graphics_shaders::~lvk_graphics_shaders()
+{
+	if (_vertex_shader != VK_NULL_HANDLE) {
+		vkDestroyShaderModule(device->_device, _vertex_shader, VK_NULL_HANDLE);
+	}
+	if (_testallation_control_shader != VK_NULL_HANDLE) {
+		vkDestroyShaderModule(device->_device, _testallation_control_shader, VK_NULL_HANDLE);
+	}
+	if (_testallation_evaluation_shader != VK_NULL_HANDLE) {
+		vkDestroyShaderModule(device->_device, _testallation_evaluation_shader, VK_NULL_HANDLE);
+	}
+	if (_geometry_shader != VK_NULL_HANDLE) {
+		vkDestroyShaderModule(device->_device, _geometry_shader, VK_NULL_HANDLE);
+	}
+	if (_fragment_shader != VK_NULL_HANDLE) {
+		vkDestroyShaderModule(device->_device, _fragment_shader, VK_NULL_HANDLE);
+	}
+	dloggln("Graphics Shaders Destroyed");
 }
 
-lvk_pipeline lvk_device::init_pipeline() {
-	lvk_pipeline pipeline = {
+
+lvk_graphics_pipeline lvk_device::init_graphics_pipeline(
+	const VkPipelineShaderStageCreateInfo* shader_stage, const uint32_t shader_stage_count,
+	const VkPipelineVertexInputStateCreateInfo*      vertex_input_state,
+	const VkPipelineInputAssemblyStateCreateInfo*    input_assembly_state,
+	const VkPipelineTessellationStateCreateInfo*     tessellation_state,
+	const VkPipelineViewportStateCreateInfo*         viewport_state,
+	const VkPipelineRasterizationStateCreateInfo*    rasterization_state,
+	const VkPipelineMultisampleStateCreateInfo*      multisample_state,
+	const VkPipelineDepthStencilStateCreateInfo*     depth_stencil_state,
+	const VkPipelineColorBlendStateCreateInfo*       color_blend_state,
+	const VkPipelineDynamicStateCreateInfo*          dynamic_state
+) {
+	lvk_graphics_pipeline pipeline = {
 		VK_NULL_HANDLE,
 		this
 	};
+	
+	// VkPipelineLayoutCreateInfo layoutInfo = {
+	// 	VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+	// 	VK_NULL_HANDLE,
+	// 	0,
+	// 	layout_count,
+	// 	set_layout
+	// }
 
 	VkGraphicsPipelineCreateInfo graphicsCreateInfo = {};
 	graphicsCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	graphicsCreateInfo.pNext = VK_NULL_HANDLE;
 	graphicsCreateInfo.flags = 0;
 
-	graphicsCreateInfo.stageCount;
-	graphicsCreateInfo.pStages;
+	graphicsCreateInfo.stageCount = shader_stage_count;
+	graphicsCreateInfo.pStages = shader_stage;
 
-	graphicsCreateInfo.pVertexInputState;
-	graphicsCreateInfo.pInputAssemblyState;
-	graphicsCreateInfo.pTessellationState;
-	graphicsCreateInfo.pViewportState;
-	graphicsCreateInfo.pRasterizationState;
-	graphicsCreateInfo.pMultisampleState;
-	graphicsCreateInfo.pDepthStencilState;
-	graphicsCreateInfo.pColorBlendState;
-	graphicsCreateInfo.pDynamicState;
+	graphicsCreateInfo.pVertexInputState = vertex_input_state;
+	graphicsCreateInfo.pInputAssemblyState = input_assembly_state;
+	graphicsCreateInfo.pTessellationState = tessellation_state;
+	graphicsCreateInfo.pViewportState = viewport_state;
+	graphicsCreateInfo.pRasterizationState = rasterization_state;
+	graphicsCreateInfo.pMultisampleState = multisample_state;
+	graphicsCreateInfo.pDepthStencilState = depth_stencil_state;
+	graphicsCreateInfo.pColorBlendState = color_blend_state;
+	graphicsCreateInfo.pDynamicState = dynamic_state;
+
 	graphicsCreateInfo.layout;
 	graphicsCreateInfo.renderPass;
 	graphicsCreateInfo.subpass;
 	graphicsCreateInfo.basePipelineHandle;
 	graphicsCreateInfo.basePipelineIndex;
+	
+	VkComputePipelineCreateInfo a;
 
 	return pipeline;
 }

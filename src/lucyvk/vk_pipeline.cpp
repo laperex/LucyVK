@@ -37,3 +37,7 @@ VkPipelineShaderStageCreateInfo lvk::shader_stage_create_info(VkShaderStageFlagB
 		specialization
 	};
 }
+
+VkPipelineShaderStageCreateInfo lvk::shader_stage_create_info(const lvk_shader_module* shader_module, const VkSpecializationInfo* specialization) {
+	return shader_stage_create_info(shader_module->_stage, shader_module->_shader_module, specialization);
+}

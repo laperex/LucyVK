@@ -78,8 +78,13 @@ int main(int count, char** args) {
 
 	uint32_t frame = 0;
 
-	auto vertex_shader = device.init_shader_module(LVK_SHADER_STAGE_VERTEX, "shaders/triangle.vert.spv");
-	auto fragment_shader = device.init_shader_module(LVK_SHADER_STAGE_FRAGMENT, "shaders/triangle.frag.spv");
+	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "shaders/triangle.vert.spv");
+	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "shaders/triangle.frag.spv");
+
+	VkPipelineShaderStageCreateInfo shader_stages[] = {
+		lvk::shader_stage_create_info(&vertex_shader, nullptr),
+		lvk::shader_stage_create_info(&fragment_shader, nullptr)
+	};
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
@@ -90,7 +95,7 @@ int main(int count, char** args) {
 		{
 			render_fence.wait();
 			render_fence.reset();
-			uint32_t image_index = swapchain->acquire_next_image(1000000000, present_semaphore._semaphore[0]);
+			uint32_t image_index = swapchain->acquire_next_image(present_semaphore._semaphore[0], nullptr, 1000000000);
 			
 			{
 				rpInfo.framebuffer = framebuffer->_framebuffer_array[image_index];

@@ -1,12 +1,10 @@
 #pragma once
 
+#include "lucyvk/vk_static.h"
 #include <vulkan/vulkan_core.h>
 
 namespace lvk {
 	struct pipeline_config {
-		const VkPipelineShaderStageCreateInfo* shader_stages;
-		const uint32_t shader_stages_count;
-
 		VkPipelineVertexInputStateCreateInfo vertex_input_state;
 		VkPipelineInputAssemblyStateCreateInfo input_assembly_state;
 		VkPipelineTessellationStateCreateInfo testallation_state;
@@ -21,4 +19,7 @@ namespace lvk {
 	VkShaderModuleCreateInfo shader_module_create_info(const char* filename);
 
 	VkPipelineShaderStageCreateInfo shader_stage_create_info(VkShaderStageFlagBits flag, VkShaderModule shader_module, const VkSpecializationInfo* specialization = nullptr);
+	VkPipelineShaderStageCreateInfo shader_stage_create_info(const lvk_shader_module* shader_module, const VkSpecializationInfo* specialization = nullptr);
+	
+	
 }
