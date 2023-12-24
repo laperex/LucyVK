@@ -1,6 +1,7 @@
 #include "lucyvk/vk_pipeline.h"
+#include "lucyvk/vk_static.h"
+#include "lucyvk/vk_function.h"
 #include <fstream>
-
 
 VkShaderModuleCreateInfo lvk::shader_module_create_info(const char* filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);

@@ -5,6 +5,7 @@
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+
 #define LVK_EXCEPT(assertion, message)	\
 	if ((assertion) != true)	\
 		throw std::runtime_error(message);
