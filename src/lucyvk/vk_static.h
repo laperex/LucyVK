@@ -23,7 +23,20 @@ struct lvk_render_pass;
 struct lvk_framebuffer;
 struct lvk_semaphore;
 struct lvk_fence;
+struct lvk_shader_module;
 struct lvk_pipeline;
+
+
+enum LVK_SHADER_STAGE_FLAG {
+	LVK_SHADER_STAGE_VERTEX = 0x00000001,					// VK_SHADER_STAGE_VERTEX_BIT,
+	LVK_SHADER_STAGE_TESSELLATION_CONTROL = 0x00000002,		// VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+	LVK_SHADER_STAGE_TESSELLATION_EVALUATION = 0x00000004,	// VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+	LVK_SHADER_STAGE_GEOMETRY = 0x00000008,					// VK_SHADER_STAGE_GEOMETRY_BIT,
+	LVK_SHADER_STAGE_FRAGMENT = 0x00000010,					// VK_SHADER_STAGE_FRAGMENT_BIT,
+	LVK_SHADER_STAGE_COMPUTE = 0x00000020,					// VK_SHADER_STAGE_COMPUTE_BIT,
+	LVK_SHADER_STAGE_ALL_GRAPHICS = 0x0000001F,				// VK_SHADER_STAGE_ALL_GRAPHICS,
+};
+
 
 namespace lvk {
 	struct queue_family_indices {
@@ -106,14 +119,15 @@ struct lvk_device {
 	
 	VkQueue _graphicsQueue;
 	VkQueue _presentQueue;
-	
+
 	std::vector<const char*> extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 	
 	~lvk_device();
 
 	const lvk_instance* instance;
 	const lvk_physical_device* physical_device;
-	
+
+	uint32_t swapchain_count = 0;	
 	lvk_swapchain* create_swapchain(uint32_t width, uint32_t height);
 	void destroy_swapchain(lvk_swapchain* swapchain);
 	
@@ -127,8 +141,12 @@ struct lvk_device {
 	lvk_fence init_fence(const uint32_t count, VkFenceCreateFlags flags = 0);
 	
 	lvk_pipeline init_pipeline();
-
+	
 	void wait_idle();
+
+	lvk_shader_module init_shader_module(LVK_SHADER_STAGE_FLAG stage, const char* filename);
+
+	std::vector<VkPipelineShaderStageCreateInfo> create_shader_stage_array(std::vector<lvk_shader_module> shader_module);
 };
 
 
@@ -265,6 +283,20 @@ struct lvk_framebuffer {
 	~lvk_framebuffer();
 
 	const lvk_render_pass* render_pass;
+	const lvk_device* device;
+};
+
+
+// |--------------------------------------------------
+// ----------------> SHADER
+// |--------------------------------------------------
+
+struct lvk_shader_module {
+	VkShaderModule _shader_module;
+	const LVK_SHADER_STAGE_FLAG stage;
+
+	~lvk_shader_module();
+
 	const lvk_device* device;
 };
 

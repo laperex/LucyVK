@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Site BuildName="Linux-g++"
-	BuildStamp="20231223-1243-Experimental"
+	BuildStamp="20231224-0404-Experimental"
 	Name="laperex-l5ip"
 	Generator="ctest-3.28.1"
 	CompilerName="/usr/bin/g++"
@@ -21,14 +21,14 @@
 	TotalVirtualMemory="15999"
 	TotalPhysicalMemory="15715"
 	LogicalProcessorsPerPhysical="1"
-	ProcessorClockFrequency="1337.62"
+	ProcessorClockFrequency="2300"
 	>
 	<Testing>
-		<StartDateTime>Dec 24 03:31 IST</StartDateTime>
-		<StartTestTime>1703368914</StartTestTime>
+		<StartDateTime>Dec 24 13:33 IST</StartDateTime>
+		<StartTestTime>1703405001</StartTestTime>
 		<TestList/>
-		<EndDateTime>Dec 24 03:31 IST</EndDateTime>
-		<EndTestTime>1703368914</EndTestTime>
+		<EndDateTime>Dec 24 13:33 IST</EndDateTime>
+		<EndTestTime>1703405001</EndTestTime>
 		<ElapsedMinutes>0</ElapsedMinutes>
 	</Testing>
 </Site>

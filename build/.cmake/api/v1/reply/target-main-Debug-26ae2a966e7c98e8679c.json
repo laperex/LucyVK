@@ -84,12 +84,7 @@
 				2,
 				3,
 				4,
-				5,
-				6,
-				7,
-				8,
-				9,
-				10
+				5
 			]
 		}
 	],
@@ -141,12 +136,7 @@
 				2,
 				3,
 				4,
-				5,
-				6,
-				7,
-				8,
-				9,
-				10
+				5
 			]
 		}
 	],
@@ -167,43 +157,13 @@
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
-			"path" : "src/lucyvk/CommandPool.cpp",
-			"sourceGroupIndex" : 0
-		},
-		{
-			"backtrace" : 1,
-			"compileGroupIndex" : 0,
-			"path" : "src/lucyvk/ImageView.cpp",
-			"sourceGroupIndex" : 0
-		},
-		{
-			"backtrace" : 1,
-			"compileGroupIndex" : 0,
-			"path" : "src/lucyvk/Instance.cpp",
-			"sourceGroupIndex" : 0
-		},
-		{
-			"backtrace" : 1,
-			"compileGroupIndex" : 0,
-			"path" : "src/lucyvk/LogicalDevice.cpp",
-			"sourceGroupIndex" : 0
-		},
-		{
-			"backtrace" : 1,
-			"compileGroupIndex" : 0,
-			"path" : "src/lucyvk/PhysicalDevice.cpp",
-			"sourceGroupIndex" : 0
-		},
-		{
-			"backtrace" : 1,
-			"compileGroupIndex" : 0,
-			"path" : "src/lucyvk/Swapchain.cpp",
-			"sourceGroupIndex" : 0
-		},
-		{
-			"backtrace" : 1,
-			"compileGroupIndex" : 0,
 			"path" : "src/lucyvk/vk_function.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/lucyvk/vk_pipeline.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{

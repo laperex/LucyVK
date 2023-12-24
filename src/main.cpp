@@ -4,6 +4,8 @@
 // #include "lucyvk/CommandPool.h"
 // #include "lucyvk/ImageView.h"
 // #include "lucyvk/Swapchain.h"
+#include "lucyvk/vk_function.h"
+#include "lucyvk/vk_pipeline.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_image.h>
@@ -75,6 +77,9 @@ int main(int count, char** args) {
 	rpInfo.pClearValues = &clearValue;
 
 	uint32_t frame = 0;
+
+	auto vertex_shader = device.init_shader_module(LVK_SHADER_STAGE_VERTEX, "shaders/triangle.vert.spv");
+	auto fragment_shader = device.init_shader_module(LVK_SHADER_STAGE_FRAGMENT, "shaders/triangle.frag.spv");
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
