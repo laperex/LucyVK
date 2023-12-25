@@ -131,7 +131,8 @@ struct lvk_swapchain {
 	const lvk_instance* instance;
 
 	lvk::deletion_queue deletion_queue;
-	lvk_framebuffer* create_framebuffer(uint32_t width, uint32_t height, const lvk_render_pass* render_pass);
+	lvk_framebuffer* create_framebuffer(const uint32_t width, const uint32_t height, const lvk_render_pass* render_pass);
+	void recreate_framebuffer(lvk_framebuffer* framebuffer, const uint32_t width, const uint32_t height, const lvk_render_pass* render_pass = VK_NULL_HANDLE);
 };
 
 

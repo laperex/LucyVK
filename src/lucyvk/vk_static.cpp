@@ -750,13 +750,31 @@ lvk_fence::~lvk_fence()
 // |--------------------------------------------------
 
 
-lvk_framebuffer* lvk_swapchain::create_framebuffer(uint32_t width, uint32_t height, const lvk_render_pass* render_pass) {
+lvk_framebuffer* lvk_swapchain::create_framebuffer(const uint32_t width, const uint32_t height, const lvk_render_pass* render_pass) {
 	auto* framebuffer = new lvk_framebuffer();
 
 	framebuffer->render_pass = render_pass;
 	framebuffer->device = this->device;
 
+	recreate_framebuffer(framebuffer, width, height, render_pass);
+	
+	deletion_queue.push([=]{
+		delete framebuffer;
+	});
+
+	return framebuffer;
+}
+
+void lvk_swapchain::recreate_framebuffer(lvk_framebuffer* framebuffer, const uint32_t width, const uint32_t height, const lvk_render_pass* render_pass) {
 	framebuffer->_framebuffers.resize(_image_view_array.size());
+
+	for (int i = 0; i < framebuffer->_framebuffers.size(); i++) {
+		vkDestroyFramebuffer(device->_device, framebuffer->_framebuffers[i], VK_NULL_HANDLE);
+	}
+	
+	if (framebuffer->render_pass->_render_pass != render_pass->_render_pass) {
+		framebuffer->render_pass = render_pass;
+	}
 	
 	VkFramebufferCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -766,7 +784,7 @@ lvk_framebuffer* lvk_swapchain::create_framebuffer(uint32_t width, uint32_t heig
 	createInfo.width = width;
 	createInfo.height = height;
 	createInfo.layers = 1;
-
+	
 	for (int i = 0; i < framebuffer->_framebuffers.size(); i++) {
 		createInfo.pAttachments = &_image_view_array[i];
 		if (vkCreateFramebuffer(device->_device, &createInfo, VK_NULL_HANDLE, &framebuffer->_framebuffers[i]) != VK_SUCCESS) {
@@ -774,12 +792,6 @@ lvk_framebuffer* lvk_swapchain::create_framebuffer(uint32_t width, uint32_t heig
 		}
 	}
 	dloggln("Framebuffers Created");
-	
-	deletion_queue.push([=]{
-		delete framebuffer;
-	});
-
-	return framebuffer;
 }
 
 lvk_framebuffer::~lvk_framebuffer()
