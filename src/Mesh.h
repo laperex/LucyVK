@@ -2,9 +2,15 @@
 
 #include "lucyvk/vk_static.h"
 #include <vector>
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
+// #include <math/math.hpp>
 
 namespace lucy {
+	struct MeshPushConstants {
+		glm::vec4 data;
+		glm::mat4 render_matrix;
+	};
+
 	struct Vertex {
 		glm::vec3 position;
 		glm::vec3 normal;

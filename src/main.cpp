@@ -4,6 +4,7 @@
 // #include "lucyvk/CommandPool.h"
 // #include "lucyvk/ImageView.h"
 // #include "lucyvk/Swapchain.h"
+#include "Camera.h"
 #include "Mesh.h"
 #include "lucyvk/vk_function.h"
 #include "lucyvk/vk_pipeline.h"
@@ -20,6 +21,8 @@
 #include <vulkan/vulkan.h>
 #include <Window.h>
 #include <glm/glm.hpp>
+
+#include <glm/gtx/transform.hpp>
 
 #include <vulkan/vulkan_core.h>
 
@@ -99,6 +102,7 @@ int main(int count, char** args) {
 
 	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "shaders/mesh.vert.spv");
 	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "shaders/colored_triangle.frag.spv");
+
 	auto vertex_layout = lucy::Vertex::get_vertex_description();
 
 	lvk::graphics_pipeline_config config;
@@ -127,7 +131,12 @@ int main(int count, char** args) {
 		config.scissor.extent = swapchain._extent;
 	}
 
-	auto pipeline_layout = device.init_pipeline_layout();
+	VkPushConstantRange push_constant;
+	push_constant.offset = 0;
+	push_constant.size = sizeof(lucy::MeshPushConstants);
+	push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	auto pipeline_layout = device.init_pipeline_layout(&push_constant, 1);
 	auto graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
 	
 	auto* framebuffer = swapchain.create_framebuffer(window.size.x, window.size.y, &render_pass);
@@ -135,11 +144,20 @@ int main(int count, char** args) {
 	auto triangle_mesh = load_triangle_mesh();
 	triangle_mesh.vertex_buffer = allocator.init_vertex_buffer(triangle_mesh._vertices.data(), triangle_mesh._vertices.size() * sizeof(triangle_mesh._vertices[0]));
 	
+	uint32_t _frameNumber;
+	
+	lucy::Camera camera;
+	
+	camera.width = swapchain._extent.width;
+	camera.height = swapchain._extent.height;
+	
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
 		const auto& start_time = std::chrono::high_resolution_clock::now();
 
 		lucy::Events::Update();
+		
+		camera.Update(dt);
 
 		{
 			render_fence.reset();
@@ -157,6 +175,28 @@ int main(int count, char** args) {
 				VkDeviceSize offset = 0;
 				vkCmdBindPipeline(command_buffers._command_buffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
 				vkCmdBindVertexBuffers(command_buffers._command_buffers[0], 0, 1, &triangle_mesh.vertex_buffer._buffer, &offset);
+				
+				// glm::vec3 camPos = { 0.f,0.f, -10 };
+
+				// glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
+				// //camera projection
+				// glm::mat4 projection = glm::perspective(glm::radians(70.f), float(swapchain._extent.width) / float(swapchain._extent.height), 0.1f, 200.0f);
+				// projection[1][1] *= -1;
+				//model rotation
+				glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, glm::radians(_frameNumber * 0.4f), glm::vec3(0, 1, 0));
+				
+				// _frameNumber++;
+
+				//calculate final mesh matrix
+				glm::mat4 mesh_matrix = camera.projection * camera.view * model;
+
+				lucy::MeshPushConstants constants;
+				constants.render_matrix = mesh_matrix;
+
+				//upload the matrix to the GPU via push constants
+				vkCmdPushConstants(command_buffers._command_buffers[0], pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
+
+				//we can now draw
 				vkCmdDraw(command_buffers._command_buffers[0], triangle_mesh._vertices.size(), 1, 0, 0);
 
 				command_buffers.cmd_render_pass_end(0);				

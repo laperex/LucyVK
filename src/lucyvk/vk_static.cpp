@@ -862,28 +862,20 @@ lvk_shader_module::~lvk_shader_module()
 // }
 
 
-lvk_pipeline_layout lvk_device::init_pipeline_layout() {
+lvk_pipeline_layout lvk_device::init_pipeline_layout(const VkPushConstantRange* push_constant_range, uint32_t push_constant_range_count) {
 	lvk_pipeline_layout pipeline_layout = {
 		VK_NULL_HANDLE,
 		this
 	};
-	
-	// VkDescriptorSetLayoutCreateInfo info = {
-	// 	VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	// 	VK_NULL_HANDLE;
-	// 	0;
-	// 	uint32_t                               bindingCount;
-	// 	const VkDescriptorSetLayoutBinding*    pBindings;
-	// };
-	
+
 	VkPipelineLayoutCreateInfo pipeline_layout_create_info = {
 		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 		VK_NULL_HANDLE,
 		0,
 		0,
 		VK_NULL_HANDLE,
-		0,
-		VK_NULL_HANDLE
+		push_constant_range_count,
+		push_constant_range
 	};
 	
 	if (vkCreatePipelineLayout(this->_device, &pipeline_layout_create_info, VK_NULL_HANDLE, &pipeline_layout._pipeline_layout) != VK_SUCCESS) {
