@@ -419,11 +419,6 @@ lvk_swapchain* lvk_device::create_swapchain(uint32_t width, uint32_t height) {
 	return self;
 }
 
-void lvk_device::destroy_swapchain(lvk_swapchain* swapchain) {
-	delete swapchain;
-	swapchain_count -= 1;
-}
-
 uint32_t lvk_swapchain::acquire_next_image(VkSemaphore semaphore, VkFence fence, const uint64_t timeout) {
 	uint32_t index;
 	vkAcquireNextImageKHR(device->_device, _swapchain, timeout, semaphore, fence, &index);
@@ -753,10 +748,6 @@ lvk_framebuffer* lvk_render_pass::create_framebuffer(uint32_t width, uint32_t he
 	return self;
 }
 
-void lvk_render_pass::destroy_framebuffer(lvk_framebuffer* framebuffer) {
-	delete framebuffer;
-}
-
 lvk_framebuffer::~lvk_framebuffer()
 {
 	for (auto& framebuffer: _framebuffer_array) {
@@ -766,9 +757,9 @@ lvk_framebuffer::~lvk_framebuffer()
 }
 
 
-// |--------------------------------------------------
-// ----------------> SHADER
-// |--------------------------------------------------
+// ! |--------------------------------------------------
+// ! ----------------> SHADER ( OBSELETE SHOULD BE REMOVED AFTER TESTING )
+// ! |--------------------------------------------------
 
 
 lvk_shader_module lvk_device::init_shader_module(VkShaderStageFlagBits stage, const char* filename) {
@@ -798,82 +789,169 @@ lvk_shader_module::~lvk_shader_module()
 
 
 // |--------------------------------------------------
-// ----------------> GRAPHICS PIPELINE
+// ----------------> PIPELINE LAYOUT
 // |--------------------------------------------------
 
 
-lvk_graphics_shaders::~lvk_graphics_shaders()
-{
-	if (_vertex_shader != VK_NULL_HANDLE) {
-		vkDestroyShaderModule(device->_device, _vertex_shader, VK_NULL_HANDLE);
-	}
-	if (_testallation_control_shader != VK_NULL_HANDLE) {
-		vkDestroyShaderModule(device->_device, _testallation_control_shader, VK_NULL_HANDLE);
-	}
-	if (_testallation_evaluation_shader != VK_NULL_HANDLE) {
-		vkDestroyShaderModule(device->_device, _testallation_evaluation_shader, VK_NULL_HANDLE);
-	}
-	if (_geometry_shader != VK_NULL_HANDLE) {
-		vkDestroyShaderModule(device->_device, _geometry_shader, VK_NULL_HANDLE);
-	}
-	if (_fragment_shader != VK_NULL_HANDLE) {
-		vkDestroyShaderModule(device->_device, _fragment_shader, VK_NULL_HANDLE);
-	}
-	dloggln("Graphics Shaders Destroyed");
-}
+// lvk_graphics_shaders::~lvk_graphics_shaders()
+// {
+// 	if (_vertex_shader != VK_NULL_HANDLE) {
+// 		vkDestroyShaderModule(device->_device, _vertex_shader, VK_NULL_HANDLE);
+// 	}
+// 	if (_testallation_control_shader != VK_NULL_HANDLE) {
+// 		vkDestroyShaderModule(device->_device, _testallation_control_shader, VK_NULL_HANDLE);
+// 	}
+// 	if (_testallation_evaluation_shader != VK_NULL_HANDLE) {
+// 		vkDestroyShaderModule(device->_device, _testallation_evaluation_shader, VK_NULL_HANDLE);
+// 	}
+// 	if (_geometry_shader != VK_NULL_HANDLE) {
+// 		vkDestroyShaderModule(device->_device, _geometry_shader, VK_NULL_HANDLE);
+// 	}
+// 	if (_fragment_shader != VK_NULL_HANDLE) {
+// 		vkDestroyShaderModule(device->_device, _fragment_shader, VK_NULL_HANDLE);
+// 	}
+// 	dloggln("Graphics Shaders Destroyed");
+// }
 
 
-lvk_graphics_pipeline lvk_device::init_graphics_pipeline(
-	const VkPipelineShaderStageCreateInfo* shader_stage, const uint32_t shader_stage_count,
-	const VkPipelineVertexInputStateCreateInfo*      vertex_input_state,
-	const VkPipelineInputAssemblyStateCreateInfo*    input_assembly_state,
-	const VkPipelineTessellationStateCreateInfo*     tessellation_state,
-	const VkPipelineViewportStateCreateInfo*         viewport_state,
-	const VkPipelineRasterizationStateCreateInfo*    rasterization_state,
-	const VkPipelineMultisampleStateCreateInfo*      multisample_state,
-	const VkPipelineDepthStencilStateCreateInfo*     depth_stencil_state,
-	const VkPipelineColorBlendStateCreateInfo*       color_blend_state,
-	const VkPipelineDynamicStateCreateInfo*          dynamic_state
-) {
-	lvk_graphics_pipeline pipeline = {
+lvk_pipeline_layout lvk_device::init_pipeline_layout() {
+	lvk_pipeline_layout pipeline_layout = {
 		VK_NULL_HANDLE,
 		this
 	};
 	
-	// VkPipelineLayoutCreateInfo layoutInfo = {
-	// 	VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-	// 	VK_NULL_HANDLE,
-	// 	0,
-	// 	layout_count,
-	// 	set_layout
-	// }
-
-	VkGraphicsPipelineCreateInfo graphicsCreateInfo = {};
-	graphicsCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	graphicsCreateInfo.pNext = VK_NULL_HANDLE;
-	graphicsCreateInfo.flags = 0;
-
-	graphicsCreateInfo.stageCount = shader_stage_count;
-	graphicsCreateInfo.pStages = shader_stage;
-
-	graphicsCreateInfo.pVertexInputState = vertex_input_state;
-	graphicsCreateInfo.pInputAssemblyState = input_assembly_state;
-	graphicsCreateInfo.pTessellationState = tessellation_state;
-	graphicsCreateInfo.pViewportState = viewport_state;
-	graphicsCreateInfo.pRasterizationState = rasterization_state;
-	graphicsCreateInfo.pMultisampleState = multisample_state;
-	graphicsCreateInfo.pDepthStencilState = depth_stencil_state;
-	graphicsCreateInfo.pColorBlendState = color_blend_state;
-	graphicsCreateInfo.pDynamicState = dynamic_state;
-
-	graphicsCreateInfo.layout;
-	graphicsCreateInfo.renderPass;
-	graphicsCreateInfo.subpass;
-	graphicsCreateInfo.basePipelineHandle;
-	graphicsCreateInfo.basePipelineIndex;
+	// VkDescriptorSetLayoutCreateInfo info = {
+	// 	VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	// 	VK_NULL_HANDLE;
+	// 	0;
+	// 	uint32_t                               bindingCount;
+	// 	const VkDescriptorSetLayoutBinding*    pBindings;
+	// };
 	
-	VkComputePipelineCreateInfo a;
+	VkPipelineLayoutCreateInfo pipeline_layout_create_info = {
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+		VK_NULL_HANDLE,
+		0,
+		0,
+		VK_NULL_HANDLE,
+		0,
+		VK_NULL_HANDLE
+	};
+	
+	if (vkCreatePipelineLayout(this->_device, &pipeline_layout_create_info, VK_NULL_HANDLE, &pipeline_layout._pipeline_layout) != VK_SUCCESS) {
+		throw std::runtime_error("pipeline layout creation failed!");
+	}
+	dloggln("Pipeline Layout Created");
+	
+	return pipeline_layout;
+}
 
+lvk_pipeline_layout::~lvk_pipeline_layout()
+{
+	vkDestroyPipelineLayout(device->_device, _pipeline_layout, VK_NULL_HANDLE);
+	dloggln("Pipeline Layout Destroyed");
+}
+
+lvk_pipeline lvk_pipeline_layout::init_graphics_pipeline(const lvk_render_pass* render_pass, const lvk::graphics_pipeline_config* config) {
+	lvk_pipeline pipeline = {
+		VK_NULL_HANDLE,
+		this,
+		render_pass,
+		device
+	};
+
+	// TODO: Support for multiple viewport and scissors
+	
+	VkPipelineViewportStateCreateInfo viewportState = {};
+	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportState.pNext = nullptr;
+
+	viewportState.viewportCount = 1;
+	viewportState.pViewports = &config->viewport;
+	viewportState.scissorCount = 1;
+	viewportState.pScissors = &config->scissor;
+
+	// TODO: Actual Blending to support Transparent Objects
+	
+	VkPipelineColorBlendStateCreateInfo colorBlending = {};
+	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	colorBlending.pNext = nullptr;
+
+	colorBlending.logicOpEnable = VK_FALSE;
+	colorBlending.logicOp = VK_LOGIC_OP_COPY;
+	colorBlending.attachmentCount = 1;
+	colorBlending.pAttachments = &config->color_blend_attachment;
+	
+	VkGraphicsPipelineCreateInfo pipelineInfo = {};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineInfo.pNext = nullptr;
+
+	pipelineInfo.stageCount = config->shader_stage_array.size();
+	pipelineInfo.pStages = config->shader_stage_array.data();
+	pipelineInfo.pVertexInputState = &config->vertex_input_state;
+	pipelineInfo.pInputAssemblyState = &config->input_assembly_state;
+	pipelineInfo.pViewportState = &viewportState;
+	pipelineInfo.pRasterizationState = &config->rasterization_state;
+	pipelineInfo.pMultisampleState = &config->multisample_state;
+	pipelineInfo.pColorBlendState = &colorBlending;
+	pipelineInfo.layout = this->_pipeline_layout;
+	pipelineInfo.renderPass = render_pass->_render_pass;
+	pipelineInfo.subpass = 0;
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	
+	if (vkCreateGraphicsPipelines(device->_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline._pipeline) != VK_SUCCESS) {
+		throw std::runtime_error("pipeline creation failed!");
+	}
+	dloggln("Pipeline Created");
+	
 	return pipeline;
 }
+
+lvk_pipeline::~lvk_pipeline()
+{
+	vkDestroyPipeline(device->_device, _pipeline, VK_NULL_HANDLE);
+	dloggln("Pipeline Destroyed");
+}
+
+
+	// lvk_pipeline pipeline = {
+	// 	VK_NULL_HANDLE,
+	// 	this->device,
+	// };
+	
+	// // VkPipelineLayoutCreateInfo layoutInfo = {
+	// // 	VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+	// // 	VK_NULL_HANDLE,
+	// // 	0,
+	// // 	layout_count,
+	// // 	set_layout
+	// // }
+
+	// VkGraphicsPipelineCreateInfo graphicsCreateInfo = {};
+	// graphicsCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	// graphicsCreateInfo.pNext = VK_NULL_HANDLE;
+	// graphicsCreateInfo.flags = 0;
+
+	// graphicsCreateInfo.stageCount = config->shader_stage_array.size();
+	// graphicsCreateInfo.pStages = config->shader_stage_array.data();
+
+	// graphicsCreateInfo.pVertexInputState = &config->vertex_input_state;
+	// graphicsCreateInfo.pInputAssemblyState = &config->input_assembly_state;
+	// // graphicsCreateInfo.pTessellationState = &config->tessellation_state;
+	// // graphicsCreateInfo.pViewportState = &config->viewport_state;
+	// graphicsCreateInfo.pRasterizationState = &config->rasterization_state;
+	// graphicsCreateInfo.pMultisampleState = &config->multisample_state;
+	// // graphicsCreateInfo.pDepthStencilState = &config->depth_stencil_state;
+	// graphicsCreateInfo.pColorBlendState = &config->color_blend_state;
+	// // graphicsCreateInfo.pDynamicState = &config->dynamic_state;
+
+	// graphicsCreateInfo.layout;
+	// graphicsCreateInfo.renderPass = this->_render_pass;
+	// graphicsCreateInfo.subpass = 0;
+	// graphicsCreateInfo.basePipelineHandle;
+	// graphicsCreateInfo.basePipelineIndex;
+	
+	// VkComputePipelineCreateInfo a;
+
+	// return pipeline;
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SDL_video.h>
+#include <deque>
 #include <functional>
 #include <optional>
 #include <vector>
@@ -28,7 +29,8 @@ struct lvk_fence;
 
 struct lvk_shader_module;
 
-struct lvk_graphics_pipeline;
+struct lvk_pipeline_layout;
+struct lvk_pipeline;
 
 
 // enum LVK_SHADER_STAGE_ {
@@ -43,6 +45,22 @@ struct lvk_graphics_pipeline;
 
 
 namespace lvk {
+	struct graphics_pipeline_config;
+	
+	// struct deletion_queue {
+	// 	std::deque<std::function<void()>> deletion_queue;
+
+	// 	void flush() const {
+	// 		for (auto function = deletion_queue.rbegin(); function != deletion_queue.rend(); function++) {
+	// 			(*function)();
+	// 		}
+	// 	}
+
+	// 	void push(std::function<void()>&& function) {
+	// 		deletion_queue.push_back(function);
+	// 	}
+	// };
+	
 	struct queue_family_indices {
 		std::optional<uint32_t> graphics;
 		std::optional<uint32_t> present;

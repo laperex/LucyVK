@@ -26,6 +26,19 @@
 #include <lucyvk/vk_static.h>
 
 
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec3 color;
+};
+
+struct Mesh {
+	std::vector<Vertex> _vertices;
+
+	// AllocatedBuffer _vertexBuffer;
+};
+
+
 int main(int count, char** args) {
 	SDL_Init(SDL_INIT_VIDEO);
 
@@ -76,15 +89,35 @@ int main(int count, char** args) {
 	rpInfo.clearValueCount = 1;
 	rpInfo.pClearValues = &clearValue;
 
-	uint32_t frame = 0;
+	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "shaders/colored_triangle.vert.spv");
+	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "shaders/colored_triangle.frag.spv");
 
-	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "shaders/triangle.vert.spv");
-	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "shaders/triangle.frag.spv");
+	lvk::graphics_pipeline_config config;
+	{
+		config.shader_stage_array.push_back(lvk::shader_stage_create_info(&vertex_shader, nullptr));
+		config.shader_stage_array.push_back(lvk::shader_stage_create_info(&fragment_shader, nullptr));
+		
+		config.color_blend_attachment = lvk::color_blend_attachment();
+		// config.color_blend_state = lvk::color_blend_state(nullptr)
+		config.vertex_input_state = lvk::vertex_input_state_create_info(nullptr, 0, nullptr, 0);
+		config.input_assembly_state = lvk::input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
+		config.rasterization_state = lvk::rasterization_state_create_info(VK_POLYGON_MODE_FILL);
+		config.multisample_state = lvk::multisample_state_create_info();
 
-	VkPipelineShaderStageCreateInfo shader_stages[] = {
-		lvk::shader_stage_create_info(&vertex_shader, nullptr),
-		lvk::shader_stage_create_info(&fragment_shader, nullptr)
-	};
+		config.viewport.x = 0.0f;
+		config.viewport.y = 0.0f;
+		config.viewport.width = (float)swapchain->_extent.width;
+		config.viewport.height = (float)swapchain->_extent.height;
+		config.viewport.minDepth = 0.0f;
+		config.viewport.maxDepth = 1.0f;
+
+		config.scissor.offset = { 0, 0 };
+		config.scissor.extent = swapchain->_extent;
+	}
+
+	auto pipeline_layout = device.init_pipeline_layout();
+
+	auto graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
 
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
@@ -95,17 +128,21 @@ int main(int count, char** args) {
 		{
 			render_fence.wait();
 			render_fence.reset();
-			uint32_t image_index = swapchain->acquire_next_image(present_semaphore._semaphore[0], nullptr, 1000000000);
-			
+			uint32_t image_index = swapchain->acquire_next_image(present_semaphore._semaphore[0], nullptr);
+
 			{
 				rpInfo.framebuffer = framebuffer->_framebuffer_array[image_index];
 
 				command_buffers.cmd_begin(0, &cmdBeginInfo);
 				command_buffers.cmd_render_pass_begin(0, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
+				
+				vkCmdBindPipeline(command_buffers._command_buffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
+				vkCmdDraw(command_buffers._command_buffers[0], 3, 1, 0, 0);
 
 				command_buffers.cmd_render_pass_end(0);				
 				command_buffers.cmd_end(0);
 			}
+
 			{
 				VkSubmitInfo submit = {};
 				submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -143,9 +180,6 @@ int main(int count, char** args) {
 				assert(vkQueuePresentKHR(device._graphicsQueue, &presentInfo) == VK_SUCCESS);
 			}
 		}
-		
-		// frame++;
-		// clearValue.color.float32[0] = float(frame % 4) / 2.0f;
 
 		window.SwapWindow();
 
@@ -154,9 +188,6 @@ int main(int count, char** args) {
 	}
 	
 	render_fence.wait(1000000000);
-
-	render_pass.destroy_framebuffer(framebuffer);
-	device.destroy_swapchain(swapchain);
 
 	device.wait_idle();
 
