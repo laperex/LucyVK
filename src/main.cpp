@@ -26,7 +26,7 @@
 #include <util/logger.h>
 #include <lucyvk/vk_static.h>
 
-lucy::Mesh load_mesh() {
+lucy::Mesh load_triangle_mesh() {
 	lucy::Mesh triangle_mesh;
 	
 	triangle_mesh._vertices.resize(3);
@@ -55,6 +55,7 @@ int main(int count, char** args) {
 	auto instance = lvk::initialize("Lucy", window.sdl_window, true);
 	auto physical_device = instance.init_physical_device();
 	auto device = physical_device.init_device();
+	auto allocator = device.init_allocator();
 	auto command_pool = device.init_command_pool();
 	auto render_pass = device.init_render_pass();
 
@@ -96,17 +97,21 @@ int main(int count, char** args) {
 	
 	//
 
-	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "shaders/colored_triangle.vert.spv");
+	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "shaders/mesh.vert.spv");
 	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "shaders/colored_triangle.frag.spv");
+	auto vertex_layout = lucy::Vertex::get_vertex_description();
 
 	lvk::graphics_pipeline_config config;
 	{
 		config.shader_stage_array.push_back(lvk::shader_stage_create_info(&fragment_shader, nullptr));
+		// config.shader_stage_array.push_back(lvk::shader_stage_create_info(&fragment_shader, nullptr));
 		config.shader_stage_array.push_back(lvk::shader_stage_create_info(&vertex_shader, nullptr));
 		
 		config.color_blend_attachment = lvk::color_blend_attachment();
 		// config.color_blend_state = lvk::color_blend_state(nullptr)
-		config.vertex_input_state = lvk::vertex_input_state_create_info(nullptr, 0, nullptr, 0);
+		
+		
+		config.vertex_input_state = lvk::vertex_input_state_create_info(vertex_layout.bindings.data(), vertex_layout.bindings.size(), vertex_layout.attributes.data(), vertex_layout.attributes.size());
 		config.input_assembly_state = lvk::input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
 		config.rasterization_state = lvk::rasterization_state_create_info(VK_POLYGON_MODE_FILL);
 		config.multisample_state = lvk::multisample_state_create_info();
@@ -127,6 +132,9 @@ int main(int count, char** args) {
 	
 	auto* framebuffer = swapchain.create_framebuffer(window.size.x, window.size.y, &render_pass);
 	
+	auto triangle_mesh = load_triangle_mesh();
+	triangle_mesh.vertex_buffer = allocator.init_vertex_buffer(triangle_mesh._vertices.data(), triangle_mesh._vertices.size() * sizeof(triangle_mesh._vertices[0]));
+	
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
 		const auto& start_time = std::chrono::high_resolution_clock::now();
@@ -138,6 +146,7 @@ int main(int count, char** args) {
 
 			uint32_t image_index;
 			swapchain.acquire_next_image(&image_index, present_semaphore._semaphore[0], nullptr);
+			
 			{
 				rpInfo.renderArea.extent = swapchain._extent;
 				rpInfo.framebuffer = framebuffer->_framebuffers[image_index];
@@ -145,8 +154,10 @@ int main(int count, char** args) {
 				command_buffers.cmd_begin(0, &cmdBeginInfo);
 				command_buffers.cmd_render_pass_begin(0, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
 				
+				VkDeviceSize offset = 0;
 				vkCmdBindPipeline(command_buffers._command_buffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
-				vkCmdDraw(command_buffers._command_buffers[0], 3, 1, 0, 0);
+				vkCmdBindVertexBuffers(command_buffers._command_buffers[0], 0, 1, &triangle_mesh.vertex_buffer._buffer, &offset);
+				vkCmdDraw(command_buffers._command_buffers[0], triangle_mesh._vertices.size(), 1, 0, 0);
 
 				command_buffers.cmd_render_pass_end(0);				
 				command_buffers.cmd_end(0);
@@ -196,6 +207,8 @@ int main(int count, char** args) {
 		const auto& end_time = std::chrono::high_resolution_clock::now();
 		dt = std::chrono::duration<double, std::ratio<1, 60>>(end_time - start_time).count();
 	}
+	
+	// vmaDestroyBuffer(allocator->_allocator, _buffer, _allocation);
 
 	device.wait_idle();
 

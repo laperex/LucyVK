@@ -321,7 +321,16 @@ struct lvk_pipeline {
 struct lvk_allocator {
 	VmaAllocator _allocator;
 	
-	lvk_buffer init_buffer();
+	const lvk_device* device;
+	
+	lvk::deletion_queue deletion_queue;
+	
+	~lvk_allocator();
+	
+	lvk_buffer init_buffer(VkBufferUsageFlagBits usage, const void* data, const std::size_t size, const VkSharingMode sharing_mode, const uint32_t* queue_family_indices, uint32_t queue_family_indices_count);
+
+	lvk_buffer init_vertex_buffer(const std::size_t size);
+	lvk_buffer init_vertex_buffer(const void* data, const std::size_t size);
 };
 
 
@@ -332,4 +341,13 @@ struct lvk_allocator {
 struct lvk_buffer {
 	VkBuffer _buffer;
 	VmaAllocation _allocation;
+	
+	const lvk_allocator* allocator;
+
+	std::size_t allocated_size;
+	VkBufferUsageFlagBits usage;
+
+	void upload(const void* vertex_data, const std::size_t vertex_size);
+	
+	~lvk_buffer();
 };

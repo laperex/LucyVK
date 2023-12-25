@@ -48,7 +48,12 @@ struct lvk_pipeline;
 
 
 namespace lvk {
-	struct graphics_pipeline_config;
+	struct vertex_input_description {
+		std::vector<VkVertexInputBindingDescription> bindings;
+		std::vector<VkVertexInputAttributeDescription> attributes;
+
+		VkPipelineVertexInputStateCreateFlags flags = 0;
+	};
 	
 	struct deletion_queue {
 		std::deque<std::function<void()>> deletion_queue;
@@ -62,6 +67,25 @@ namespace lvk {
 		void push(std::function<void()>&& function) {
 			deletion_queue.push_back(function);
 		}
+	};
+
+	struct graphics_pipeline_config {
+		std::vector<VkPipelineShaderStageCreateInfo> shader_stage_array;
+
+		VkPipelineVertexInputStateCreateInfo vertex_input_state;
+		VkPipelineInputAssemblyStateCreateInfo input_assembly_state;
+		// VkPipelineTessellationStateCreateInfo testallation_state;
+		// VkPipelineViewportStateCreateInfo viewport_state;
+		VkPipelineRasterizationStateCreateInfo rasterization_state;
+		VkPipelineMultisampleStateCreateInfo multisample_state;
+		// VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
+		// VkPipelineColorBlendStateCreateInfo color_blend_state;
+		// VkPipelineDynamicStateCreateInfo dynamic_state;
+		
+		VkPipelineColorBlendAttachmentState color_blend_attachment;
+		
+		VkViewport viewport;
+		VkRect2D scissor;
 	};
 	
 	struct queue_family_indices {

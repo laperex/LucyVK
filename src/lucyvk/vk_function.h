@@ -9,4 +9,6 @@ namespace lvk {
 	lvk::queue_family_indices query_queue_family_indices(VkPhysicalDevice physicalDevice, VkSurfaceKHR _surfaceKHR);
 
 	VkPhysicalDevice default_physical_device(const std::vector<VkPhysicalDevice>& physicalDeviceArray, const lvk_instance* instance);
+	
+	void print_buffer_usage_enum(const char* string, const VkBufferUsageFlagBits usage);
 }

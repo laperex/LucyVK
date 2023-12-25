@@ -43,7 +43,12 @@ VkPipelineShaderStageCreateInfo lvk::shader_stage_create_info(const lvk_shader_m
 	return shader_stage_create_info(shader_module->_stage, shader_module->_shader_module, specialization);
 }
 
-VkPipelineVertexInputStateCreateInfo lvk::vertex_input_state_create_info(const VkVertexInputBindingDescription* binding_description, const uint32_t binding_description_count, const VkVertexInputAttributeDescription* attribute_description, const uint32_t attribute_description_count) {
+VkPipelineVertexInputStateCreateInfo lvk::vertex_input_state_create_info(const std::vector<VkVertexInputBindingDescription>& binding_description, const std::vector<VkVertexInputAttributeDescription>& attribute_description) {
+	return vertex_input_state_create_info(binding_description.data(), binding_description.size(), attribute_description.data(), attribute_description.size());
+}
+
+
+VkPipelineVertexInputStateCreateInfo lvk::vertex_input_state_create_info(const VkVertexInputBindingDescription* binding_description, uint32_t binding_description_count, const VkVertexInputAttributeDescription* attribute_description, uint32_t attribute_description_count) {
 	return {
 		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 		VK_NULL_HANDLE,

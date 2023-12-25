@@ -766,12 +766,12 @@ lvk_framebuffer* lvk_swapchain::create_framebuffer(const uint32_t width, const u
 }
 
 void lvk_swapchain::recreate_framebuffer(lvk_framebuffer* framebuffer, const uint32_t width, const uint32_t height, const lvk_render_pass* render_pass) {
-	framebuffer->_framebuffers.resize(_image_view_array.size());
-
 	for (int i = 0; i < framebuffer->_framebuffers.size(); i++) {
-		vkDestroyFramebuffer(device->_device, framebuffer->_framebuffers[i], VK_NULL_HANDLE);
+		if (framebuffer->_framebuffers[i] != VK_NULL_HANDLE) {
+			vkDestroyFramebuffer(device->_device, framebuffer->_framebuffers[i], VK_NULL_HANDLE);
+		}
 	}
-	
+
 	if (framebuffer->render_pass->_render_pass != render_pass->_render_pass) {
 		framebuffer->render_pass = render_pass;
 	}
@@ -784,7 +784,9 @@ void lvk_swapchain::recreate_framebuffer(lvk_framebuffer* framebuffer, const uin
 	createInfo.width = width;
 	createInfo.height = height;
 	createInfo.layers = 1;
-	
+
+	framebuffer->_framebuffers.resize(_image_view_array.size());
+
 	for (int i = 0; i < framebuffer->_framebuffers.size(); i++) {
 		createInfo.pAttachments = &_image_view_array[i];
 		if (vkCreateFramebuffer(device->_device, &createInfo, VK_NULL_HANDLE, &framebuffer->_framebuffers[i]) != VK_SUCCESS) {
@@ -967,7 +969,9 @@ lvk_pipeline::~lvk_pipeline()
 
 lvk_allocator lvk_device::init_allocator() {
 	lvk_allocator allocator = {
-		VK_NULL_HANDLE
+		VK_NULL_HANDLE,
+		this,
+		{}
 	};
 	
 	VmaAllocatorCreateInfo allocatorInfo = {};
@@ -977,8 +981,17 @@ lvk_allocator lvk_device::init_allocator() {
     allocatorInfo.instance = instance->_instance;
 
     vmaCreateAllocator(&allocatorInfo, &allocator._allocator);
+	dloggln("Allocator Created");
 	
 	return allocator;
+}
+
+lvk_allocator::~lvk_allocator()
+{
+	deletion_queue.flush();
+
+	vmaDestroyAllocator(_allocator);
+	dloggln("Allocator Destroyed");
 }
 
 
@@ -987,28 +1000,72 @@ lvk_allocator lvk_device::init_allocator() {
 // |--------------------------------------------------
 
 
-lvk_buffer lvk_allocator::init_buffer() {
-	// VkBufferCreateInfo bufferInfo = {};
-	// bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	// //this is the total size, in bytes, of the buffer we are allocating
-	// bufferInfo.size = mesh._vertices.size() * sizeof(Vertex);
-	// //this buffer is going to be used as a Vertex Buffer
-	// bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+lvk_buffer lvk_allocator::init_buffer(VkBufferUsageFlagBits usage, const void* data, const std::size_t size, const VkSharingMode sharing_mode, const uint32_t* queue_family_indices, uint32_t queue_family_indices_count) {
+	lvk_buffer buffer = {
+		VK_NULL_HANDLE,
+		VK_NULL_HANDLE,
+		this,
+		size,
+		usage
+	};
+	
+	VkBufferCreateInfo bufferInfo = {
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		VK_NULL_HANDLE,
+		0,
+		size,
+		usage,
+		sharing_mode,
+		queue_family_indices_count,
+		queue_family_indices
+	};
 
+	//let the VMA library know that this data should be writeable by CPU, but also readable by GPU
+	VmaAllocationCreateInfo vmaallocInfo = {};
+	vmaallocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-	// //let the VMA library know that this data should be writeable by CPU, but also readable by GPU
-	// VmaAllocationCreateInfo vmaallocInfo = {};
-	// vmaallocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+	//allocate the buffer
+	if (vmaCreateBuffer(_allocator, &bufferInfo, &vmaallocInfo, &buffer._buffer, &buffer._allocation, nullptr) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create buffer!");
+	}
 
-	// //allocate the buffer
-	// VK_CHECK(vmaCreateBuffer(_allocator, &bufferInfo, &vmaallocInfo,
-	// 	&mesh._vertexBuffer._buffer,
-	// 	&mesh._vertexBuffer._allocation,
-	// 	nullptr));
+	lvk::print_buffer_usage_enum("Buffer Created: ", usage);
+	
+	if (data != nullptr) {
+		buffer.upload(data, size);
+	}
 
-	// //add the destruction of triangle mesh buffer to the deletion queue
-	// _mainDeletionQueue.push_function([=]() {
+	deletion_queue.push([=]{
+		vmaDestroyBuffer(_allocator, buffer._buffer, buffer._allocation);
+		lvk::print_buffer_usage_enum("Buffer Destroyed: ", buffer.usage);
+	});
 
-    //     vmaDestroyBuffer(_allocator, mesh._vertexBuffer._buffer, mesh._vertexBuffer._allocation);
-    // });
+	return buffer;
+}
+
+lvk_buffer lvk_allocator::init_vertex_buffer(const void* data, const std::size_t size) {
+	return init_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, data, size, VK_SHARING_MODE_EXCLUSIVE, nullptr, 0);
+}
+
+lvk_buffer lvk_allocator::init_vertex_buffer(const std::size_t size) {
+	return init_vertex_buffer(nullptr, size);
+}
+
+void lvk_buffer::upload(const void* vertex_data, const std::size_t vertex_size) {
+	if (vertex_size > allocated_size) {
+		throw std::runtime_error("vertices size greater than allocated size!");
+	}
+
+	void* data;
+	vmaMapMemory(allocator->_allocator, _allocation, &data);
+
+	memcpy(data, vertex_data, vertex_size);
+
+	vmaUnmapMemory(allocator->_allocator, _allocation);
+}
+
+lvk_buffer::~lvk_buffer()
+{
+	// vmaDestroyBuffer(allocator->_allocator, _buffer, _allocation);
+	// dloggln("Buffer Destroyed");
 }
