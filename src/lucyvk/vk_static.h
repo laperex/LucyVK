@@ -1,15 +1,15 @@
 #pragma once
 
-#include "vk_types.h"
 
-#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+#include "vk_types.h"
 
 #include <SDL_video.h>
 #include <functional>
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan_core.h>
-
+// #include <vulkan/vulkan_>
 
 // |--------------------------------------------------
 // ----------------> INSTANCE
@@ -99,6 +99,8 @@ struct lvk_device {
 	lvk_shader_module init_shader_module(VkShaderStageFlagBits stage, const char* filename);
 	
 	lvk_pipeline_layout init_pipeline_layout();
+	
+	lvk_allocator init_allocator();
 
 	void wait_idle();
 };
@@ -115,17 +117,21 @@ struct lvk_swapchain {
 	VkSurfaceFormatKHR _surface_format;
 	VkPresentModeKHR _present_mode;
 
-	std::vector<VkImage> _images;
+	VkImage* _images;
 	std::vector<VkImageView> _image_view_array;
+	std::vector<VkFramebuffer> _frambuffers;
 	
 	bool recreate(const uint32_t width, const uint32_t height);
-	bool acquire_next_image(uint32_t& index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT);
+	VkResult acquire_next_image(uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT);
 	
 	~lvk_swapchain();
 	
 	const lvk_device* device;
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
+
+	lvk::deletion_queue deletion_queue;
+	lvk_framebuffer* create_framebuffer(uint32_t width, uint32_t height, const lvk_render_pass* render_pass);
 };
 
 
@@ -187,11 +193,8 @@ struct lvk_render_pass {
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
 
-	lvk::deletion_queue deletion_queue;
-
-	// VkRenderPassBeginInfo begin_info();
-
-	lvk_framebuffer* create_framebuffer(uint32_t width, uint32_t height, const std::vector<VkImageView>& image_view_array);
+	// lvk::deletion_queue deletion_queue;
+	// lvk_swapchain: create_framebuffer(uint32_t width, uint32_t height, const std::vector<VkImageView>& image_view_array);
 };
 
 
@@ -234,7 +237,7 @@ struct lvk_fence {
 
 
 struct lvk_framebuffer {
-	std::vector<VkFramebuffer> _framebuffer_array;
+	std::vector<VkFramebuffer> _framebuffers;
 	
 	~lvk_framebuffer();
 
@@ -308,3 +311,24 @@ struct lvk_pipeline {
 	const lvk_device* device;
 };
 
+
+// |--------------------------------------------------
+// ----------------> ALLOCATOR
+// |--------------------------------------------------
+
+
+struct lvk_allocator {
+	VmaAllocator _allocator;
+	
+	lvk_buffer init_buffer();
+};
+
+
+// |--------------------------------------------------
+// ----------------> ALLOCATOR
+// |--------------------------------------------------
+
+struct lvk_buffer {
+	VkBuffer _buffer;
+	VmaAllocation _allocation;
+};

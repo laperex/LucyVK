@@ -4,6 +4,7 @@
 // #include "lucyvk/CommandPool.h"
 // #include "lucyvk/ImageView.h"
 // #include "lucyvk/Swapchain.h"
+#include "Mesh.h"
 #include "lucyvk/vk_function.h"
 #include "lucyvk/vk_pipeline.h"
 #include <SDL2/SDL.h>
@@ -25,18 +26,23 @@
 #include <util/logger.h>
 #include <lucyvk/vk_static.h>
 
+lucy::Mesh load_mesh() {
+	lucy::Mesh triangle_mesh;
+	
+	triangle_mesh._vertices.resize(3);
 
-struct Vertex {
-    glm::vec3 position;
-    glm::vec3 normal;
-    glm::vec3 color;
-};
+	//vertex positions
+	triangle_mesh._vertices[0].position = { 1.f, 1.f, 0.0f };
+	triangle_mesh._vertices[1].position = {-1.f, 1.f, 0.0f };
+	triangle_mesh._vertices[2].position = { 0.f,-1.f, 0.0f };
 
-struct Mesh {
-	std::vector<Vertex> _vertices;
-
-	// AllocatedBuffer _vertexBuffer;
-};
+	//vertex colors, all green
+	triangle_mesh._vertices[0].color = { 0.f, 1.f, 0.0f }; //pure green
+	triangle_mesh._vertices[1].color = { 0.f, 1.f, 0.0f }; //pure green
+	triangle_mesh._vertices[2].color = { 0.f, 1.f, 0.0f }; //pure green
+	
+	return triangle_mesh;
+}
 
 
 int main(int count, char** args) {
@@ -52,10 +58,7 @@ int main(int count, char** args) {
 	auto command_pool = device.init_command_pool();
 	auto render_pass = device.init_render_pass();
 
-	// auto* aswapchain = device.create_swapchain(window.size.x, window.size.y);
 	auto swapchain = device.init_swapchain(window.size.x, window.size.y);
-	auto* framebuffer = render_pass.create_framebuffer(window.size.x, window.size.y, swapchain._image_view_array);
-	framebuffer = render_pass.create_framebuffer(window.size.x, window.size.y, swapchain._image_view_array);
 	
 	auto render_fence = device.init_fence(1, VK_FENCE_CREATE_SIGNALED_BIT);
 	auto present_semaphore = device.init_semaphore(1);
@@ -63,8 +66,6 @@ int main(int count, char** args) {
 	
 	auto command_buffers = command_pool.init_command_buffer(1);
 	// auto command_buffers = command_pool.init_command_buffer(swapchain._images.size());
-
-	command_buffers.reset();
 	
 	VkCommandBufferBeginInfo cmdBeginInfo = {};
 	cmdBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -76,6 +77,7 @@ int main(int count, char** args) {
 	VkClearValue clearValue;
 	// float flash = abs(sin(_frameNumber / 120.f));
 	clearValue.color = { { 0.0f, 0.0f, 1, 1.0f } };
+	// clearValue.depthStencil = { 1, 0 };
 
 	//start the main renderpass.
 	//We will use the clear color from above, and the framebuffer of the index the swapchain gave us
@@ -91,14 +93,16 @@ int main(int count, char** args) {
 	//connect clear values
 	rpInfo.clearValueCount = 1;
 	rpInfo.pClearValues = &clearValue;
+	
+	//
 
 	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "shaders/colored_triangle.vert.spv");
 	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "shaders/colored_triangle.frag.spv");
 
 	lvk::graphics_pipeline_config config;
 	{
-		config.shader_stage_array.push_back(lvk::shader_stage_create_info(&vertex_shader, nullptr));
 		config.shader_stage_array.push_back(lvk::shader_stage_create_info(&fragment_shader, nullptr));
+		config.shader_stage_array.push_back(lvk::shader_stage_create_info(&vertex_shader, nullptr));
 		
 		config.color_blend_attachment = lvk::color_blend_attachment();
 		// config.color_blend_state = lvk::color_blend_state(nullptr)
@@ -119,9 +123,10 @@ int main(int count, char** args) {
 	}
 
 	auto pipeline_layout = device.init_pipeline_layout();
-
 	auto graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
-
+	
+	auto* framebuffer = swapchain.create_framebuffer(window.size.x, window.size.y, &render_pass);
+	
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
 		const auto& start_time = std::chrono::high_resolution_clock::now();
@@ -132,13 +137,10 @@ int main(int count, char** args) {
 			render_fence.reset();
 
 			uint32_t image_index;
-			if (swapchain.acquire_next_image(image_index, present_semaphore._semaphore[0], nullptr) == false) {
-				// auto swapchain = device.init_swapchain(lucy::Events::GetWindowSize().x, lucy::Events::GetWindowSize().y);
-				// auto* framebuffer = render_pass.create_framebuffer(lucy::Events::GetWindowSize().x, lucy::Events::GetWindowSize().y, swapchain._image_view_array);
-			}
-
+			swapchain.acquire_next_image(&image_index, present_semaphore._semaphore[0], nullptr);
 			{
-				rpInfo.framebuffer = framebuffer->_framebuffer_array[image_index];
+				rpInfo.renderArea.extent = swapchain._extent;
+				rpInfo.framebuffer = framebuffer->_framebuffers[image_index];
 
 				command_buffers.cmd_begin(0, &cmdBeginInfo);
 				command_buffers.cmd_render_pass_begin(0, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -171,6 +173,7 @@ int main(int count, char** args) {
 				//submit command buffer to the queue and execute it.
 				// _renderFence will now block until the graphic commands finish execution
 				vkQueueSubmit(device._graphicsQueue, 1, &submit, render_fence._fence[0]);
+				render_fence.wait();
 				
 				VkPresentInfoKHR presentInfo = {};
 				presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -185,7 +188,6 @@ int main(int count, char** args) {
 				presentInfo.pImageIndices = &image_index;
 
 				vkQueuePresentKHR(device._graphicsQueue, &presentInfo);
-				render_fence.wait();
 			}
 		}
 

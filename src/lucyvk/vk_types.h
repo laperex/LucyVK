@@ -14,6 +14,9 @@
 
 #define LVK_TIMEOUT 1000000000
 
+struct lvk_allocator;
+struct lvk_buffer;
+
 struct lvk_instance;
 struct lvk_physical_device;
 struct lvk_device;

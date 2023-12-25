@@ -1,3 +1,7 @@
+#define VMA_IMPLEMENTATION
+
+#include "vk_mem_alloc.h"
+
 #include "lucyvk/vk_static.h"
 #include "lucyvk/vk_function.h"
 #include "lucyvk/vk_pipeline.h"
@@ -299,13 +303,12 @@ static VkSurfaceFormatKHR get_swapchain_surface_format(const std::vector<VkSurfa
 lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height) {
 	const auto& capabilities = physical_device->_swapchain_support_details.capabilities;
 
-	uint32_t image_count = (capabilities.maxImageCount > 0 && image_count > capabilities.maxImageCount) ? capabilities.maxImageCount: capabilities.minImageCount + 1;
-
 	lvk_swapchain swapchain = {
 		VK_NULL_HANDLE,
 		VkExtent2D { width, height },
 		get_swapchain_surface_format(physical_device->_swapchain_support_details.formats),
 		VK_PRESENT_MODE_FIFO_KHR,
+		VK_NULL_HANDLE,
 		{},
 		{},
 		this,
@@ -338,13 +341,23 @@ lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height) {
 }
 
 bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
+	if (_swapchain != VK_NULL_HANDLE) {
+		vkDestroySwapchainKHR(device->_device, _swapchain, VK_NULL_HANDLE);
+		dloggln("Swapchain Destroyed");
+	}
+
+	if (_image_view_array.size()) {
+		for (int i = 0; i < _image_view_array.size(); i++) {
+			vkDestroyImageView(device->_device, _image_view_array[i], VK_NULL_HANDLE);
+		}
+		dloggln("ImageViews Destroyed");
+	}
+
 	this->_extent.width = width;
 	this->_extent.height = height;
 
 	const auto& present_modes = physical_device->_swapchain_support_details.present_modes;
 	const auto& capabilities = physical_device->_swapchain_support_details.capabilities;
-
-	this->_surface_format = get_swapchain_surface_format(this->physical_device->_swapchain_support_details.formats);
 
 	uint32_t image_count = (capabilities.maxImageCount > 0 && image_count > capabilities.maxImageCount) ? capabilities.maxImageCount: capabilities.minImageCount + 1;
 
@@ -392,7 +405,7 @@ bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
 		createInfo.clipped = VK_TRUE;
 
 		// TODO: remains to be tested
-		createInfo.oldSwapchain = this->_swapchain;
+		createInfo.oldSwapchain = VK_NULL_HANDLE;
 
 
 		if (vkCreateSwapchainKHR(this->device->_device, &createInfo, VK_NULL_HANDLE, &this->_swapchain) != VK_SUCCESS) {
@@ -403,16 +416,18 @@ bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
 	
 	// ImageViews
 	
+	// dloggln(image_count);
 	vkGetSwapchainImagesKHR(this->device->_device, this->_swapchain, &image_count, nullptr);
-	this->_images.resize(image_count);
-	this->_image_view_array.resize(this->_images.size());
-	assert(vkGetSwapchainImagesKHR(this->device->_device, this->_swapchain, &image_count, this->_images.data()) == VK_SUCCESS);
+	_images = new VkImage[image_count];
+	vkGetSwapchainImagesKHR(this->device->_device, this->_swapchain, &image_count, _images);
+	this->_image_view_array.resize(image_count);
 
-	for (size_t i = 0; i < this->_images.size(); i++) {
+
+	for (size_t i = 0; i < image_count; i++) {
 		VkImageViewCreateInfo viewInfo = {};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 
-		viewInfo.image = this->_images[i];
+		viewInfo.image = _images[i];
 		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		viewInfo.format = this->_surface_format.format;
 
@@ -431,12 +446,14 @@ bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
 	return true;
 }
 
-bool lvk_swapchain::acquire_next_image(uint32_t& index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout) {
-	return (vkAcquireNextImageKHR(device->_device, _swapchain, timeout, semaphore, fence, &index) != VK_ERROR_OUT_OF_DATE_KHR);
+VkResult lvk_swapchain::acquire_next_image(uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout) {
+	return vkAcquireNextImageKHR(device->_device, _swapchain, timeout, semaphore, fence, index);
 }
 
 lvk_swapchain::~lvk_swapchain()
 {
+	deletion_queue.flush();
+	
 	vkDestroySwapchainKHR(device->_device, _swapchain, VK_NULL_HANDLE);
 	dloggln("Swapchain Destroyed");
 
@@ -602,7 +619,6 @@ lvk_render_pass lvk_device::init_render_pass(const VkAttachmentDescription* atta
 		this,
 		physical_device,
 		instance,
-		{}
 	};
 
 	VkRenderPassCreateInfo createInfo = {};
@@ -626,7 +642,7 @@ lvk_render_pass lvk_device::init_render_pass(const VkAttachmentDescription* atta
 
 lvk_render_pass::~lvk_render_pass()
 {
-	deletion_queue.flush();
+	// deletion_queue.flush();
 
 	vkDestroyRenderPass(device->_device, _render_pass, VK_NULL_HANDLE);
 	dloggln("RenderPass Destroyed");
@@ -734,25 +750,26 @@ lvk_fence::~lvk_fence()
 // |--------------------------------------------------
 
 
-lvk_framebuffer* lvk_render_pass::create_framebuffer(uint32_t width, uint32_t height, const std::vector<VkImageView>& image_view_array) {
+lvk_framebuffer* lvk_swapchain::create_framebuffer(uint32_t width, uint32_t height, const lvk_render_pass* render_pass) {
 	auto* framebuffer = new lvk_framebuffer();
 
-	framebuffer->render_pass = this;
+	framebuffer->render_pass = render_pass;
 	framebuffer->device = this->device;
 
-	framebuffer->_framebuffer_array.resize(image_view_array.size());
+	framebuffer->_framebuffers.resize(_image_view_array.size());
 	
 	VkFramebufferCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	createInfo.renderPass = _render_pass;
+	createInfo.flags = 0;
+	createInfo.renderPass = render_pass->_render_pass;
 	createInfo.attachmentCount = 1;
 	createInfo.width = width;
 	createInfo.height = height;
 	createInfo.layers = 1;
 
-	for (int i = 0; i < framebuffer->_framebuffer_array.size(); i++) {
-		createInfo.pAttachments = &image_view_array[i];
-		if (vkCreateFramebuffer(device->_device, &createInfo, VK_NULL_HANDLE, &framebuffer->_framebuffer_array[i]) != VK_SUCCESS) {
+	for (int i = 0; i < framebuffer->_framebuffers.size(); i++) {
+		createInfo.pAttachments = &_image_view_array[i];
+		if (vkCreateFramebuffer(device->_device, &createInfo, VK_NULL_HANDLE, &framebuffer->_framebuffers[i]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create framebuffer");
 		}
 	}
@@ -767,7 +784,7 @@ lvk_framebuffer* lvk_render_pass::create_framebuffer(uint32_t width, uint32_t he
 
 lvk_framebuffer::~lvk_framebuffer()
 {
-	for (auto& framebuffer: _framebuffer_array) {
+	for (auto& framebuffer: _framebuffers) {
 		vkDestroyFramebuffer(device->_device, framebuffer, VK_NULL_HANDLE);
 	}
 	dloggln("Framebuffers Destroyed");
@@ -931,44 +948,55 @@ lvk_pipeline::~lvk_pipeline()
 }
 
 
-	// lvk_pipeline pipeline = {
-	// 	VK_NULL_HANDLE,
-	// 	this->device,
-	// };
+// |--------------------------------------------------
+// ----------------> ALLOCATOR
+// |--------------------------------------------------
+
+
+lvk_allocator lvk_device::init_allocator() {
+	lvk_allocator allocator = {
+		VK_NULL_HANDLE
+	};
 	
-	// // VkPipelineLayoutCreateInfo layoutInfo = {
-	// // 	VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-	// // 	VK_NULL_HANDLE,
-	// // 	0,
-	// // 	layout_count,
-	// // 	set_layout
-	// // }
+	VmaAllocatorCreateInfo allocatorInfo = {};
 
-	// VkGraphicsPipelineCreateInfo graphicsCreateInfo = {};
-	// graphicsCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	// graphicsCreateInfo.pNext = VK_NULL_HANDLE;
-	// graphicsCreateInfo.flags = 0;
+    allocatorInfo.physicalDevice = physical_device->_physical_device;
+    allocatorInfo.device = _device;
+    allocatorInfo.instance = instance->_instance;
 
-	// graphicsCreateInfo.stageCount = config->shader_stage_array.size();
-	// graphicsCreateInfo.pStages = config->shader_stage_array.data();
-
-	// graphicsCreateInfo.pVertexInputState = &config->vertex_input_state;
-	// graphicsCreateInfo.pInputAssemblyState = &config->input_assembly_state;
-	// // graphicsCreateInfo.pTessellationState = &config->tessellation_state;
-	// // graphicsCreateInfo.pViewportState = &config->viewport_state;
-	// graphicsCreateInfo.pRasterizationState = &config->rasterization_state;
-	// graphicsCreateInfo.pMultisampleState = &config->multisample_state;
-	// // graphicsCreateInfo.pDepthStencilState = &config->depth_stencil_state;
-	// graphicsCreateInfo.pColorBlendState = &config->color_blend_state;
-	// // graphicsCreateInfo.pDynamicState = &config->dynamic_state;
-
-	// graphicsCreateInfo.layout;
-	// graphicsCreateInfo.renderPass = this->_render_pass;
-	// graphicsCreateInfo.subpass = 0;
-	// graphicsCreateInfo.basePipelineHandle;
-	// graphicsCreateInfo.basePipelineIndex;
+    vmaCreateAllocator(&allocatorInfo, &allocator._allocator);
 	
-	// VkComputePipelineCreateInfo a;
+	return allocator;
+}
 
-	// return pipeline;
 
+// |--------------------------------------------------
+// ----------------> BUFFER
+// |--------------------------------------------------
+
+
+lvk_buffer lvk_allocator::init_buffer() {
+	// VkBufferCreateInfo bufferInfo = {};
+	// bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	// //this is the total size, in bytes, of the buffer we are allocating
+	// bufferInfo.size = mesh._vertices.size() * sizeof(Vertex);
+	// //this buffer is going to be used as a Vertex Buffer
+	// bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+
+	// //let the VMA library know that this data should be writeable by CPU, but also readable by GPU
+	// VmaAllocationCreateInfo vmaallocInfo = {};
+	// vmaallocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+	// //allocate the buffer
+	// VK_CHECK(vmaCreateBuffer(_allocator, &bufferInfo, &vmaallocInfo,
+	// 	&mesh._vertexBuffer._buffer,
+	// 	&mesh._vertexBuffer._allocation,
+	// 	nullptr));
+
+	// //add the destruction of triangle mesh buffer to the deletion queue
+	// _mainDeletionQueue.push_function([=]() {
+
+    //     vmaDestroyBuffer(_allocator, mesh._vertexBuffer._buffer, mesh._vertexBuffer._allocation);
+    // });
+}
