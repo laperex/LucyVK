@@ -21,8 +21,6 @@ struct lvk_instance {
 	VkSurfaceKHR _surface;
 	VkInstance _instance;
 
-	// lvk::deletion_queue deletion_queue;
-
 	std::vector<const char*> layers = {};
 	
 	~lvk_instance();
@@ -46,10 +44,10 @@ struct lvk_physical_device {
 
 	lvk::queue_family_indices _queue_family_indices;
 	lvk::swapchain_support_details _swapchain_support_details;
-
+	
 	const lvk_instance* instance;
 
-	lvk_device init_device();
+	lvk_device init_device(std::vector<const char*> layers = {}, std::vector<const char*> extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME });
 
 	const VkFormat find_supported_format(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 	const uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags property_flags) const;
@@ -67,15 +65,15 @@ struct lvk_device {
 	VkQueue _graphicsQueue;
 	VkQueue _presentQueue;
 
-	std::vector<const char*> extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-	
+	std::vector<const char*> extensions = {};
+	std::vector<const char*> layers = {};
+
 	~lvk_device();
 
-	const lvk_instance* instance;
 	const lvk_physical_device* physical_device;
+	const lvk_instance* instance;
 
-	uint32_t swapchain_count = 0;	
-	lvk_swapchain* create_swapchain(uint32_t width, uint32_t height);
+	lvk_swapchain init_swapchain(uint32_t width, uint32_t height);
 	
 	lvk_command_pool init_command_pool();
 	lvk_command_pool init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
@@ -120,7 +118,8 @@ struct lvk_swapchain {
 	std::vector<VkImage> _images;
 	std::vector<VkImageView> _image_view_array;
 	
-	uint32_t acquire_next_image(VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT);
+	bool recreate(const uint32_t width, const uint32_t height);
+	bool acquire_next_image(uint32_t& index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT);
 	
 	~lvk_swapchain();
 	
@@ -187,6 +186,8 @@ struct lvk_render_pass {
 	const lvk_device* device;
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
+
+	lvk::deletion_queue deletion_queue;
 
 	// VkRenderPassBeginInfo begin_info();
 

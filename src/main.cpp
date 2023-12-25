@@ -43,6 +43,7 @@ int main(int count, char** args) {
 	SDL_Init(SDL_INIT_VIDEO);
 
 	lucy::Window window = {};
+	// window.flags |= SDL_WINDOW_RESIZABLE;
 	window.InitWindow();
 
 	auto instance = lvk::initialize("Lucy", window.sdl_window, true);
@@ -51,15 +52,17 @@ int main(int count, char** args) {
 	auto command_pool = device.init_command_pool();
 	auto render_pass = device.init_render_pass();
 
-	auto* swapchain = device.create_swapchain(window.size.x, window.size.y);
-	auto* framebuffer = render_pass.create_framebuffer(window.size.x, window.size.y, swapchain->_image_view_array);
+	// auto* aswapchain = device.create_swapchain(window.size.x, window.size.y);
+	auto swapchain = device.init_swapchain(window.size.x, window.size.y);
+	auto* framebuffer = render_pass.create_framebuffer(window.size.x, window.size.y, swapchain._image_view_array);
+	framebuffer = render_pass.create_framebuffer(window.size.x, window.size.y, swapchain._image_view_array);
 	
 	auto render_fence = device.init_fence(1, VK_FENCE_CREATE_SIGNALED_BIT);
 	auto present_semaphore = device.init_semaphore(1);
 	auto render_semaphore = device.init_semaphore(1);
 	
 	auto command_buffers = command_pool.init_command_buffer(1);
-	// auto command_buffers = command_pool.init_command_buffer(swapchain->_images.size());
+	// auto command_buffers = command_pool.init_command_buffer(swapchain._images.size());
 
 	command_buffers.reset();
 	
@@ -83,7 +86,7 @@ int main(int count, char** args) {
 	rpInfo.renderPass = render_pass._render_pass;
 	rpInfo.renderArea.offset.x = 0;
 	rpInfo.renderArea.offset.y = 0;
-	rpInfo.renderArea.extent = swapchain->_extent;
+	rpInfo.renderArea.extent = swapchain._extent;
 
 	//connect clear values
 	rpInfo.clearValueCount = 1;
@@ -106,13 +109,13 @@ int main(int count, char** args) {
 
 		config.viewport.x = 0.0f;
 		config.viewport.y = 0.0f;
-		config.viewport.width = (float)swapchain->_extent.width;
-		config.viewport.height = (float)swapchain->_extent.height;
+		config.viewport.width = (float)swapchain._extent.width;
+		config.viewport.height = (float)swapchain._extent.height;
 		config.viewport.minDepth = 0.0f;
 		config.viewport.maxDepth = 1.0f;
 
 		config.scissor.offset = { 0, 0 };
-		config.scissor.extent = swapchain->_extent;
+		config.scissor.extent = swapchain._extent;
 	}
 
 	auto pipeline_layout = device.init_pipeline_layout();
@@ -126,9 +129,13 @@ int main(int count, char** args) {
 		lucy::Events::Update();
 
 		{
-			render_fence.wait();
 			render_fence.reset();
-			uint32_t image_index = swapchain->acquire_next_image(present_semaphore._semaphore[0], nullptr);
+
+			uint32_t image_index;
+			if (swapchain.acquire_next_image(image_index, present_semaphore._semaphore[0], nullptr) == false) {
+				// auto swapchain = device.init_swapchain(lucy::Events::GetWindowSize().x, lucy::Events::GetWindowSize().y);
+				// auto* framebuffer = render_pass.create_framebuffer(lucy::Events::GetWindowSize().x, lucy::Events::GetWindowSize().y, swapchain._image_view_array);
+			}
 
 			{
 				rpInfo.framebuffer = framebuffer->_framebuffer_array[image_index];
@@ -163,13 +170,13 @@ int main(int count, char** args) {
 
 				//submit command buffer to the queue and execute it.
 				// _renderFence will now block until the graphic commands finish execution
-				assert(vkQueueSubmit(device._graphicsQueue, 1, &submit, render_fence._fence[0]) == VK_SUCCESS);
+				vkQueueSubmit(device._graphicsQueue, 1, &submit, render_fence._fence[0]);
 				
 				VkPresentInfoKHR presentInfo = {};
 				presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 				presentInfo.pNext = nullptr;
 
-				presentInfo.pSwapchains = &swapchain->_swapchain;
+				presentInfo.pSwapchains = &swapchain._swapchain;
 				presentInfo.swapchainCount = 1;
 
 				presentInfo.pWaitSemaphores = render_semaphore._semaphore;
@@ -177,7 +184,8 @@ int main(int count, char** args) {
 
 				presentInfo.pImageIndices = &image_index;
 
-				assert(vkQueuePresentKHR(device._graphicsQueue, &presentInfo) == VK_SUCCESS);
+				vkQueuePresentKHR(device._graphicsQueue, &presentInfo);
+				render_fence.wait();
 			}
 		}
 
@@ -186,8 +194,6 @@ int main(int count, char** args) {
 		const auto& end_time = std::chrono::high_resolution_clock::now();
 		dt = std::chrono::duration<double, std::ratio<1, 60>>(end_time - start_time).count();
 	}
-	
-	render_fence.wait(1000000000);
 
 	device.wait_idle();
 
