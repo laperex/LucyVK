@@ -20,6 +20,9 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 #include <Window.h>
+#include <glm/glm.hpp>
+
+#include <glm/gtx/transform.hpp>
 
 #include <vulkan/vulkan_core.h>
 
@@ -66,7 +69,6 @@ int main(int count, char** args) {
 	auto render_semaphore = device.init_semaphore(1);
 	
 	auto command_buffer = command_pool.init_command_buffer();
-	// auto command_buffers = command_pool.init_command_buffer(swapchain._images.size());
 	
 	VkCommandBufferBeginInfo cmdBeginInfo = {};
 	cmdBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -135,11 +137,7 @@ int main(int count, char** args) {
 
 	auto pipeline_layout = device.init_pipeline_layout(&push_constant, 1);
 	auto graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
-	
-	std::vector<lvk_framebuffer> framebuffer(swapchain._image_view_array.size());
-	for (int i = 0; i < framebuffer.size(); i++)
-		framebuffer[i] = render_pass.init_framebuffer(window.size.x, window.size.y, &swapchain._image_view_array[i], 1);
-	
+
 	auto triangle_mesh = load_triangle_mesh();
 	triangle_mesh.vertex_buffer = allocator.init_vertex_buffer(triangle_mesh._vertices.data(), triangle_mesh._vertices.size() * sizeof(triangle_mesh._vertices[0]));
 	
@@ -150,6 +148,11 @@ int main(int count, char** args) {
 	camera.width = swapchain._extent.width;
 	camera.height = swapchain._extent.height;
 	
+	lvk_framebuffer* framebuffer = new lvk_framebuffer[swapchain._image_view_array.size()];
+	for (int i = 0; i < swapchain._image_view_array.size(); i++) {
+		framebuffer[i] = render_pass.init_framebuffer(swapchain._extent, &swapchain._image_view_array[i], 1);
+	}
+	
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
 		const auto& start_time = std::chrono::high_resolution_clock::now();
@@ -157,8 +160,8 @@ int main(int count, char** args) {
 		lucy::Events::Update();
 		
 		camera.Update(dt);
-
 		{
+			render_fence.reset();
 
 			uint32_t image_index;
 			swapchain.acquire_next_image(&image_index, present_semaphore._semaphore[0], nullptr);
@@ -168,14 +171,13 @@ int main(int count, char** args) {
 				rpInfo.framebuffer = framebuffer[image_index]._framebuffer;
 
 				command_buffer.begin(&cmdBeginInfo);
-				command_buffer.cmd_render_pass_begin(&rpInfo, VK_SUBPASS_CONTENTS_INLINE);
+				command_buffer.render_pass_begin(&rpInfo, VK_SUBPASS_CONTENTS_INLINE);
 				
 				VkDeviceSize offset = 0;
 				vkCmdBindPipeline(command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
 				vkCmdBindVertexBuffers(command_buffer._command_buffer, 0, 1, &triangle_mesh.vertex_buffer._buffer, &offset);
 
-				glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, glm::radians(_frameNumber * 0.4f), glm::vec3(0, 1, 0));
-				
+				glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, glm::radians(_frameNumber++ * 0.4f), glm::vec3(0, 1, 0));
 				glm::mat4 mesh_matrix = camera.projection * camera.view * model;
 
 				lucy::MeshPushConstants constants;
@@ -187,7 +189,7 @@ int main(int count, char** args) {
 				//we can now draw
 				vkCmdDraw(command_buffer._command_buffer, triangle_mesh._vertices.size(), 1, 0, 0);
 
-				command_buffer.cmd_render_pass_end();
+				command_buffer.render_pass_end();
 				command_buffer.end();
 			}
 
@@ -211,7 +213,6 @@ int main(int count, char** args) {
 
 				//submit command buffer to the queue and execute it.
 				// _renderFence will now block until the graphic commands finish execution
-				render_fence.reset();
 				vkQueueSubmit(device._graphicsQueue, 1, &submit, render_fence._fence[0]);
 				render_fence.wait();
 				
