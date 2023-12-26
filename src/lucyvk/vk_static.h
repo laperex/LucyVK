@@ -146,7 +146,7 @@ struct lvk_command_pool {
 	const lvk_physical_device* physical_device;
 	const lvk_device* device;
 
-	lvk_command_buffer init_command_buffer(uint32_t count = 1, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	lvk_command_buffer init_command_buffer(VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 };
 
 
@@ -156,21 +156,16 @@ struct lvk_command_pool {
 
 
 struct lvk_command_buffer {
-	VkCommandBuffer* _command_buffers;
+	VkCommandBuffer _command_buffer;
 
-	const uint32_t _count;
-
-	const lvk_instance* instance;
-	const lvk_physical_device* physical_device;
-	const lvk_device* device;
 	const lvk_command_pool* command_pool;
+	const lvk_device* device;
 
-	void reset(const uint32_t index = 0, VkCommandBufferResetFlags flags = 0);
-	void reset_all(VkCommandBufferResetFlags flags = 0);
-	void cmd_begin(const uint32_t index, const VkCommandBufferBeginInfo* beginInfo);
-	void cmd_end(const uint32_t index);
-	void cmd_render_pass_begin(const uint32_t index, const VkRenderPassBeginInfo* beginInfo, VkSubpassContents subpass_contents);
-	void cmd_render_pass_end(const uint32_t index);
+	void reset(VkCommandBufferResetFlags flags = 0);
+	void begin(const VkCommandBufferBeginInfo* beginInfo);
+	void end();
+	void begin_render_pass(const VkRenderPassBeginInfo* beginInfo, VkSubpassContents subpass_contents);
+	void end_render_pass();
 
 	~lvk_command_buffer();
 };

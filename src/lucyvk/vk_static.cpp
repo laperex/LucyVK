@@ -503,14 +503,11 @@ lvk_command_pool::~lvk_command_pool()
 // |--------------------------------------------------
 
 
-lvk_command_buffer lvk_command_pool::init_command_buffer(uint32_t count, VkCommandBufferLevel level) {
+lvk_command_buffer lvk_command_pool::init_command_buffer(VkCommandBufferLevel level) {
 	lvk_command_buffer self = {
-		new VkCommandBuffer[count],
-		count,
-		instance,
-		physical_device,
-		device,
-		this
+		VK_NULL_HANDLE,
+		this,
+		device
 	};
 
 	VkCommandBufferAllocateInfo allocateInfo = {};
@@ -519,46 +516,41 @@ lvk_command_buffer lvk_command_pool::init_command_buffer(uint32_t count, VkComma
 	allocateInfo.pNext = nullptr;
 	allocateInfo.commandPool = _command_pool;
 	allocateInfo.level = level;
-	allocateInfo.commandBufferCount = count;
-	if (vkAllocateCommandBuffers(device->_device, &allocateInfo, self._command_buffers) != VK_SUCCESS) {
+	allocateInfo.commandBufferCount = 1;
+
+	if (vkAllocateCommandBuffers(device->_device, &allocateInfo, &self._command_buffer) != VK_SUCCESS) {
 		throw std::runtime_error("command buffer allocation failed!");
 	}
-	dloggln("Command Buffer Allocated: ", &self._command_buffers);
+	dloggln("Command Buffer Allocated: ", &self._command_buffer);
 	
 	return self;
 }
 
-void lvk_command_buffer::reset(const uint32_t index, VkCommandBufferResetFlags flags) {
+void lvk_command_buffer::reset(VkCommandBufferResetFlags flags) {
 	
-	vkResetCommandBuffer(_command_buffers[index], flags);
+	vkResetCommandBuffer(_command_buffer, flags);
 }
 
-void lvk_command_buffer::reset_all(VkCommandBufferResetFlags flags) {
-	for (int i = 0; i < _count; i++)
-		vkResetCommandBuffer(_command_buffers[i], flags);
+void lvk_command_buffer::begin(const VkCommandBufferBeginInfo* beginInfo) {
+	vkBeginCommandBuffer(_command_buffer, beginInfo);
 }
 
-void lvk_command_buffer::cmd_begin(const uint32_t index, const VkCommandBufferBeginInfo* beginInfo) {
-	vkBeginCommandBuffer(_command_buffers[index], beginInfo);
+void lvk_command_buffer::end() {
+	vkEndCommandBuffer(_command_buffer);
 }
 
-void lvk_command_buffer::cmd_end(const uint32_t index) {
-	vkEndCommandBuffer(_command_buffers[index]);
+void lvk_command_buffer::begin_render_pass(const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents) {
+	vkCmdBeginRenderPass(_command_buffer, beginInfo, subpass_contents);
 }
 
-void lvk_command_buffer::cmd_render_pass_begin(const uint32_t index, const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents) {
-	vkCmdBeginRenderPass(_command_buffers[index], beginInfo, subpass_contents);
-}
-
-void lvk_command_buffer::cmd_render_pass_end(const uint32_t index) {
-	vkCmdEndRenderPass(_command_buffers[index]);
+void lvk_command_buffer::end_render_pass() {
+	vkCmdEndRenderPass(_command_buffer);
 }
 
 lvk_command_buffer::~lvk_command_buffer()
 {
-	vkFreeCommandBuffers(device->_device, command_pool->_command_pool, _count, _command_buffers);
+	vkFreeCommandBuffers(device->_device, command_pool->_command_pool, 1, &_command_buffer);
 	dloggln("Command Buffer Destroyed");
-	delete [] _command_buffers;
 }
 
 
