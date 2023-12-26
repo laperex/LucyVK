@@ -3,7 +3,7 @@
 #include <SDL2/SDL_scancode.h>
 #include <SDL2/SDL_events.h>
 
-#include <math/math.hpp>
+#include <lucyvm/lvm_vector.h>
 
 #include <string>
 #include <set>

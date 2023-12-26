@@ -2,8 +2,7 @@
 
 #include "lucyvk/vk_static.h"
 #include <vector>
-#include <glm/glm.hpp>
-// #include <math/math.hpp>
+#include <lucyvm/lvm_vector.h>
 
 namespace lucy {
 	struct MeshPushConstants {

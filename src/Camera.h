@@ -1,8 +1,6 @@
 #pragma once
 
-#define GLM_FORCE_XYZW_ONLY
-
-#include <glm/glm.hpp>
+#include <lucyvm/lvm_vector.h>
 
 namespace lucy {
 	struct Camera {
@@ -32,6 +30,9 @@ namespace lucy {
 		bool enable = true;
 
 		// lgl::FrameBuffer* framebuffer = nullptr;
+		
+		glm::vec3 delta;
+		glm::vec3 initpos;
 
 		Camera();
 		void Update(double dt);

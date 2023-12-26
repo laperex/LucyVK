@@ -130,9 +130,7 @@ struct lvk_swapchain {
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
 
-	lvk::deletion_queue deletion_queue;
-	lvk_framebuffer* create_framebuffer(const uint32_t width, const uint32_t height, const lvk_render_pass* render_pass);
-	void recreate_framebuffer(lvk_framebuffer* framebuffer, const uint32_t width, const uint32_t height, const lvk_render_pass* render_pass = VK_NULL_HANDLE);
+	lvk_framebuffer* create_presentation_framebuffers(const lvk_render_pass* render_pass = VK_NULL_HANDLE);
 };
 
 
@@ -161,7 +159,6 @@ struct lvk_command_pool {
 
 struct lvk_command_buffer {
 	VkCommandBuffer* _command_buffers;
-
 	const uint32_t _count;
 
 	const lvk_instance* instance;
@@ -169,11 +166,14 @@ struct lvk_command_buffer {
 	const lvk_device* device;
 	const lvk_command_pool* command_pool;
 
-	void reset(const uint32_t index = 0, VkCommandBufferResetFlags flags = 0);
+	void reset(const uint32_t index, VkCommandBufferResetFlags flags = 0);
 	void reset_all(VkCommandBufferResetFlags flags = 0);
+
 	void cmd_begin(const uint32_t index, const VkCommandBufferBeginInfo* beginInfo);
 	void cmd_end(const uint32_t index);
+
 	void cmd_render_pass_begin(const uint32_t index, const VkRenderPassBeginInfo* beginInfo, VkSubpassContents subpass_contents);
+	void cmd_render_pass_begin(const uint32_t index, const lvk_render_pass* render_pass, const lvk_framebuffer* framebuffer, const VkClearValue* clear_values, const uint32_t clear_value_count, const VkSubpassContents subpass_contents);
 	void cmd_render_pass_end(const uint32_t index);
 
 	~lvk_command_buffer();
@@ -194,8 +194,28 @@ struct lvk_render_pass {
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
 
+	lvk_framebuffer init_framebuffer(const uint32_t width, const uint32_t height, const VkImageView* image_view, const uint32_t image_view_count);
+
+	lvk::deletion_queue deletion_queue;
 	// lvk::deletion_queue deletion_queue;
 	// lvk_swapchain: create_framebuffer(uint32_t width, uint32_t height, const std::vector<VkImageView>& image_view_array);
+};
+
+
+// |--------------------------------------------------
+// ----------------> FRAMEBUFFER
+// |--------------------------------------------------
+
+
+struct lvk_framebuffer {
+	VkFramebuffer _framebuffer;
+	
+	VkExtent2D _extent;
+	
+	~lvk_framebuffer();
+
+	const lvk_render_pass* render_pass;
+	const lvk_device* device;
 };
 
 
@@ -229,21 +249,6 @@ struct lvk_fence {
 	VkResult reset();
 
 	~lvk_fence();
-};
-
-
-// |--------------------------------------------------
-// ----------------> FRAMEBUFFER
-// |--------------------------------------------------
-
-
-struct lvk_framebuffer {
-	std::vector<VkFramebuffer> _framebuffers;
-	
-	~lvk_framebuffer();
-
-	const lvk_render_pass* render_pass;
-	const lvk_device* device;
 };
 
 
@@ -331,12 +336,15 @@ struct lvk_allocator {
 
 	lvk_buffer init_vertex_buffer(const std::size_t size);
 	lvk_buffer init_vertex_buffer(const void* data, const std::size_t size);
+	
+	lvk_image init_image();
 };
 
 
 // |--------------------------------------------------
-// ----------------> ALLOCATOR
+// ----------------> BUFFER
 // |--------------------------------------------------
+
 
 struct lvk_buffer {
 	VkBuffer _buffer;
@@ -350,4 +358,24 @@ struct lvk_buffer {
 	void upload(const void* vertex_data, const std::size_t vertex_size);
 	
 	~lvk_buffer();
+};
+
+
+// |--------------------------------------------------
+// ----------------> IMAGE
+// |--------------------------------------------------
+
+
+struct lvk_image {
+	VkImage _image;
+	VmaAllocation _allocation;
+	
+	const lvk_allocator* allocator;
+
+	// std::size_t allocated_size;
+	// VkBufferUsageFlagBits usage;
+
+	// void upload(const void* vertex_data, const std::size_t vertex_size);
+	
+	~lvk_image();
 };

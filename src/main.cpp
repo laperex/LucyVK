@@ -20,9 +20,6 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 #include <Window.h>
-#include <glm/glm.hpp>
-
-#include <glm/gtx/transform.hpp>
 
 #include <vulkan/vulkan_core.h>
 
@@ -139,7 +136,9 @@ int main(int count, char** args) {
 	auto pipeline_layout = device.init_pipeline_layout(&push_constant, 1);
 	auto graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
 	
-	auto* framebuffer = swapchain.create_framebuffer(window.size.x, window.size.y, &render_pass);
+	std::vector<lvk_framebuffer> framebuffer(swapchain._image_view_array.size());
+	for (int i = 0; i < framebuffer.size(); i++)
+		framebuffer[i] = render_pass.init_framebuffer(window.size.x, window.size.y, &swapchain._image_view_array[i], 1);
 	
 	auto triangle_mesh = load_triangle_mesh();
 	triangle_mesh.vertex_buffer = allocator.init_vertex_buffer(triangle_mesh._vertices.data(), triangle_mesh._vertices.size() * sizeof(triangle_mesh._vertices[0]));
@@ -160,14 +159,13 @@ int main(int count, char** args) {
 		camera.Update(dt);
 
 		{
-			render_fence.reset();
 
 			uint32_t image_index;
 			swapchain.acquire_next_image(&image_index, present_semaphore._semaphore[0], nullptr);
 			
 			{
 				rpInfo.renderArea.extent = swapchain._extent;
-				rpInfo.framebuffer = framebuffer->_framebuffers[image_index];
+				rpInfo.framebuffer = framebuffer[image_index]._framebuffer;
 
 				command_buffers.cmd_begin(0, &cmdBeginInfo);
 				command_buffers.cmd_render_pass_begin(0, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -175,19 +173,9 @@ int main(int count, char** args) {
 				VkDeviceSize offset = 0;
 				vkCmdBindPipeline(command_buffers._command_buffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
 				vkCmdBindVertexBuffers(command_buffers._command_buffers[0], 0, 1, &triangle_mesh.vertex_buffer._buffer, &offset);
-				
-				// glm::vec3 camPos = { 0.f,0.f, -10 };
 
-				// glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
-				// //camera projection
-				// glm::mat4 projection = glm::perspective(glm::radians(70.f), float(swapchain._extent.width) / float(swapchain._extent.height), 0.1f, 200.0f);
-				// projection[1][1] *= -1;
-				//model rotation
 				glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, glm::radians(_frameNumber * 0.4f), glm::vec3(0, 1, 0));
 				
-				// _frameNumber++;
-
-				//calculate final mesh matrix
 				glm::mat4 mesh_matrix = camera.projection * camera.view * model;
 
 				lucy::MeshPushConstants constants;
@@ -223,6 +211,7 @@ int main(int count, char** args) {
 
 				//submit command buffer to the queue and execute it.
 				// _renderFence will now block until the graphic commands finish execution
+				render_fence.reset();
 				vkQueueSubmit(device._graphicsQueue, 1, &submit, render_fence._fence[0]);
 				render_fence.wait();
 				

@@ -7,8 +7,6 @@ glm::vec2 last_pos = { 0, 0 };
 float scrollspeed = 0.75 * 3;
 bool toggle = false;
 
-glm::vec3 delta;
-glm::vec3 initpos;
 
 lucy::Camera::Camera() {
 	// position = { 0, 0, 500 };

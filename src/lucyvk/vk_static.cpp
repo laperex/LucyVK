@@ -452,8 +452,6 @@ VkResult lvk_swapchain::acquire_next_image(uint32_t* index, VkSemaphore semaphor
 
 lvk_swapchain::~lvk_swapchain()
 {
-	deletion_queue.flush();
-	
 	vkDestroySwapchainKHR(device->_device, _swapchain, VK_NULL_HANDLE);
 	dloggln("Swapchain Destroyed");
 
@@ -552,6 +550,20 @@ void lvk_command_buffer::cmd_render_pass_begin(const uint32_t index, const VkRen
 	vkCmdBeginRenderPass(_command_buffers[index], beginInfo, subpass_contents);
 }
 
+void lvk_command_buffer::cmd_render_pass_begin(const uint32_t index, const lvk_render_pass* render_pass, const lvk_framebuffer* framebuffer, const VkClearValue* clear_values, const uint32_t clear_value_count, const VkSubpassContents subpass_contents) {
+	VkRenderPassBeginInfo render_pass_begin_info = {
+		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		VK_NULL_HANDLE,
+		render_pass->_render_pass,
+		framebuffer->_framebuffer,
+		{ { 0, 0 }, framebuffer->_extent },
+		clear_value_count,
+		clear_values
+	};
+
+	cmd_render_pass_begin(index, &render_pass_begin_info, subpass_contents);
+}
+
 void lvk_command_buffer::cmd_render_pass_end(const uint32_t index) {
 	vkCmdEndRenderPass(_command_buffers[index]);
 }
@@ -642,23 +654,54 @@ lvk_render_pass lvk_device::init_render_pass(const VkAttachmentDescription* atta
 
 lvk_render_pass::~lvk_render_pass()
 {
-	// deletion_queue.flush();
+	deletion_queue.flush();
 
 	vkDestroyRenderPass(device->_device, _render_pass, VK_NULL_HANDLE);
 	dloggln("RenderPass Destroyed");
 }
 
-// VkRenderPassBeginInfo lvk_render_pass::begin_info(VkFramebuffer framebuffer) {
-// 	return {
-// 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-// 		VK_NULL_HANDLE,
-// 		_render_pass,
-// 		framebuffer,
-// 		render_area,
-// 		clear_values.size(),
-// 		clear_values.data()
-// 	}
-// }
+
+// |--------------------------------------------------
+// ----------------> FRAMEBUFFER
+// |--------------------------------------------------
+
+
+lvk_framebuffer lvk_render_pass::init_framebuffer(const uint32_t width, const uint32_t height, const VkImageView* image_view, const uint32_t image_view_count) {
+	lvk_framebuffer framebuffer = {
+		VK_NULL_HANDLE,
+		{ width, height },
+		this,
+		device
+	};
+
+	VkFramebufferCreateInfo createInfo = {};
+	createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	createInfo.pNext = VK_NULL_HANDLE;
+	createInfo.flags = 0;
+	createInfo.renderPass = _render_pass;
+	createInfo.attachmentCount = 1;
+	createInfo.pAttachments = image_view;
+	createInfo.width = width;
+	createInfo.height = height;
+	createInfo.layers = 1;
+
+	if (vkCreateFramebuffer(device->_device, &createInfo, VK_NULL_HANDLE, &framebuffer._framebuffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create framebuffer");
+	}
+	dloggln("Framebuffer Created");
+
+	deletion_queue.push([=]{
+		vkDestroyFramebuffer(device->_device, framebuffer._framebuffer, VK_NULL_HANDLE);
+		dloggln("Framebuffer Destroyed");
+	});
+
+	return framebuffer;
+}
+
+lvk_framebuffer::~lvk_framebuffer()
+{
+	
+}
 
 
 // |--------------------------------------------------
@@ -742,66 +785,6 @@ lvk_fence::~lvk_fence()
 	dloggln("Fence Destroyed");
 	
 	delete [] _fence;
-}
-
-
-// |--------------------------------------------------
-// ----------------> FRAMEBUFFER
-// |--------------------------------------------------
-
-
-lvk_framebuffer* lvk_swapchain::create_framebuffer(const uint32_t width, const uint32_t height, const lvk_render_pass* render_pass) {
-	auto* framebuffer = new lvk_framebuffer();
-
-	framebuffer->render_pass = render_pass;
-	framebuffer->device = this->device;
-
-	recreate_framebuffer(framebuffer, width, height, render_pass);
-	
-	deletion_queue.push([=]{
-		delete framebuffer;
-	});
-
-	return framebuffer;
-}
-
-void lvk_swapchain::recreate_framebuffer(lvk_framebuffer* framebuffer, const uint32_t width, const uint32_t height, const lvk_render_pass* render_pass) {
-	for (int i = 0; i < framebuffer->_framebuffers.size(); i++) {
-		if (framebuffer->_framebuffers[i] != VK_NULL_HANDLE) {
-			vkDestroyFramebuffer(device->_device, framebuffer->_framebuffers[i], VK_NULL_HANDLE);
-		}
-	}
-
-	if (framebuffer->render_pass->_render_pass != render_pass->_render_pass) {
-		framebuffer->render_pass = render_pass;
-	}
-	
-	VkFramebufferCreateInfo createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	createInfo.flags = 0;
-	createInfo.renderPass = render_pass->_render_pass;
-	createInfo.attachmentCount = 1;
-	createInfo.width = width;
-	createInfo.height = height;
-	createInfo.layers = 1;
-
-	framebuffer->_framebuffers.resize(_image_view_array.size());
-
-	for (int i = 0; i < framebuffer->_framebuffers.size(); i++) {
-		createInfo.pAttachments = &_image_view_array[i];
-		if (vkCreateFramebuffer(device->_device, &createInfo, VK_NULL_HANDLE, &framebuffer->_framebuffers[i]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create framebuffer");
-		}
-	}
-	dloggln("Framebuffers Created");
-}
-
-lvk_framebuffer::~lvk_framebuffer()
-{
-	for (auto& framebuffer: _framebuffers) {
-		vkDestroyFramebuffer(device->_device, framebuffer, VK_NULL_HANDLE);
-	}
-	dloggln("Framebuffers Destroyed");
 }
 
 
@@ -1060,4 +1043,14 @@ lvk_buffer::~lvk_buffer()
 {
 	// vmaDestroyBuffer(allocator->_allocator, _buffer, _allocation);
 	// dloggln("Buffer Destroyed");
+}
+
+
+// |--------------------------------------------------
+// ----------------> IMAGE
+// |--------------------------------------------------
+
+
+lvk_image lvk_allocator::init_image() {
+	
 }
