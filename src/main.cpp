@@ -92,7 +92,6 @@ int main(int count, char** args) {
 	rpInfo.renderPass = render_pass._render_pass;
 	rpInfo.renderArea.offset.x = 0;
 	rpInfo.renderArea.offset.y = 0;
-	
 	rpInfo.renderArea.extent = swapchain._extent;
 
 	//connect clear values
@@ -140,8 +139,11 @@ int main(int count, char** args) {
 	auto pipeline_layout = device.init_pipeline_layout(&push_constant, 1);
 	auto graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
 	
-	auto* framebuffer = swapchain.create_framebuffer(window.size.x, window.size.y, &render_pass);
-	
+	std::vector<lvk_framebuffer> framebuffers(swapchain._image_view_array.size());
+	for (int i = 0; i < framebuffers.size(); i++) {
+		framebuffers[i] = render_pass.init_framebuffer(swapchain._extent, &swapchain._image_view_array[i], 1);
+	}
+
 	auto triangle_mesh = load_triangle_mesh();
 	triangle_mesh.vertex_buffer = allocator.init_vertex_buffer(triangle_mesh._vertices.data(), triangle_mesh._vertices.size() * sizeof(triangle_mesh._vertices[0]));
 	
@@ -168,7 +170,7 @@ int main(int count, char** args) {
 			
 			{
 				rpInfo.renderArea.extent = swapchain._extent;
-				rpInfo.framebuffer = framebuffer->_framebuffers[image_index];
+				rpInfo.framebuffer = framebuffers[image_index]._framebuffer;
 
 				command_buffers.cmd_begin(0, &cmdBeginInfo);
 				command_buffers.cmd_render_pass_begin(0, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);

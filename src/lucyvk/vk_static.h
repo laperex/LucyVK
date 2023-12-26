@@ -129,10 +129,6 @@ struct lvk_swapchain {
 	const lvk_device* device;
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
-
-	lvk::deletion_queue deletion_queue;
-	lvk_framebuffer* create_framebuffer(const uint32_t width, const uint32_t height, const lvk_render_pass* render_pass);
-	void recreate_framebuffer(lvk_framebuffer* framebuffer, const uint32_t width, const uint32_t height, const lvk_render_pass* render_pass = VK_NULL_HANDLE);
 };
 
 
@@ -194,8 +190,25 @@ struct lvk_render_pass {
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
 
-	// lvk::deletion_queue deletion_queue;
-	// lvk_swapchain: create_framebuffer(uint32_t width, uint32_t height, const std::vector<VkImageView>& image_view_array);
+	lvk_framebuffer init_framebuffer(const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count);
+
+	lvk::deletion_queue deletion_queue;
+};
+
+
+// |--------------------------------------------------
+// ----------------> FRAMEBUFFER
+// |--------------------------------------------------
+
+
+struct lvk_framebuffer {
+	VkFramebuffer _framebuffer;
+	VkExtent2D _extent;
+	
+	~lvk_framebuffer();
+
+	const lvk_render_pass* render_pass;
+	const lvk_device* device;
 };
 
 
@@ -229,21 +242,6 @@ struct lvk_fence {
 	VkResult reset();
 
 	~lvk_fence();
-};
-
-
-// |--------------------------------------------------
-// ----------------> FRAMEBUFFER
-// |--------------------------------------------------
-
-
-struct lvk_framebuffer {
-	std::vector<VkFramebuffer> _framebuffers;
-	
-	~lvk_framebuffer();
-
-	const lvk_render_pass* render_pass;
-	const lvk_device* device;
 };
 
 
