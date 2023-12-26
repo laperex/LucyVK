@@ -92,6 +92,7 @@ int main(int count, char** args) {
 	rpInfo.renderPass = render_pass._render_pass;
 	rpInfo.renderArea.offset.x = 0;
 	rpInfo.renderArea.offset.y = 0;
+	
 	rpInfo.renderArea.extent = swapchain._extent;
 
 	//connect clear values
