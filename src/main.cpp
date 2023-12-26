@@ -64,9 +64,9 @@ int main(int count, char** args) {
 
 	auto swapchain = device.init_swapchain(window.size.x, window.size.y);
 	
-	auto render_fence = device.init_fence(1, VK_FENCE_CREATE_SIGNALED_BIT);
-	auto present_semaphore = device.init_semaphore(1);
-	auto render_semaphore = device.init_semaphore(1);
+	auto render_fence = device.init_fence();
+	auto present_semaphore = device.init_semaphore();
+	auto render_semaphore = device.init_semaphore();
 	
 	auto command_buffer = command_pool.init_command_buffer();
 	// auto command_buffers = command_pool.init_command_buffer(swapchain._images.size());
@@ -145,7 +145,7 @@ int main(int count, char** args) {
 
 		{
 			uint32_t image_index;
-			swapchain.acquire_next_image(&image_index, present_semaphore._semaphore[0], nullptr);
+			swapchain.acquire_next_image(&image_index, present_semaphore._semaphore, VK_NULL_HANDLE);
 			
 			{
 				command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -182,10 +182,10 @@ int main(int count, char** args) {
 				submit.pWaitDstStageMask = &waitStage;
 
 				submit.waitSemaphoreCount = 1;
-				submit.pWaitSemaphores = present_semaphore._semaphore;
+				submit.pWaitSemaphores = &present_semaphore._semaphore;
 
 				submit.signalSemaphoreCount = 1;
-				submit.pSignalSemaphores = render_semaphore._semaphore;
+				submit.pSignalSemaphores = &render_semaphore._semaphore;
 
 				submit.commandBufferCount = 1;
 				submit.pCommandBuffers = &command_buffer._command_buffer;
@@ -193,7 +193,7 @@ int main(int count, char** args) {
 				//submit command buffer to the queue and execute it.
 				// _renderFence will now block until the graphic commands finish execution
 				render_fence.reset();
-				vkQueueSubmit(device._graphicsQueue, 1, &submit, render_fence._fence[0]);
+				vkQueueSubmit(device._graphicsQueue, 1, &submit, render_fence._fence);
 				render_fence.wait();
 				
 				VkPresentInfoKHR presentInfo = {};
@@ -203,7 +203,7 @@ int main(int count, char** args) {
 				presentInfo.pSwapchains = &swapchain._swapchain;
 				presentInfo.swapchainCount = 1;
 
-				presentInfo.pWaitSemaphores = render_semaphore._semaphore;
+				presentInfo.pWaitSemaphores = &render_semaphore._semaphore;
 				presentInfo.waitSemaphoreCount = 1;
 
 				presentInfo.pImageIndices = &image_index;

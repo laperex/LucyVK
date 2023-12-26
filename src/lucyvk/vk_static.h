@@ -81,8 +81,8 @@ struct lvk_device {
 	lvk_render_pass init_render_pass();
 	lvk_render_pass init_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform = false);
 	
-	lvk_semaphore init_semaphore(const uint32_t count, VkSemaphoreCreateFlags flags = 0);
-	lvk_fence init_fence(const uint32_t count, VkFenceCreateFlags flags = 0);
+	lvk_semaphore init_semaphore();
+	lvk_fence init_fence(VkFenceCreateFlags flags = 0);
 	
 // 	lvk_graphics_pipeline init_graphics_pipeline(
 // 	const VkPipelineShaderStageCreateInfo* shader_stage, const uint32_t shader_stage_count,
@@ -217,8 +217,7 @@ struct lvk_framebuffer {
 
 
 struct lvk_semaphore {
-	VkSemaphore* _semaphore;
-	const uint32_t _count;
+	VkSemaphore _semaphore;
 
 	const lvk_device* device;
 	
@@ -232,12 +231,11 @@ struct lvk_semaphore {
 
 
 struct lvk_fence {
-	VkFence* _fence;
-	const uint32_t _count;
+	VkFence _fence;
 
 	const lvk_device* device;
 
-	VkResult wait(bool wait_all = true, uint64_t timeout = LVK_TIMEOUT);
+	VkResult wait(uint64_t timeout = LVK_TIMEOUT);
 	VkResult reset();
 
 	~lvk_fence();

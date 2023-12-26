@@ -712,22 +712,20 @@ lvk_framebuffer::~lvk_framebuffer()
 // |--------------------------------------------------
 
 
-lvk_semaphore lvk_device::init_semaphore(const uint32_t count, VkSemaphoreCreateFlags flags) {
+lvk_semaphore lvk_device::init_semaphore() {
 	lvk_semaphore semaphore = {
-		new VkSemaphore[count],
-		count,
+		VK_NULL_HANDLE,
 		this
 	};
 
-	VkSemaphoreCreateInfo createInfo;
-	createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	createInfo.pNext = nullptr;
-	createInfo.flags = flags;
+	VkSemaphoreCreateInfo createInfo = {
+		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		VK_NULL_HANDLE,
+		0
+	};
 
-	for (int i = 0; i < count; i++) {
-		if (vkCreateSemaphore(_device, &createInfo, VK_NULL_HANDLE, &semaphore._semaphore[i]) != VK_SUCCESS) {
-			throw std::runtime_error("semaphore creation failed");
-		}
+	if (vkCreateSemaphore(_device, &createInfo, VK_NULL_HANDLE, &semaphore._semaphore) != VK_SUCCESS) {
+		throw std::runtime_error("semaphore creation failed");
 	}
 	dloggln("Semaphore Created");
 	
@@ -737,12 +735,8 @@ lvk_semaphore lvk_device::init_semaphore(const uint32_t count, VkSemaphoreCreate
 
 lvk_semaphore::~lvk_semaphore()
 {
-	for (int i = 0; i < _count; i++) {
-		vkDestroySemaphore(device->_device, _semaphore[i], VK_NULL_HANDLE);
-	}
+	vkDestroySemaphore(device->_device, _semaphore, VK_NULL_HANDLE);
 	dloggln("Semaphore Destroyed");
-	
-	delete [] _semaphore;
 }
 
 
@@ -751,43 +745,37 @@ lvk_semaphore::~lvk_semaphore()
 // |--------------------------------------------------
 
 
-lvk_fence lvk_device::init_fence(const uint32_t count, VkFenceCreateFlags flags) {
+lvk_fence lvk_device::init_fence(VkFenceCreateFlags flags) {
 	lvk_fence fence = {
-		new VkFence[count],
-		count,
+		VK_NULL_HANDLE,
 		this
 	};
 
-	VkFenceCreateInfo createInfo;
-	createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	createInfo.pNext = nullptr;
-	createInfo.flags = flags;
+	VkFenceCreateInfo createInfo = {
+		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		VK_NULL_HANDLE,
+		flags
+	};
 
-	for (int i = 0; i < count; i++) {
-		if (vkCreateFence(_device, &createInfo, VK_NULL_HANDLE, &fence._fence[i]) != VK_SUCCESS) {
-			throw std::runtime_error("fence creation failed");
-		}
+	if (vkCreateFence(_device, &createInfo, VK_NULL_HANDLE, &fence._fence) != VK_SUCCESS) {
+		throw std::runtime_error("fence creation failed");
 	}
 	dloggln("Fence Created");
 
 	return fence;
 }
 
-VkResult lvk_fence::wait(bool wait_all, uint64_t timeout) {
-	return vkWaitForFences(device->_device, _count, _fence, wait_all, timeout);
+VkResult lvk_fence::wait(uint64_t timeout) {
+	return vkWaitForFences(device->_device, 1, &_fence, false, timeout);
 }
 
 VkResult lvk_fence::reset() {
-	return vkResetFences(device->_device, _count, _fence);
+	return vkResetFences(device->_device, 1, &_fence);
 }
 
 lvk_fence::~lvk_fence()
 {
-	for (int i = 0; i < _count; i++)
-		vkDestroyFence(device->_device, _fence[i], VK_NULL_HANDLE);
-	dloggln("Fence Destroyed");
-	
-	delete [] _fence;
+	vkDestroyFence(device->_device, _fence, VK_NULL_HANDLE);
 }
 
 
