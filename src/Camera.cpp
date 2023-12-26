@@ -13,8 +13,8 @@ glm::vec3 initpos;
 lucy::Camera::Camera() {
 	// position = { 0, 0, 500 };
 	position = { 0, 0, -10 };
-	c_near = 0.1f;
-	c_far = 200.0f;
+	// c_near = 0.1f;
+	// c_far = 200.0f;
 }
 
 void lucy::Camera::Update(double dt) {
@@ -39,9 +39,9 @@ void lucy::Camera::Update(double dt) {
 	}
 
 	auto norm_cursor_pos = Events::GetCursorPosNormalized(this->posx, this->posy, this->width, this->height);
-	norm_cursor_pos.y = 1 - norm_cursor_pos.y;
+	// norm_cursor_pos.y = 1 - norm_cursor_pos.y;
 	auto cursor_pos = Events::GetCursorPos();
-	cursor_pos.y = this->height - cursor_pos.y;
+	// cursor_pos.y = this->height - cursor_pos.y;
 
 	if (Events::IsButtonPressed(SDL_BUTTON_RIGHT)) {
 		if (this->first_mouse) {

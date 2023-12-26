@@ -15,7 +15,7 @@ namespace lucy {
 		glm::vec3 offset = { 0.0, 0.0, 0.0 };
 		glm::vec3 world_front = { 0.0, 0.0, -1.0 };
 		glm::vec3 front = world_front;
-		glm::vec3 world_up = { 0.0, 1.0, 0.0 };
+		glm::vec3 world_up = { 0.0, -1.0, 0.0 };
 		glm::vec3 up = world_up;
 
 		// glm::vec4 clear_color = { 0, 0, 0, 1 };

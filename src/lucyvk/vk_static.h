@@ -1,7 +1,7 @@
 #pragma once
 
-
 #include "vk_mem_alloc.h"
+
 #include "vk_types.h"
 
 #include <SDL_video.h>
@@ -326,11 +326,13 @@ struct lvk_allocator {
 
 	lvk_buffer init_vertex_buffer(const std::size_t size);
 	lvk_buffer init_vertex_buffer(const void* data, const std::size_t size);
+
+	lvk_image init_buffer();
 };
 
 
 // |--------------------------------------------------
-// ----------------> ALLOCATOR
+// ----------------> BUFFER
 // |--------------------------------------------------
 
 struct lvk_buffer {
@@ -345,4 +347,18 @@ struct lvk_buffer {
 	void upload(const void* vertex_data, const std::size_t vertex_size);
 	
 	~lvk_buffer();
+};
+
+
+// |--------------------------------------------------
+// ----------------> IMAGE
+// |--------------------------------------------------
+
+struct lvk_image {
+	VkImage _image;
+	VmaAllocation _allocation;
+	
+	const lvk_allocator* allocator;
+
+	~lvk_image();
 };

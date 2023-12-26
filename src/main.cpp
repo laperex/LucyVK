@@ -1,9 +1,6 @@
-// #include "lucyvk/Instance.h"
-// #include "lucyvk/PhysicalDevice.h"
-// #include "lucyvk/LogicalDevice.h"
-// #include "lucyvk/CommandPool.h"
-// #include "lucyvk/ImageView.h"
-// #include "lucyvk/Swapchain.h"
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
+
 #include "Camera.h"
 #include "Mesh.h"
 #include "lucyvk/vk_function.h"
@@ -125,8 +122,9 @@ int main(int count, char** args) {
 		framebuffers[i] = render_pass.init_framebuffer(swapchain._extent, &swapchain._image_view_array[i], 1);
 	}
 
-	auto triangle_mesh = load_triangle_mesh();
-	triangle_mesh.vertex_buffer = allocator.init_vertex_buffer(triangle_mesh._vertices.data(), triangle_mesh._vertices.size() * sizeof(triangle_mesh._vertices[0]));
+	lucy::Mesh monkey_mesh;
+	monkey_mesh.load_obj("/home/laperex/Programming/C++/LucyVK/src/assets/monkey.obj");
+	monkey_mesh.vertex_buffer = allocator.init_vertex_buffer(monkey_mesh._vertices.data(), monkey_mesh._vertices.size() * sizeof(monkey_mesh._vertices[0]));
 	
 	uint32_t _frameNumber;
 	
@@ -153,9 +151,9 @@ int main(int count, char** args) {
 				
 				VkDeviceSize offset = 0;
 				vkCmdBindPipeline(command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
-				vkCmdBindVertexBuffers(command_buffer._command_buffer, 0, 1, &triangle_mesh.vertex_buffer._buffer, &offset);
+				vkCmdBindVertexBuffers(command_buffer._command_buffer, 0, 1, &monkey_mesh.vertex_buffer._buffer, &offset);
 
-				glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, glm::radians(_frameNumber++ * 0.4f), glm::vec3(0, 1, 0));
+				glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, glm::radians(float(_frameNumber++) * 0.4f), glm::vec3(0, 1, 0));
 				
 				glm::mat4 mesh_matrix = camera.projection * camera.view * model;
 
@@ -166,7 +164,7 @@ int main(int count, char** args) {
 				vkCmdPushConstants(command_buffer._command_buffer, pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
 
 				//we can now draw
-				vkCmdDraw(command_buffer._command_buffer, triangle_mesh._vertices.size(), 1, 0, 0);
+				vkCmdDraw(command_buffer._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
 
 				command_buffer.end_render_pass();
 				command_buffer.end();

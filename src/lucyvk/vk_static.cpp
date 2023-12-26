@@ -1,5 +1,4 @@
 #define VMA_IMPLEMENTATION
-
 #include "vk_mem_alloc.h"
 
 #include "lucyvk/vk_static.h"
@@ -1034,4 +1033,30 @@ lvk_buffer::~lvk_buffer()
 {
 	// vmaDestroyBuffer(allocator->_allocator, _buffer, _allocation);
 	// dloggln("Buffer Destroyed");
+}
+
+
+// |--------------------------------------------------
+// ----------------> IMAGE
+// |--------------------------------------------------
+
+
+lvk_image lvk_allocator::init_buffer() {
+	lvk_image image = {
+		VK_NULL_HANDLE,
+		VK_NULL_HANDLE,
+		this
+	};
+	
+	deletion_queue.push([=]{
+		vmaDestroyImage(_allocator, image._image, image._allocation);
+		// lvk::print_buffer_usage_enum("Image Destroyed: ", image.usage);
+	});
+	
+	return image;
+}
+
+lvk_image::~lvk_image()
+{
+	
 }

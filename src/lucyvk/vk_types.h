@@ -14,9 +14,6 @@
 
 #define LVK_TIMEOUT 1000000000
 
-struct lvk_allocator;
-struct lvk_buffer;
-
 struct lvk_instance;
 struct lvk_physical_device;
 struct lvk_device;
@@ -35,6 +32,9 @@ struct lvk_shader_module;
 struct lvk_pipeline_layout;
 struct lvk_pipeline;
 
+struct lvk_allocator;
+struct lvk_buffer;
+struct lvk_image;
 
 // enum LVK_SHADER_STAGE_ {
 // 	LVK_SHADER_STAGE_VERTEX_BIT = 0x00000001,					// VK_SHADER_STAGE_VERTEX_BIT,

@@ -60,5 +60,7 @@ namespace lucy {
 		std::vector<Vertex> _vertices;
 
 		lvk_buffer vertex_buffer;
+		
+		bool load_obj(const char* filename);
 	};
 }
