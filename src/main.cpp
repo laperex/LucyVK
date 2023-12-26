@@ -100,8 +100,8 @@ int main(int count, char** args) {
 	
 	//
 
-	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "shaders/mesh.vert.spv");
-	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "shaders/colored_triangle.frag.spv");
+	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/mesh.vert.spv");
+	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
 
 	auto vertex_layout = lucy::Vertex::get_vertex_description();
 
@@ -183,7 +183,7 @@ int main(int count, char** args) {
 				// glm::mat4 projection = glm::perspective(glm::radians(70.f), float(swapchain._extent.width) / float(swapchain._extent.height), 0.1f, 200.0f);
 				// projection[1][1] *= -1;
 				//model rotation
-				glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, glm::radians(_frameNumber * 0.4f), glm::vec3(0, 1, 0));
+				glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, glm::radians(_frameNumber++ * 0.4f), glm::vec3(0, 1, 0));
 				
 				// _frameNumber++;
 
