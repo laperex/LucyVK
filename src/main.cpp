@@ -65,7 +65,7 @@ int main(int count, char** args) {
 	auto present_semaphore = device.init_semaphore(1);
 	auto render_semaphore = device.init_semaphore(1);
 	
-	auto command_buffers = command_pool.init_command_buffer(1);
+	auto command_buffer = command_pool.init_command_buffer();
 	// auto command_buffers = command_pool.init_command_buffer(swapchain._images.size());
 	
 	VkCommandBufferBeginInfo cmdBeginInfo = {};
@@ -167,12 +167,12 @@ int main(int count, char** args) {
 				rpInfo.renderArea.extent = swapchain._extent;
 				rpInfo.framebuffer = framebuffer[image_index]._framebuffer;
 
-				command_buffers.cmd_begin(0, &cmdBeginInfo);
-				command_buffers.cmd_render_pass_begin(0, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
+				command_buffer.begin(&cmdBeginInfo);
+				command_buffer.cmd_render_pass_begin(&rpInfo, VK_SUBPASS_CONTENTS_INLINE);
 				
 				VkDeviceSize offset = 0;
-				vkCmdBindPipeline(command_buffers._command_buffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
-				vkCmdBindVertexBuffers(command_buffers._command_buffers[0], 0, 1, &triangle_mesh.vertex_buffer._buffer, &offset);
+				vkCmdBindPipeline(command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
+				vkCmdBindVertexBuffers(command_buffer._command_buffer, 0, 1, &triangle_mesh.vertex_buffer._buffer, &offset);
 
 				glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, glm::radians(_frameNumber * 0.4f), glm::vec3(0, 1, 0));
 				
@@ -182,13 +182,13 @@ int main(int count, char** args) {
 				constants.render_matrix = mesh_matrix;
 
 				//upload the matrix to the GPU via push constants
-				vkCmdPushConstants(command_buffers._command_buffers[0], pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
+				vkCmdPushConstants(command_buffer._command_buffer, pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
 
 				//we can now draw
-				vkCmdDraw(command_buffers._command_buffers[0], triangle_mesh._vertices.size(), 1, 0, 0);
+				vkCmdDraw(command_buffer._command_buffer, triangle_mesh._vertices.size(), 1, 0, 0);
 
-				command_buffers.cmd_render_pass_end(0);				
-				command_buffers.cmd_end(0);
+				command_buffer.cmd_render_pass_end();
+				command_buffer.end();
 			}
 
 			{
@@ -206,8 +206,8 @@ int main(int count, char** args) {
 				submit.signalSemaphoreCount = 1;
 				submit.pSignalSemaphores = render_semaphore._semaphore;
 
-				submit.commandBufferCount = command_buffers._count;
-				submit.pCommandBuffers = command_buffers._command_buffers;
+				submit.commandBufferCount = 1;
+				submit.pCommandBuffers = &command_buffer._command_buffer;
 
 				//submit command buffer to the queue and execute it.
 				// _renderFence will now block until the graphic commands finish execution
