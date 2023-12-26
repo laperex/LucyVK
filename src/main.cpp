@@ -179,18 +179,8 @@ int main(int count, char** args) {
 				vkCmdBindPipeline(command_buffers._command_buffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
 				vkCmdBindVertexBuffers(command_buffers._command_buffers[0], 0, 1, &triangle_mesh.vertex_buffer._buffer, &offset);
 				
-				// glm::vec3 camPos = { 0.f,0.f, -10 };
-
-				// glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
-				// //camera projection
-				// glm::mat4 projection = glm::perspective(glm::radians(70.f), float(swapchain._extent.width) / float(swapchain._extent.height), 0.1f, 200.0f);
-				// projection[1][1] *= -1;
-				//model rotation
 				glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, glm::radians(_frameNumber++ * 0.4f), glm::vec3(0, 1, 0));
 				
-				// _frameNumber++;
-
-				//calculate final mesh matrix
 				glm::mat4 mesh_matrix = camera.projection * camera.view * model;
 
 				lucy::MeshPushConstants constants;
