@@ -164,10 +164,14 @@ struct lvk_command_buffer {
 	void reset(VkCommandBufferResetFlags flags = 0);
 	void begin(const VkCommandBufferBeginInfo* beginInfo);
 	void end();
-	void begin_render_pass(const VkRenderPassBeginInfo* beginInfo, VkSubpassContents subpass_contents);
+	void begin_render_pass(const lvk_framebuffer* framebuffer, const VkClearValue* clear_value, const uint32_t clear_value_count, const VkSubpassContents subpass_contents);
 	void end_render_pass();
 
 	~lvk_command_buffer();
+
+	void begin_render_pass(const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents);
+
+	void begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info = VK_NULL_HANDLE);
 };
 
 

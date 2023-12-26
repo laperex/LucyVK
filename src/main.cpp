@@ -79,27 +79,8 @@ int main(int count, char** args) {
 	cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
 	VkClearValue clearValue;
-	// float flash = abs(sin(_frameNumber / 120.f));
 	clearValue.color = { { 0.0f, 0.0f, 1, 1.0f } };
-	// clearValue.depthStencil = { 1, 0 };
-
-	//start the main renderpass.
-	//We will use the clear color from above, and the framebuffer of the index the swapchain gave us
-	VkRenderPassBeginInfo rpInfo = {};
-	rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	rpInfo.pNext = nullptr;
-
-	rpInfo.renderPass = render_pass._render_pass;
-	rpInfo.renderArea.offset.x = 0;
-	rpInfo.renderArea.offset.y = 0;
-	rpInfo.renderArea.extent = swapchain._extent;
-
-	//connect clear values
-	rpInfo.clearValueCount = 1;
-	rpInfo.pClearValues = &clearValue;
 	
-	//
-
 	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/mesh.vert.spv");
 	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
 
@@ -167,11 +148,8 @@ int main(int count, char** args) {
 			swapchain.acquire_next_image(&image_index, present_semaphore._semaphore[0], nullptr);
 			
 			{
-				rpInfo.renderArea.extent = swapchain._extent;
-				rpInfo.framebuffer = framebuffers[image_index]._framebuffer;
-
-				command_buffer.begin(&cmdBeginInfo);
-				command_buffer.begin_render_pass(&rpInfo, VK_SUBPASS_CONTENTS_INLINE);
+				command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+				command_buffer.begin_render_pass(&framebuffers[image_index], &clearValue, 1, VK_SUBPASS_CONTENTS_INLINE);
 				
 				VkDeviceSize offset = 0;
 				vkCmdBindPipeline(command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
