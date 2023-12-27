@@ -27,6 +27,23 @@ VkShaderModuleCreateInfo lvk::shader_module_create_info(const char* filename) {
 	};
 }
 
+VkPipelineDepthStencilStateCreateInfo lvk::depth_stencil_state_create_info(bool depth_test, bool depth_write, VkCompareOp compare_op) {
+	return {
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+		VK_NULL_HANDLE,
+		0,
+		depth_test ? VK_TRUE : VK_FALSE,
+		depth_write ? VK_TRUE: VK_FALSE,
+		depth_test ? compare_op: VK_COMPARE_OP_ALWAYS,
+		VK_FALSE,
+		VK_FALSE,
+		{},
+		{},
+		0,
+		1
+	};
+}
+
 VkPipelineShaderStageCreateInfo lvk::shader_stage_create_info(VkShaderStageFlagBits flag_bits, VkShaderModule shader_module, const VkSpecializationInfo* specialization) {
 	return {
 		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,

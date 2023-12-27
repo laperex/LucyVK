@@ -64,7 +64,7 @@ static bool CheckValidationLayerSupport() {
 
 
 lvk_instance lvk::initialize(const char* name, SDL_Window* sdl_window, bool debug_enable) {
-	lvk_instance self = {};
+	lvk_instance instance = {};
 	
 	VkApplicationInfo appInfo = {
 		VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -110,7 +110,7 @@ lvk_instance lvk::initialize(const char* name, SDL_Window* sdl_window, bool debu
 		
 		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
 		
-		self.layers.push_back("VK_LAYER_KHRONOS_validation");
+		instance.layers.push_back("VK_LAYER_KHRONOS_validation");
 
 		requiredExtensionArray.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
@@ -136,29 +136,29 @@ lvk_instance lvk::initialize(const char* name, SDL_Window* sdl_window, bool debu
 		}
     }
 
-	createInfo.enabledLayerCount = std::size(self.layers);
-	createInfo.ppEnabledLayerNames = self.layers.data();
+	createInfo.enabledLayerCount = std::size(instance.layers);
+	createInfo.ppEnabledLayerNames = instance.layers.data();
 
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensionArray.size());
 	createInfo.ppEnabledExtensionNames = requiredExtensionArray.data();
 
-	if (vkCreateInstance(&createInfo, nullptr, &self._instance) != VK_SUCCESS) {
+	if (vkCreateInstance(&createInfo, nullptr, &instance._instance) != VK_SUCCESS) {
         throw std::runtime_error("failed to create instance!");
     }
 	dloggln("Instance Created");
 
 	if (debug_enable) {
-		if (CreateDebugUtilsMessengerEXT(self._instance, &debugCreateInfo, nullptr, &self._debug_messenger) != VK_SUCCESS) {
+		if (CreateDebugUtilsMessengerEXT(instance._instance, &debugCreateInfo, nullptr, &instance._debug_messenger) != VK_SUCCESS) {
 			throw std::runtime_error("debug messenger creation failed!");
 		}
 		dloggln("Debug Messenger Created");
 	}
 
-	if (SDL_Vulkan_CreateSurface(sdl_window, self._instance, &self._surface)) {
+	if (SDL_Vulkan_CreateSurface(sdl_window, instance._instance, &instance._surface)) {
 		dloggln("Surface Created");
 	}
 
-	return self;
+	return instance;
 }
 
 lvk_instance::~lvk_instance()
@@ -472,11 +472,11 @@ lvk_command_pool lvk_device::init_command_pool() {
 }
 
 lvk_command_pool lvk_device::init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags) {
-	lvk_command_pool self = {};
+	lvk_command_pool command_pool = {};
 	
-	self.device = this;
-	self.physical_device = this->physical_device;
-	self.instance = this->instance;
+	command_pool.device = this;
+	command_pool.physical_device = this->physical_device;
+	command_pool.instance = this->instance;
 	
 	VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -484,11 +484,11 @@ lvk_command_pool lvk_device::init_command_pool(uint32_t queue_family_index, VkCo
     poolInfo.queueFamilyIndex = queue_family_index;
     poolInfo.flags = flags;
 
-    if (vkCreateCommandPool(_device, &poolInfo, VK_NULL_HANDLE, &self._command_pool) != VK_SUCCESS) {
+    if (vkCreateCommandPool(_device, &poolInfo, VK_NULL_HANDLE, &command_pool._command_pool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create command pool!");
     }
 
-	return self;
+	return command_pool;
 }
 
 lvk_command_pool::~lvk_command_pool()
@@ -504,26 +504,25 @@ lvk_command_pool::~lvk_command_pool()
 
 
 lvk_command_buffer lvk_command_pool::init_command_buffer(VkCommandBufferLevel level) {
-	lvk_command_buffer self = {
+	lvk_command_buffer command_buffer = {
 		VK_NULL_HANDLE,
 		this,
 		device
 	};
 
 	VkCommandBufferAllocateInfo allocateInfo = {};
-
 	allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocateInfo.pNext = nullptr;
 	allocateInfo.commandPool = _command_pool;
 	allocateInfo.level = level;
 	allocateInfo.commandBufferCount = 1;
 
-	if (vkAllocateCommandBuffers(device->_device, &allocateInfo, &self._command_buffer) != VK_SUCCESS) {
+	if (vkAllocateCommandBuffers(device->_device, &allocateInfo, &command_buffer._command_buffer) != VK_SUCCESS) {
 		throw std::runtime_error("command buffer allocation failed!");
 	}
-	dloggln("Command Buffer Allocated: ", &self._command_buffer);
+	dloggln("Command Buffer Allocated: ", &command_buffer._command_buffer);
 	
-	return self;
+	return command_buffer;
 }
 
 void lvk_command_buffer::reset(VkCommandBufferResetFlags flags) {
@@ -599,25 +598,42 @@ lvk_command_buffer::~lvk_command_buffer()
 
 
 lvk_render_pass lvk_device::init_render_pass() {	
-	VkAttachmentDescription attachment = {};
-	attachment.flags = 0;
-    attachment.format = get_swapchain_surface_format(physical_device->_swapchain_support_details.formats).format;
+	VkAttachmentDescription color_attachment = {};
+	color_attachment.flags = 0;
+    color_attachment.format = get_swapchain_surface_format(physical_device->_swapchain_support_details.formats).format;
 	// 1 sample = No MSAA
-    attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	// clear attachment when loaded
-    attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	// store attachment when renderpass ends
-    attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	// no stencil
-    attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	
-    attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-	VkAttachmentReference attachment_reference = {};
-	attachment_reference.attachment = 0;
-    attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	VkAttachmentReference color_attachment_ref = {};
+	color_attachment_ref.attachment = 0;
+    color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	
+
+	VkAttachmentDescription depth_attachment = {};
+    // Depth attachment
+    depth_attachment.flags = 0;
+    depth_attachment.format = VK_FORMAT_D32_SFLOAT;
+    depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depth_attachment_ref = {};
+    depth_attachment_ref.attachment = 1;
+    depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 	VkSubpassDescription subpass = {};
 	subpass.flags = 0;
@@ -625,21 +641,36 @@ lvk_render_pass lvk_device::init_render_pass() {
 	// subpassDesc.inputAttachmentCount;
 	// subpassDesc.pInputAttachments;
 	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &attachment_reference;
+	subpass.pColorAttachments = &color_attachment_ref;
+	subpass.pDepthStencilAttachment = &depth_attachment_ref;
+
 	// subpassDesc.pResolveAttachments;
 	// subpassDesc.pDepthStencilAttachment;
 	// subpassDesc.preserveAttachmentCount;
 	// subpassDesc.pPreserveAttachments;
+	
+	// VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT -> VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT -> VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT
 
-	// VkSubpassDependency dependency = {};
-	// dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	// dependency.srcAccessMask = 0;
-	// dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-	// dependency.dstSubpass = 0;
-	// dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-	// dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	VkSubpassDependency color_dependency = {};
+	color_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	color_dependency.srcAccessMask = 0;
+	color_dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;	// | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	color_dependency.dstSubpass = 0;
+	color_dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;	// | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+	color_dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-	return init_render_pass(&attachment, 1, &subpass, 1, nullptr, 0);
+	VkSubpassDependency depth_dependency = {};
+	depth_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	depth_dependency.dstSubpass = 0;
+	depth_dependency.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+	depth_dependency.srcAccessMask = 0;
+	depth_dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+	depth_dependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+	VkAttachmentDescription attachments[2] = { color_attachment, depth_attachment };
+	VkSubpassDependency dependency[2] = { color_dependency, depth_dependency };
+
+	return init_render_pass(attachments, 2, &subpass, 1, dependency, 1);
 }
 
 lvk_render_pass lvk_device::init_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform) {
@@ -683,21 +714,21 @@ lvk_render_pass::~lvk_render_pass()
 // |--------------------------------------------------
 
 
-lvk_framebuffer lvk_render_pass::init_framebuffer(const VkExtent2D extent, const VkImageView* image_views) {
+lvk_framebuffer lvk_render_pass::init_framebuffer(const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count) {
 	lvk_framebuffer framebuffer = {
 		VK_NULL_HANDLE,
 		extent,
 		this,
 		device
 	};
-	
+
 	VkFramebufferCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 	createInfo.flags = 0;
 	createInfo.renderPass = _render_pass;
 	createInfo.width = extent.width;
 	createInfo.height = extent.height;
-	createInfo.attachmentCount = 1;
+	createInfo.attachmentCount = image_views_count;
 	createInfo.pAttachments = image_views;
 	createInfo.layers = 1;
 
@@ -945,6 +976,7 @@ lvk_pipeline lvk_pipeline_layout::init_graphics_pipeline(const lvk_render_pass* 
 	pipelineInfo.pViewportState = &viewportState;
 	pipelineInfo.pRasterizationState = &config->rasterization_state;
 	pipelineInfo.pMultisampleState = &config->multisample_state;
+	pipelineInfo.pDepthStencilState = &config->depth_stencil_state;
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.layout = this->_pipeline_layout;
 	pipelineInfo.renderPass = render_pass->_render_pass;
@@ -1082,7 +1114,8 @@ lvk_image lvk_allocator::init_image(VkFormat format, VkImageUsageFlags usage, Vk
 		extent,
 		usage,
 		this,
-		device
+		device,
+		&deletion_queue
 	};
 	
 	VkImageCreateInfo createInfo = {};
@@ -1113,8 +1146,12 @@ lvk_image lvk_allocator::init_image(VkFormat format, VkImageUsageFlags usage, Vk
 	// createInfo.queueFamilyIndexCount;
 	// createInfo.pQueueFamilyIndices;
 	// createInfo.initialLayout;
-	
-	if (vkCreateImage(device->_device, &createInfo, VK_NULL_HANDLE, &image._image) != VK_SUCCESS) {
+
+	VmaAllocationCreateInfo allocationInfo = {};
+	allocationInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+	allocationInfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	if (vmaCreateImage(_allocator, &createInfo, &allocationInfo, &image._image, &image._allocation, VK_NULL_HANDLE) != VK_SUCCESS) {
 		throw std::runtime_error("image creation failed!");
 	}
 	dloggln("Image Created");
@@ -1140,13 +1177,13 @@ lvk_image_view lvk_image::init_image_view(VkImageAspectFlags aspect_flag, VkImag
 
 	VkImageViewCreateInfo createInfo = lvk::image_view_create_info(_image, _format, aspect_flag, image_view_type);
 
-	if (vkCreateImageView(device->_device, &createInfo, VK_NULL_HANDLE, &image_view.image_view) != VK_SUCCESS) {
+	if (vkCreateImageView(device->_device, &createInfo, VK_NULL_HANDLE, &image_view._image_view) != VK_SUCCESS) {
 		throw std::runtime_error("image_view creation failed!");
 	}
 	dloggln("ImageView Created");
 
 	deletion_queue->push([=]{
-		vkDestroyImageView(device->_device, image_view.image_view, VK_NULL_HANDLE);
+		vkDestroyImageView(device->_device, image_view._image_view, VK_NULL_HANDLE);
 		dloggln("ImageView Destroyed");
 	});
 

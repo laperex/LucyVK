@@ -82,7 +82,7 @@ namespace lvk {
 		// VkPipelineViewportStateCreateInfo viewport_state;
 		VkPipelineRasterizationStateCreateInfo rasterization_state;
 		VkPipelineMultisampleStateCreateInfo multisample_state;
-		// VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
+		VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
 		// VkPipelineColorBlendStateCreateInfo color_blend_state;
 		// VkPipelineDynamicStateCreateInfo dynamic_state;
 		

@@ -5,6 +5,8 @@
 
 namespace lvk {
 	VkShaderModuleCreateInfo shader_module_create_info(const char* filename);
+	
+	VkPipelineDepthStencilStateCreateInfo depth_stencil_state_create_info(bool depth_test, bool depth_write, VkCompareOp compare_op);
 
 	VkPipelineShaderStageCreateInfo shader_stage_create_info(VkShaderStageFlagBits flag, VkShaderModule shader_module, const VkSpecializationInfo* specialization = nullptr);
 	VkPipelineShaderStageCreateInfo shader_stage_create_info(const lvk_shader_module* shader_module, const VkSpecializationInfo* specialization = nullptr);

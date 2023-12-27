@@ -108,7 +108,7 @@ struct lvk_swapchain {
 	uint32_t _image_count;
 	VkImage* _images;
 	VkImageView* _image_views;
-	
+
 	bool recreate(const uint32_t width, const uint32_t height);
 	VkResult acquire_next_image(uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT);
 	
@@ -179,7 +179,7 @@ struct lvk_render_pass {
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
 
-	lvk_framebuffer init_framebuffer(const VkExtent2D extent, const VkImageView* image_views);
+	lvk_framebuffer init_framebuffer(const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count);
 
 	lvk::deletion_queue deletion_queue;
 
@@ -380,7 +380,7 @@ struct lvk_image {
 
 
 struct lvk_image_view {
-	VkImageView image_view;
-	
+	VkImageView _image_view;
+
 	const lvk_image* image;
 };
