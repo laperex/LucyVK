@@ -72,6 +72,8 @@ struct lvk_device {
 
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
+	
+	lvk::deletion_queue deletion_queue;
 
 	lvk_swapchain init_swapchain(uint32_t width, uint32_t height);
 	
@@ -128,11 +130,13 @@ struct lvk_swapchain {
 struct lvk_command_pool {
 	VkCommandPool _command_pool;
 
-	~lvk_command_pool();
+	// ~lvk_command_pool();
 
 	const lvk_instance* instance;
 	const lvk_physical_device* physical_device;
 	const lvk_device* device;
+	
+	lvk::deletion_queue* deletion_queue;
 
 	lvk_command_buffer init_command_buffer(VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 };
@@ -155,7 +159,7 @@ struct lvk_command_buffer {
 	void begin_render_pass(const uint32_t image_index, const lvk_framebuffer_array* framebuffer, const VkClearValue* clear_values, const uint32_t clear_value_count, const VkSubpassContents subpass_contents);
 	void end_render_pass();
 
-	~lvk_command_buffer();
+	// ~lvk_command_buffer();
 
 	void begin_render_pass(const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents);
 
@@ -224,8 +228,6 @@ struct lvk_semaphore {
 	VkSemaphore _semaphore;
 
 	const lvk_device* device;
-	
-	~lvk_semaphore();
 };
 
 
@@ -241,8 +243,6 @@ struct lvk_fence {
 
 	VkResult wait(uint64_t timeout = LVK_TIMEOUT);
 	VkResult reset();
-
-	~lvk_fence();
 };
 
 

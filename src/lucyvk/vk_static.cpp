@@ -228,7 +228,8 @@ lvk_device lvk_physical_device::init_device(std::vector<const char*> layers, std
 		extensions,
 		layers,
 		this,
-		this->instance
+		this->instance,
+		{}
 	};
 	
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoArray;
@@ -278,6 +279,8 @@ void lvk_device::wait_idle() const {
 
 lvk_device::~lvk_device()
 {
+	deletion_queue.flush();
+	
 	vkDestroyDevice(_device, VK_NULL_HANDLE);
 	dloggln("Device Destroyed");
 }
@@ -477,6 +480,7 @@ lvk_command_pool lvk_device::init_command_pool(uint32_t queue_family_index, VkCo
 	command_pool.device = this;
 	command_pool.physical_device = this->physical_device;
 	command_pool.instance = this->instance;
+	command_pool.deletion_queue = &deletion_queue;
 	
 	VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -487,14 +491,13 @@ lvk_command_pool lvk_device::init_command_pool(uint32_t queue_family_index, VkCo
     if (vkCreateCommandPool(_device, &poolInfo, VK_NULL_HANDLE, &command_pool._command_pool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create command pool!");
     }
+	
+	deletion_queue.push([=]{
+		vkDestroyCommandPool(_device, command_pool._command_pool, VK_NULL_HANDLE);
+		dloggln("Command Pool Destroyed");
+	});
 
 	return command_pool;
-}
-
-lvk_command_pool::~lvk_command_pool()
-{
-	vkDestroyCommandPool(device->_device, _command_pool, VK_NULL_HANDLE);
-	dloggln("Command Pool Destroyed");
 }
 
 
@@ -522,11 +525,15 @@ lvk_command_buffer lvk_command_pool::init_command_buffer(VkCommandBufferLevel le
 	}
 	dloggln("Command Buffer Allocated: ", &command_buffer._command_buffer);
 	
+	deletion_queue->push([=]{
+		vkFreeCommandBuffers(device->_device, _command_pool, 1, &command_buffer._command_buffer);
+		dloggln("Command Buffer Destroyed");
+	});
+	
 	return command_buffer;
 }
 
 void lvk_command_buffer::reset(VkCommandBufferResetFlags flags) {
-	
 	vkResetCommandBuffer(_command_buffer, flags);
 }
 
@@ -583,12 +590,6 @@ void lvk_command_buffer::begin_render_pass(const lvk_framebuffer* framebuffer, c
 
 void lvk_command_buffer::end_render_pass() {
 	vkCmdEndRenderPass(_command_buffer);
-}
-
-lvk_command_buffer::~lvk_command_buffer()
-{
-	vkFreeCommandBuffers(device->_device, command_pool->_command_pool, 1, &_command_buffer);
-	dloggln("Command Buffer Destroyed");
 }
 
 
@@ -813,20 +814,18 @@ lvk_semaphore lvk_device::init_semaphore() {
 		VK_NULL_HANDLE,
 		0
 	};
-
+	
 	if (vkCreateSemaphore(_device, &createInfo, VK_NULL_HANDLE, &semaphore._semaphore) != VK_SUCCESS) {
 		throw std::runtime_error("semaphore creation failed");
 	}
 	dloggln("Semaphore Created");
+
+	deletion_queue.push([=]{
+		vkDestroySemaphore(_device, semaphore._semaphore, VK_NULL_HANDLE);
+		dloggln("Semaphore Destroyed");
+	});
 	
 	return semaphore;
-}
-
-
-lvk_semaphore::~lvk_semaphore()
-{
-	vkDestroySemaphore(device->_device, _semaphore, VK_NULL_HANDLE);
-	dloggln("Semaphore Destroyed");
 }
 
 
@@ -851,6 +850,11 @@ lvk_fence lvk_device::init_fence(VkFenceCreateFlags flags) {
 		throw std::runtime_error("fence creation failed");
 	}
 	dloggln("Fence Created");
+	
+	deletion_queue.push([=]{
+		vkDestroyFence(_device, fence._fence, VK_NULL_HANDLE);
+		dloggln("Fence Destroyed");
+	});
 
 	return fence;
 }
@@ -861,11 +865,6 @@ VkResult lvk_fence::wait(uint64_t timeout) {
 
 VkResult lvk_fence::reset() {
 	return vkResetFences(device->_device, 1, &_fence);
-}
-
-lvk_fence::~lvk_fence()
-{
-	vkDestroyFence(device->_device, _fence, VK_NULL_HANDLE);
 }
 
 

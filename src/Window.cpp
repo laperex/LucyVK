@@ -18,6 +18,8 @@ lucy::Window::~Window() {
 void lucy::Window::InitWindow() {
 	assert(this->sdl_window == nullptr);
 
+	SDL_Init(SDL_INIT_VIDEO);
+
 	int off_x = 0;
 	int off_y = 0;
 

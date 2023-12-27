@@ -44,28 +44,42 @@ lucy::Mesh load_triangle_mesh() {
 	return triangle_mesh;
 }
 
+struct Frame {
+	lvk_fence render_fence;
+	lvk_semaphore present_semaphore;
+	lvk_semaphore render_semaphore;
+
+	lvk_command_pool command_pool;
+	lvk_command_buffer command_buffer;
+	
+	uint32_t image_index;
+};
+
+static constexpr const int FRAMES_IN_FLIGHT = 2;
 
 int main(int count, char** args) {
-	SDL_Init(SDL_INIT_VIDEO);
-
 	lucy::Window window = {};
-	// window.flags |= SDL_WINDOW_RESIZABLE;
 	window.InitWindow();
 
 	auto instance = lvk::initialize("Lucy", window.sdl_window, true);
 	auto physical_device = instance.init_physical_device();
 	auto device = physical_device.init_device();
 	auto allocator = device.init_allocator();
-	auto command_pool = device.init_command_pool();
 	auto render_pass = device.init_render_pass();
 
 	auto swapchain = device.init_swapchain(window.size.x, window.size.y);
 	
-	auto render_fence = device.init_fence();
-	auto present_semaphore = device.init_semaphore();
-	auto render_semaphore = device.init_semaphore();
+	Frame frame[FRAMES_IN_FLIGHT];
 	
-	auto command_buffer = command_pool.init_command_buffer();
+	for (int i = 0; i < std::size(frame); i++) {
+		frame[i].command_pool = device.init_command_pool();
+		frame[i].command_buffer = frame[i].command_pool.init_command_buffer();
+
+		frame[i].render_fence = device.init_fence();
+
+		frame[i].render_semaphore = device.init_semaphore();
+		frame[i].present_semaphore = device.init_semaphore();
+	}
 
 	VkCommandBufferBeginInfo cmdBeginInfo = {};
 	cmdBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -83,7 +97,7 @@ int main(int count, char** args) {
 
 	auto vertex_layout = lucy::Vertex::get_vertex_description();
 
-	lvk::graphics_pipeline_config config;
+	lvk::graphics_pipeline_config config = {};
 	{
 		config.shader_stage_array.push_back(lvk::shader_stage_create_info(&fragment_shader, nullptr));
 		// config.shader_stage_array.push_back(lvk::shader_stage_create_info(&fragment_shader, nullptr));
@@ -143,23 +157,28 @@ int main(int count, char** args) {
 	while (!lucy::Events::IsQuittable()) {
 		const auto& start_time = std::chrono::high_resolution_clock::now();
 
+		auto& current_frame = frame[framenumber % FRAMES_IN_FLIGHT];
+
 		lucy::Events::Update();
 
 		camera.Update(dt);
 
 		{
-			uint32_t image_index;
-			swapchain.acquire_next_image(&image_index, present_semaphore._semaphore, VK_NULL_HANDLE);
-
 			{
-				command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-				command_buffer.begin_render_pass(&framebuffers[image_index], clearValue, 2, VK_SUBPASS_CONTENTS_INLINE);
+				uint32_t image_index;
+				swapchain.acquire_next_image(&image_index, current_frame.present_semaphore._semaphore, VK_NULL_HANDLE);
+				current_frame.image_index = image_index;
+
+				current_frame.command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+				current_frame.command_buffer.begin_render_pass(&framebuffers[image_index], clearValue, 2, VK_SUBPASS_CONTENTS_INLINE);
 
 				VkDeviceSize offset = 0;
-				vkCmdBindPipeline(command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
-				vkCmdBindVertexBuffers(command_buffer._command_buffer, 0, 1, &monkey_mesh.vertex_buffer._buffer, &offset);
+				vkCmdBindPipeline(current_frame.command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
+				vkCmdBindVertexBuffers(current_frame.command_buffer._command_buffer, 0, 1, &monkey_mesh.vertex_buffer._buffer, &offset);
 
-				glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(float(framenumber++) * 0.4f), glm::vec3(0, 1, 0));
+				glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(framenumber * 0.4f), glm::vec3(0, 1, 0));
+
+				framenumber += 1;
 
 				glm::mat4 mesh_matrix = camera.projection * camera.view * model;
 
@@ -167,16 +186,18 @@ int main(int count, char** args) {
 				constants.render_matrix = mesh_matrix;
 
 				//upload the matrix to the GPU via push constants
-				vkCmdPushConstants(command_buffer._command_buffer, pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
+				vkCmdPushConstants(current_frame.command_buffer._command_buffer, pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
 
 				//we can now draw
-				vkCmdDraw(command_buffer._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
+				vkCmdDraw(current_frame.command_buffer._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
 
-				command_buffer.end_render_pass();
-				command_buffer.end();
+				current_frame.command_buffer.end_render_pass();
+				current_frame.command_buffer.end();
 			}
 
-			{
+			if (framenumber > 1) {
+				auto& prev_frame = frame[(framenumber - 2) % FRAMES_IN_FLIGHT];
+				
 				VkSubmitInfo submit = {};
 				submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 				submit.pNext = nullptr;
@@ -186,19 +207,20 @@ int main(int count, char** args) {
 				submit.pWaitDstStageMask = &waitStage;
 
 				submit.waitSemaphoreCount = 1;
-				submit.pWaitSemaphores = &present_semaphore._semaphore;
+				submit.pWaitSemaphores = &prev_frame.present_semaphore._semaphore;
 
 				submit.signalSemaphoreCount = 1;
-				submit.pSignalSemaphores = &render_semaphore._semaphore;
+				submit.pSignalSemaphores = &prev_frame.render_semaphore._semaphore;
 
 				submit.commandBufferCount = 1;
-				submit.pCommandBuffers = &command_buffer._command_buffer;
+				submit.pCommandBuffers = &prev_frame.command_buffer._command_buffer;
 
 				//submit command buffer to the queue and execute it.
 				// _renderFence will now block until the graphic commands finish execution
-				render_fence.reset();
-				vkQueueSubmit(device._graphicsQueue, 1, &submit, render_fence._fence);
-				render_fence.wait();
+				prev_frame.render_fence.reset();
+				vkQueueSubmit(device._graphicsQueue, 1, &submit, prev_frame.render_fence._fence);
+				prev_frame.render_fence.wait();
+				prev_frame.command_buffer.reset();
 				
 				VkPresentInfoKHR presentInfo = {};
 				presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -207,16 +229,16 @@ int main(int count, char** args) {
 				presentInfo.pSwapchains = &swapchain._swapchain;
 				presentInfo.swapchainCount = 1;
 
-				presentInfo.pWaitSemaphores = &render_semaphore._semaphore;
+				presentInfo.pWaitSemaphores = &prev_frame.render_semaphore._semaphore;
 				presentInfo.waitSemaphoreCount = 1;
 
-				presentInfo.pImageIndices = &image_index;
+				presentInfo.pImageIndices = &prev_frame.image_index;
 
 				vkQueuePresentKHR(device._graphicsQueue, &presentInfo);
 			}
 		}
 
-		window.SwapWindow();
+		// window.SwapWindow();
 
 		const auto& end_time = std::chrono::high_resolution_clock::now();
 		dt = std::chrono::duration<double, std::ratio<1, 60>>(end_time - start_time).count();
