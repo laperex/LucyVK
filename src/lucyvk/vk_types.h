@@ -23,7 +23,10 @@ struct lvk_command_buffer;
 
 struct lvk_swapchain;
 struct lvk_render_pass;
+
+struct lvk_framebuffer_array;
 struct lvk_framebuffer;
+
 struct lvk_semaphore;
 struct lvk_fence;
 

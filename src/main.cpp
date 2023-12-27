@@ -117,10 +117,7 @@ int main(int count, char** args) {
 	auto pipeline_layout = device.init_pipeline_layout(&push_constant, 1);
 	auto graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
 
-	std::vector<lvk_framebuffer> framebuffers(swapchain._image_count);
-	for (int i = 0; i < framebuffers.size(); i++) {
-		framebuffers[i] = render_pass.init_framebuffer(swapchain._extent, &swapchain._image_views[i], 1);
-	}
+	auto framebuffer_array = render_pass.init_framebuffer_array(swapchain._extent, swapchain._image_views, swapchain._image_count);
 
 	lucy::Mesh monkey_mesh;
 	monkey_mesh.load_obj("/home/laperex/Programming/C++/LucyVK/src/assets/monkey.obj");
@@ -147,8 +144,8 @@ int main(int count, char** args) {
 			
 			{
 				command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-				command_buffer.begin_render_pass(&framebuffers[image_index], &clearValue, 1, VK_SUBPASS_CONTENTS_INLINE);
-				
+				command_buffer.begin_render_pass(image_index, &framebuffer_array, &clearValue, 1, VK_SUBPASS_CONTENTS_INLINE);
+
 				VkDeviceSize offset = 0;
 				vkCmdBindPipeline(command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
 				vkCmdBindVertexBuffers(command_buffer._command_buffer, 0, 1, &monkey_mesh.vertex_buffer._buffer, &offset);

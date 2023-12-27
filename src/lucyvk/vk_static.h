@@ -152,7 +152,7 @@ struct lvk_command_buffer {
 	void reset(VkCommandBufferResetFlags flags = 0);
 	void begin(const VkCommandBufferBeginInfo* beginInfo);
 	void end();
-	void begin_render_pass(const lvk_framebuffer* framebuffer, const VkClearValue* clear_value, const uint32_t clear_value_count, const VkSubpassContents subpass_contents);
+	void begin_render_pass(const uint32_t image_index, const lvk_framebuffer_array* framebuffer, const VkClearValue* clear_values, const uint32_t clear_value_count, const VkSubpassContents subpass_contents);
 	void end_render_pass();
 
 	~lvk_command_buffer();
@@ -160,6 +160,8 @@ struct lvk_command_buffer {
 	void begin_render_pass(const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents);
 
 	void begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info = VK_NULL_HANDLE);
+
+	void begin_render_pass(const lvk_framebuffer* framebuffer, const VkClearValue* clear_values, const uint32_t clear_value_count, const VkSubpassContents subpass_contents);
 };
 
 
@@ -177,9 +179,11 @@ struct lvk_render_pass {
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
 
-	lvk_framebuffer init_framebuffer(const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count);
+	lvk_framebuffer init_framebuffer(const VkExtent2D extent, const VkImageView* image_views);
 
 	lvk::deletion_queue deletion_queue;
+
+	lvk_framebuffer_array init_framebuffer_array(const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count);
 };
 
 
@@ -193,6 +197,18 @@ struct lvk_framebuffer {
 	VkExtent2D _extent;
 	
 	~lvk_framebuffer();
+
+	const lvk_render_pass* render_pass;
+	const lvk_device* device;
+};
+
+struct lvk_framebuffer_array {
+	VkFramebuffer* _framebuffers;
+	uint32_t _count;
+
+	VkExtent2D _extent;
+
+	~lvk_framebuffer_array();
 
 	const lvk_render_pass* render_pass;
 	const lvk_device* device;
