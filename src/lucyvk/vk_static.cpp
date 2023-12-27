@@ -948,9 +948,9 @@ lvk_buffer lvk_allocator::init_buffer(VkBufferUsageFlagBits usage, const void* d
 	lvk_buffer buffer = {
 		VK_NULL_HANDLE,
 		VK_NULL_HANDLE,
-		this,
 		size,
-		usage
+		usage,
+		this
 	};
 	
 	VkBufferCreateInfo bufferInfo = {
@@ -981,7 +981,7 @@ lvk_buffer lvk_allocator::init_buffer(VkBufferUsageFlagBits usage, const void* d
 
 	deletion_queue.push([=]{
 		vmaDestroyBuffer(_allocator, buffer._buffer, buffer._allocation);
-		dloggln("Buffer Destroyed: ", lvk::to_string(buffer.usage));
+		dloggln("Buffer Destroyed: ", lvk::to_string(buffer._usage));
 	});
 
 	return buffer;
@@ -996,7 +996,7 @@ lvk_buffer lvk_allocator::init_vertex_buffer(const std::size_t size) {
 }
 
 void lvk_buffer::upload(const void* vertex_data, const std::size_t vertex_size) {
-	if (vertex_size > allocated_size) {
+	if (vertex_size > _allocated_size) {
 		throw std::runtime_error("vertices size greater than allocated size!");
 	}
 
@@ -1014,15 +1014,52 @@ void lvk_buffer::upload(const void* vertex_data, const std::size_t vertex_size) 
 // |--------------------------------------------------
 
 
-lvk_image lvk_allocator::init_image(VkFormat format) {
+lvk_image lvk_allocator::init_image(VkFormat format, VkImageUsageFlags usage, VkImageType image_type, VkExtent3D extent) {
 	lvk_image image = {
 		VK_NULL_HANDLE,
 		VK_NULL_HANDLE,
 		format,
+		image_type,
+		extent,
+		usage,
 		this,
 		device
 	};
 	
+	VkImageCreateInfo createInfo = {};
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	createInfo.pNext = VK_NULL_HANDLE;
+	createInfo.flags = 0;
+	createInfo.imageType = image_type;
+	createInfo.format = format;
+	createInfo.extent = extent;
+
+	// TODO: Mipmapping
+	createInfo.mipLevels = 1;
+
+	// TODO: Cubemaps
+	createInfo.arrayLayers = 1;
+	
+	// TODO: MSAA
+	createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	
+	// * VK_IMAGE_TILING_OPTIMAL					-> Let Vulkan Choose
+	// * VK_IMAGE_TILING_LINEAR						-> To read from CPU
+	// * VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT	-> Model Specific
+	createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+
+	createInfo.usage = usage;
+
+	// createInfo.sharingMode;
+	// createInfo.queueFamilyIndexCount;
+	// createInfo.pQueueFamilyIndices;
+	// createInfo.initialLayout;
+	
+	if (vkCreateImage(device->_device, &createInfo, VK_NULL_HANDLE, &image._image) != VK_SUCCESS) {
+		throw std::runtime_error("image creation failed!");
+	}
+	dloggln("Image Created");
+
 	deletion_queue.push([=]{
 		vmaDestroyImage(_allocator, image._image, image._allocation);
 		dloggln("Image Destroyed");
@@ -1037,12 +1074,12 @@ lvk_image lvk_allocator::init_image(VkFormat format) {
 // |--------------------------------------------------
 
 
-lvk_image_view lvk_image::init_image_view(VkImageAspectFlags aspect_flag) {
+lvk_image_view lvk_image::init_image_view(VkImageAspectFlags aspect_flag, VkImageViewType image_view_type) {
 	lvk_image_view image_view = {
 		VK_NULL_HANDLE
 	};
 
-	VkImageViewCreateInfo createInfo = lvk::image_view_create_info(_image, _format, aspect_flag);
+	VkImageViewCreateInfo createInfo = lvk::image_view_create_info(_image, _format, aspect_flag, image_view_type);
 
 	if (vkCreateImageView(device->_device, &createInfo, VK_NULL_HANDLE, &image_view.image_view) != VK_SUCCESS) {
 		throw std::runtime_error("image_view creation failed!");

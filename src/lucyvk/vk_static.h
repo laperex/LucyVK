@@ -315,7 +315,7 @@ struct lvk_allocator {
 	lvk_buffer init_vertex_buffer(const std::size_t size);
 	lvk_buffer init_vertex_buffer(const void* data, const std::size_t size);
 
-	lvk_image init_image(VkFormat format);
+	lvk_image init_image(VkFormat format, VkImageUsageFlags usage, VkImageType image_type, VkExtent3D extent);
 };
 
 
@@ -327,10 +327,10 @@ struct lvk_buffer {
 	VkBuffer _buffer;
 	VmaAllocation _allocation;
 	
-	const lvk_allocator* allocator;
+	std::size_t _allocated_size;
+	VkBufferUsageFlagBits _usage;
 
-	std::size_t allocated_size;
-	VkBufferUsageFlagBits usage;
+	const lvk_allocator* allocator;
 
 	void upload(const void* vertex_data, const std::size_t vertex_size);
 };
@@ -345,13 +345,16 @@ struct lvk_image {
 	VmaAllocation _allocation;
 	
 	VkFormat _format;
+	VkImageType _image_type;
+	VkExtent3D _extent;
+	VkImageUsageFlags _usage;
 	
 	const lvk_allocator* allocator;
 	const lvk_device* device;
 
 	lvk::deletion_queue* deletion_queue;
 	
-	lvk_image_view init_image_view(VkImageAspectFlags aspect_flag);
+	lvk_image_view init_image_view(VkImageAspectFlags aspect_flag, VkImageViewType image_view_type);
 };
 
 

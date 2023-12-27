@@ -67,7 +67,7 @@ int main(int count, char** args) {
 	
 	auto command_buffer = command_pool.init_command_buffer();
 	// auto command_buffers = command_pool.init_command_buffer(swapchain._images.size());
-	
+
 	VkCommandBufferBeginInfo cmdBeginInfo = {};
 	cmdBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	cmdBeginInfo.pNext = nullptr;
@@ -77,7 +77,7 @@ int main(int count, char** args) {
 
 	VkClearValue clearValue;
 	clearValue.color = { { 0.0f, 0.0f, 0, 0.0f } };
-	
+
 	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/mesh.vert.spv");
 	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
 
