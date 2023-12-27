@@ -76,7 +76,7 @@ int main(int count, char** args) {
 	cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
 	VkClearValue clearValue;
-	clearValue.color = { { 0.0f, 0.0f, 1, 1.0f } };
+	clearValue.color = { { 0.0f, 0.0f, 0, 0.0f } };
 	
 	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/mesh.vert.spv");
 	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
@@ -116,10 +116,10 @@ int main(int count, char** args) {
 
 	auto pipeline_layout = device.init_pipeline_layout(&push_constant, 1);
 	auto graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
-	
-	std::vector<lvk_framebuffer> framebuffers(swapchain._image_view_array.size());
+
+	std::vector<lvk_framebuffer> framebuffers(swapchain._image_count);
 	for (int i = 0; i < framebuffers.size(); i++) {
-		framebuffers[i] = render_pass.init_framebuffer(swapchain._extent, &swapchain._image_view_array[i], 1);
+		framebuffers[i] = render_pass.init_framebuffer(swapchain._extent, &swapchain._image_views[i], 1);
 	}
 
 	lucy::Mesh monkey_mesh;

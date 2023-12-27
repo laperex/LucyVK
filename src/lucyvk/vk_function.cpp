@@ -141,30 +141,49 @@ VkPhysicalDevice lvk::default_physical_device(const std::vector<VkPhysicalDevice
 	return VK_NULL_HANDLE;
 }
 
-void lvk::print_buffer_usage_enum(const char* string, const VkBufferUsageFlagBits usage) {
+VkImageViewCreateInfo lvk::image_view_create_info(VkImage image, VkFormat format, VkImageViewType view_type, VkImageSubresourceRange subresource_range, VkComponentMapping components) {
+	return {
+		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		VK_NULL_HANDLE,
+		0,
+		image,
+		view_type,
+		format,
+		components,
+		subresource_range
+	};
+}
+
+VkImageViewCreateInfo lvk::image_view_create_info(VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType view_type) {
+	return image_view_create_info(image, format, view_type, { aspect_flag, 0, 1, 0, 1 }, {});
+}
+
+const char* lvk::to_string(const VkBufferUsageFlagBits usage) {
 	switch (usage) {
-        case VK_BUFFER_USAGE_TRANSFER_SRC_BIT:dloggln(string, "TRANSFER_SRC");break;
-        case VK_BUFFER_USAGE_TRANSFER_DST_BIT:dloggln(string, "TRANSFER_DST");break;
-        case VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT:dloggln(string, "UNIFORM_TEXEL_BUFFER");break;
-        case VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT:dloggln(string, "STORAGE_TEXEL_BUFFER");break;
-        case VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT:dloggln(string, "UNIFORM_BUFFER");break;
-        case VK_BUFFER_USAGE_STORAGE_BUFFER_BIT:dloggln(string, "STORAGE_BUFFER");break;
-        case VK_BUFFER_USAGE_INDEX_BUFFER_BIT:dloggln(string, "INDEX_BUFFER");break;
-        case VK_BUFFER_USAGE_VERTEX_BUFFER_BIT:dloggln(string, "VERTEX_BUFFER");break;
-        case VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT:dloggln(string, "INDIRECT_BUFFER");break;
-        case VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT:dloggln(string, "SHADER_DEVICE_ADDRESS");break;
-        case VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR:dloggln(string, "VIDEO_DECODE_SRC");break;
-        case VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR:dloggln(string, "VIDEO_DECODE_DST");break;
-        case VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT:dloggln(string, "TRANSFORM_FEEDBACK_BUFFER");break;
-        case VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT:dloggln(string, "TRANSFORM_FEEDBACK_COUNTER_BUFFER");break;
-        case VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT:dloggln(string, "CONDITIONAL_RENDERING");break;
-        case VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR:dloggln(string, "ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY");break;
-        case VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR:dloggln(string, "ACCELERATION_STRUCTURE_STORAGE");break;
-        case VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR:dloggln(string, "SHADER_BINDING_TABLE");break;
-        case VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT:dloggln(string, "SAMPLER_DESCRIPTOR_BUFFER");break;
-        case VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT:dloggln(string, "RESOURCE_DESCRIPTOR_BUFFER");break;
-        case VK_BUFFER_USAGE_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT:dloggln(string, "PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER");break;
-        case VK_BUFFER_USAGE_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT:dloggln(string, "MICROMAP_BUILD_INPUT_READ_ONLY");break;
-        case VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT:dloggln(string, "MICROMAP_STORAGE");break;
+        case VK_BUFFER_USAGE_TRANSFER_SRC_BIT:return "TRANSFER_SRC";
+        case VK_BUFFER_USAGE_TRANSFER_DST_BIT:return "TRANSFER_DST";
+        case VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT:return "UNIFORM_TEXEL_BUFFER";
+        case VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT:return "STORAGE_TEXEL_BUFFER";
+        case VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT:return "UNIFORM_BUFFER";
+        case VK_BUFFER_USAGE_STORAGE_BUFFER_BIT:return "STORAGE_BUFFER";
+        case VK_BUFFER_USAGE_INDEX_BUFFER_BIT:return "INDEX_BUFFER";
+        case VK_BUFFER_USAGE_VERTEX_BUFFER_BIT:return "VERTEX_BUFFER";
+        case VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT:return "INDIRECT_BUFFER";
+        case VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT:return "SHADER_DEVICE_ADDRESS";
+        case VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR:return "VIDEO_DECODE_SRC";
+        case VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR:return "VIDEO_DECODE_DST";
+        case VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT:return "TRANSFORM_FEEDBACK_BUFFER";
+        case VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_COUNTER_BUFFER_BIT_EXT:return "TRANSFORM_FEEDBACK_COUNTER_BUFFER";
+        case VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT:return "CONDITIONAL_RENDERING";
+        case VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR:return "ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY";
+        case VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR:return "ACCELERATION_STRUCTURE_STORAGE";
+        case VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR:return "SHADER_BINDING_TABLE";
+        case VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT:return "SAMPLER_DESCRIPTOR_BUFFER";
+        case VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT:return "RESOURCE_DESCRIPTOR_BUFFER";
+        case VK_BUFFER_USAGE_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT:return "PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER";
+        case VK_BUFFER_USAGE_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT:return "MICROMAP_BUILD_INPUT_READ_ONLY";
+        case VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT:return "MICROMAP_STORAGE";
 	}
+	
+	return "";
 }

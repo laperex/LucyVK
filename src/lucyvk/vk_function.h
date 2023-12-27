@@ -10,5 +10,8 @@ namespace lvk {
 
 	VkPhysicalDevice default_physical_device(const std::vector<VkPhysicalDevice>& physicalDeviceArray, const lvk_instance* instance);
 	
-	void print_buffer_usage_enum(const char* string, const VkBufferUsageFlagBits usage);
+	VkImageViewCreateInfo image_view_create_info(VkImage image, VkFormat format, VkImageViewType view_type, VkImageSubresourceRange subresource_range, VkComponentMapping components);
+	VkImageViewCreateInfo image_view_create_info(VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType view_type = VK_IMAGE_VIEW_TYPE_2D);
+	
+	const char* to_string(const VkBufferUsageFlagBits usage);
 }

@@ -67,7 +67,7 @@ struct lvk_device {
 
 	std::vector<const char*> extensions = {};
 	std::vector<const char*> layers = {};
-
+	
 	~lvk_device();
 
 	const lvk_physical_device* physical_device;
@@ -80,29 +80,17 @@ struct lvk_device {
 	
 	lvk_render_pass init_render_pass();
 	lvk_render_pass init_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform = false);
-	
+
 	lvk_semaphore init_semaphore();
 	lvk_fence init_fence(VkFenceCreateFlags flags = 0);
-	
-// 	lvk_graphics_pipeline init_graphics_pipeline(
-// 	const VkPipelineShaderStageCreateInfo* shader_stage, const uint32_t shader_stage_count,
-// 	const VkPipelineVertexInputStateCreateInfo*      vertex_input_state,
-// 	const VkPipelineInputAssemblyStateCreateInfo*    input_assembly_state,
-// 	const VkPipelineTessellationStateCreateInfo*     tessellation_state,
-// 	const VkPipelineViewportStateCreateInfo*         viewport_state,
-// 	const VkPipelineRasterizationStateCreateInfo*    rasterization_state,
-// 	const VkPipelineMultisampleStateCreateInfo*      multisample_state,
-// 	const VkPipelineDepthStencilStateCreateInfo*     depth_stencil_state,
-// 	const VkPipelineColorBlendStateCreateInfo*       color_blend_state,
-// 	const VkPipelineDynamicStateCreateInfo*          dynamic_state
-// );
+
 	lvk_shader_module init_shader_module(VkShaderStageFlagBits stage, const char* filename);
 	
 	lvk_pipeline_layout init_pipeline_layout(const VkPushConstantRange* push_constant_range, uint32_t push_constant_range_count);
 	
 	lvk_allocator init_allocator();
 
-	void wait_idle();
+	void wait_idle() const;
 };
 
 
@@ -117,9 +105,9 @@ struct lvk_swapchain {
 	VkSurfaceFormatKHR _surface_format;
 	VkPresentModeKHR _present_mode;
 
+	uint32_t _image_count;
 	VkImage* _images;
-	std::vector<VkImageView> _image_view_array;
-	std::vector<VkFramebuffer> _frambuffers;
+	VkImageView* _image_views;
 	
 	bool recreate(const uint32_t width, const uint32_t height);
 	VkResult acquire_next_image(uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT);
@@ -317,17 +305,17 @@ struct lvk_allocator {
 	VmaAllocator _allocator;
 	
 	const lvk_device* device;
-	
+
 	lvk::deletion_queue deletion_queue;
 	
 	~lvk_allocator();
-	
+
 	lvk_buffer init_buffer(VkBufferUsageFlagBits usage, const void* data, const std::size_t size, const VkSharingMode sharing_mode, const uint32_t* queue_family_indices, uint32_t queue_family_indices_count);
 
 	lvk_buffer init_vertex_buffer(const std::size_t size);
 	lvk_buffer init_vertex_buffer(const void* data, const std::size_t size);
 
-	lvk_image init_buffer();
+	lvk_image init_image(VkFormat format);
 };
 
 
@@ -345,8 +333,6 @@ struct lvk_buffer {
 	VkBufferUsageFlagBits usage;
 
 	void upload(const void* vertex_data, const std::size_t vertex_size);
-	
-	~lvk_buffer();
 };
 
 
@@ -358,7 +344,24 @@ struct lvk_image {
 	VkImage _image;
 	VmaAllocation _allocation;
 	
+	VkFormat _format;
+	
 	const lvk_allocator* allocator;
+	const lvk_device* device;
 
-	~lvk_image();
+	lvk::deletion_queue* deletion_queue;
+	
+	lvk_image_view init_image_view(VkImageAspectFlags aspect_flag);
+};
+
+
+// |--------------------------------------------------
+// ----------------> IMAGE VIEW
+// |--------------------------------------------------
+
+
+struct lvk_image_view {
+	VkImageView image_view;
+	
+	const lvk_image* image;
 };

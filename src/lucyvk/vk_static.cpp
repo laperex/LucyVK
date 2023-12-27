@@ -272,7 +272,7 @@ lvk_device lvk_physical_device::init_device(std::vector<const char*> layers, std
 	return device;
 }
 
-void lvk_device::wait_idle() {
+void lvk_device::wait_idle() const {
 	vkDeviceWaitIdle(_device);
 }
 
@@ -307,8 +307,8 @@ lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height) {
 		VkExtent2D { width, height },
 		get_swapchain_surface_format(physical_device->_swapchain_support_details.formats),
 		VK_PRESENT_MODE_FIFO_KHR,
+		0,
 		VK_NULL_HANDLE,
-		{},
 		{},
 		this,
 		physical_device,
@@ -340,16 +340,16 @@ lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height) {
 }
 
 bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
+	if (_image_count) {
+		for (int i = 0; i < _image_count; i++) {
+			vkDestroyImageView(device->_device, _image_views[i], VK_NULL_HANDLE);
+		}
+		dloggln("ImageViews Destroyed");
+	}
+
 	if (_swapchain != VK_NULL_HANDLE) {
 		vkDestroySwapchainKHR(device->_device, _swapchain, VK_NULL_HANDLE);
 		dloggln("Swapchain Destroyed");
-	}
-
-	if (_image_view_array.size()) {
-		for (int i = 0; i < _image_view_array.size(); i++) {
-			vkDestroyImageView(device->_device, _image_view_array[i], VK_NULL_HANDLE);
-		}
-		dloggln("ImageViews Destroyed");
 	}
 
 	this->_extent.width = width;
@@ -358,8 +358,6 @@ bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
 	const auto& present_modes = physical_device->_swapchain_support_details.present_modes;
 	const auto& capabilities = physical_device->_swapchain_support_details.capabilities;
 
-	uint32_t image_count = (capabilities.maxImageCount > 0 && image_count > capabilities.maxImageCount) ? capabilities.maxImageCount: capabilities.minImageCount + 1;
-
 	VkSwapchainCreateInfoKHR createInfo = {};
 	{
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -367,7 +365,9 @@ bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
 		createInfo.flags = 0;
 		createInfo.surface = instance->_surface;
 
-		createInfo.minImageCount = image_count;
+		// TF ???
+		createInfo.minImageCount = (capabilities.maxImageCount > 0 && capabilities.minImageCount + 1 > capabilities.maxImageCount) ? capabilities.maxImageCount: capabilities.minImageCount + 1;
+
 		createInfo.imageFormat = this->_surface_format.format;
 		createInfo.imageColorSpace = this->_surface_format.colorSpace;
 		createInfo.imageExtent = (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) ?
@@ -415,14 +415,12 @@ bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
 	
 	// ImageViews
 	
-	// dloggln(image_count);
-	vkGetSwapchainImagesKHR(this->device->_device, this->_swapchain, &image_count, nullptr);
-	_images = new VkImage[image_count];
-	vkGetSwapchainImagesKHR(this->device->_device, this->_swapchain, &image_count, _images);
-	this->_image_view_array.resize(image_count);
+	vkGetSwapchainImagesKHR(this->device->_device, this->_swapchain, &_image_count, nullptr);
+	_images = new VkImage[_image_count];
+	_image_views = new VkImageView[_image_count];
+	vkGetSwapchainImagesKHR(this->device->_device, this->_swapchain, &_image_count, _images);
 
-
-	for (size_t i = 0; i < image_count; i++) {
+	for (size_t i = 0; i < _image_count; i++) {
 		VkImageViewCreateInfo viewInfo = {};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 
@@ -436,7 +434,7 @@ bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = 1;
 
-		if (vkCreateImageView(this->device->_device, &viewInfo, VK_NULL_HANDLE, &this->_image_view_array[i]) != VK_SUCCESS) {
+		if (vkCreateImageView(this->device->_device, &viewInfo, VK_NULL_HANDLE, &this->_image_views[i]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create image!");
 		}
 	}
@@ -454,10 +452,13 @@ lvk_swapchain::~lvk_swapchain()
 	vkDestroySwapchainKHR(device->_device, _swapchain, VK_NULL_HANDLE);
 	dloggln("Swapchain Destroyed");
 
-	for (int i = 0; i < _image_view_array.size(); i++) {
-		vkDestroyImageView(device->_device, _image_view_array[i], VK_NULL_HANDLE);
+	for (int i = 0; i < _image_count; i++) {
+		vkDestroyImageView(device->_device, _image_views[i], VK_NULL_HANDLE);
 	}
 	dloggln("ImageViews Destroyed");
+	
+	delete [] _image_views;
+	delete [] _images;
 }
 
 
@@ -814,27 +815,6 @@ lvk_shader_module::~lvk_shader_module()
 // |--------------------------------------------------
 
 
-// lvk_graphics_shaders::~lvk_graphics_shaders()
-// {
-// 	if (_vertex_shader != VK_NULL_HANDLE) {
-// 		vkDestroyShaderModule(device->_device, _vertex_shader, VK_NULL_HANDLE);
-// 	}
-// 	if (_testallation_control_shader != VK_NULL_HANDLE) {
-// 		vkDestroyShaderModule(device->_device, _testallation_control_shader, VK_NULL_HANDLE);
-// 	}
-// 	if (_testallation_evaluation_shader != VK_NULL_HANDLE) {
-// 		vkDestroyShaderModule(device->_device, _testallation_evaluation_shader, VK_NULL_HANDLE);
-// 	}
-// 	if (_geometry_shader != VK_NULL_HANDLE) {
-// 		vkDestroyShaderModule(device->_device, _geometry_shader, VK_NULL_HANDLE);
-// 	}
-// 	if (_fragment_shader != VK_NULL_HANDLE) {
-// 		vkDestroyShaderModule(device->_device, _fragment_shader, VK_NULL_HANDLE);
-// 	}
-// 	dloggln("Graphics Shaders Destroyed");
-// }
-
-
 lvk_pipeline_layout lvk_device::init_pipeline_layout(const VkPushConstantRange* push_constant_range, uint32_t push_constant_range_count) {
 	lvk_pipeline_layout pipeline_layout = {
 		VK_NULL_HANDLE,
@@ -951,8 +931,7 @@ lvk_allocator lvk_device::init_allocator() {
 	return allocator;
 }
 
-lvk_allocator::~lvk_allocator()
-{
+lvk_allocator::~lvk_allocator() {
 	deletion_queue.flush();
 
 	vmaDestroyAllocator(_allocator);
@@ -994,7 +973,7 @@ lvk_buffer lvk_allocator::init_buffer(VkBufferUsageFlagBits usage, const void* d
 		throw std::runtime_error("failed to create buffer!");
 	}
 
-	lvk::print_buffer_usage_enum("Buffer Created: ", usage);
+	dloggln("Buffer Created: ", lvk::to_string(usage));
 	
 	if (data != nullptr) {
 		buffer.upload(data, size);
@@ -1002,7 +981,7 @@ lvk_buffer lvk_allocator::init_buffer(VkBufferUsageFlagBits usage, const void* d
 
 	deletion_queue.push([=]{
 		vmaDestroyBuffer(_allocator, buffer._buffer, buffer._allocation);
-		lvk::print_buffer_usage_enum("Buffer Destroyed: ", buffer.usage);
+		dloggln("Buffer Destroyed: ", lvk::to_string(buffer.usage));
 	});
 
 	return buffer;
@@ -1029,34 +1008,51 @@ void lvk_buffer::upload(const void* vertex_data, const std::size_t vertex_size) 
 	vmaUnmapMemory(allocator->_allocator, _allocation);
 }
 
-lvk_buffer::~lvk_buffer()
-{
-	// vmaDestroyBuffer(allocator->_allocator, _buffer, _allocation);
-	// dloggln("Buffer Destroyed");
-}
-
 
 // |--------------------------------------------------
 // ----------------> IMAGE
 // |--------------------------------------------------
 
 
-lvk_image lvk_allocator::init_buffer() {
+lvk_image lvk_allocator::init_image(VkFormat format) {
 	lvk_image image = {
 		VK_NULL_HANDLE,
 		VK_NULL_HANDLE,
-		this
+		format,
+		this,
+		device
 	};
 	
 	deletion_queue.push([=]{
 		vmaDestroyImage(_allocator, image._image, image._allocation);
-		// lvk::print_buffer_usage_enum("Image Destroyed: ", image.usage);
+		dloggln("Image Destroyed");
 	});
 	
 	return image;
 }
 
-lvk_image::~lvk_image()
-{
-	
+
+// |--------------------------------------------------
+// ----------------> IMAGE VIEW
+// |--------------------------------------------------
+
+
+lvk_image_view lvk_image::init_image_view(VkImageAspectFlags aspect_flag) {
+	lvk_image_view image_view = {
+		VK_NULL_HANDLE
+	};
+
+	VkImageViewCreateInfo createInfo = lvk::image_view_create_info(_image, _format, aspect_flag);
+
+	if (vkCreateImageView(device->_device, &createInfo, VK_NULL_HANDLE, &image_view.image_view) != VK_SUCCESS) {
+		throw std::runtime_error("image_view creation failed!");
+	}
+	dloggln("ImageView Created");
+
+	deletion_queue->push([=]{
+		vkDestroyImageView(device->_device, image_view.image_view, VK_NULL_HANDLE);
+		dloggln("ImageView Destroyed");
+	});
+
+	return image_view;
 }

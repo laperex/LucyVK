@@ -35,6 +35,7 @@ struct lvk_pipeline;
 struct lvk_allocator;
 struct lvk_buffer;
 struct lvk_image;
+struct lvk_image_view;
 
 // enum LVK_SHADER_STAGE_ {
 // 	LVK_SHADER_STAGE_VERTEX_BIT = 0x00000001,					// VK_SHADER_STAGE_VERTEX_BIT,
