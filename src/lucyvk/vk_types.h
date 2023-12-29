@@ -17,8 +17,11 @@
 #define LVK_TIMEOUT 1000000000
 
 struct lvk_instance;
+
 struct lvk_physical_device;
 struct lvk_device;
+
+struct lvk_queue;
 
 struct lvk_command_pool;
 struct lvk_command_buffer;
@@ -26,7 +29,6 @@ struct lvk_command_buffer;
 struct lvk_swapchain;
 struct lvk_render_pass;
 
-struct lvk_framebuffer_array;
 struct lvk_framebuffer;
 
 struct lvk_semaphore;
@@ -65,17 +67,24 @@ namespace lvk {
 	};
 
 	struct queue_family_indices {
-		std::optional<uint32_t> graphics;
-		std::optional<uint32_t> present;
-		std::optional<uint32_t> compute;
+		// union {
+		// 	struct {
+				std::optional<uint32_t> graphics;
+				std::optional<uint32_t> present;
+				std::optional<uint32_t> compute;
+				std::optional<uint32_t> transfer;
+		// 	};
+			
+		// 	uint32_t indices[4];
+		// };
 
 		operator bool() const {
-			return graphics.has_value() && present.has_value();
+			return graphics.has_value() && present.has_value() && compute.has_value() && transfer.has_value();
 		}
 
-		const bool unique() const {
-			return (graphics.value() == present.value());
-		}
+		// const bool unique() const {
+		// 	return (graphics.value() == present.value());
+		// }
 	};
 
 	struct swapchain_support_details {
@@ -85,6 +94,4 @@ namespace lvk {
 	};
 
 	typedef std::function<VkPhysicalDevice(const std::vector<VkPhysicalDevice>&, const lvk_instance* instance)> SelectPhysicalDeviceFunction;
-
-	lvk_instance initialize(const char* name, SDL_Window* sdl_window, bool debug_enable);
 }

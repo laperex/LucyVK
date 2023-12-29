@@ -63,15 +63,15 @@ static bool CheckValidationLayerSupport() {
 // |--------------------------------------------------
 
 
-lvk_instance lvk::initialize(const char* name, SDL_Window* sdl_window, bool debug_enable) {
+lvk_instance lvk_init_instance(const lvk::config::instance* config, SDL_Window* sdl_window) {
 	lvk_instance instance = {};
 	
 	VkApplicationInfo appInfo = {
 		VK_STRUCTURE_TYPE_APPLICATION_INFO,
 		nullptr,
-		name,
+		config->name,
 		VK_MAKE_VERSION(0, 0, 8),
-		name,
+		config->name,
 		VK_MAKE_VERSION(1, 1, 7),
 		VK_API_VERSION_1_0
 	};
@@ -79,7 +79,7 @@ lvk_instance lvk::initialize(const char* name, SDL_Window* sdl_window, bool debu
     VkInstanceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
-	
+
 	uint32_t requiredExtensionCount = 0;
 	SDL_Vulkan_GetInstanceExtensions(sdl_window, &requiredExtensionCount, nullptr);
 	std::vector<const char*> requiredExtensionArray(requiredExtensionCount);
@@ -103,11 +103,11 @@ lvk_instance lvk::initialize(const char* name, SDL_Window* sdl_window, bool debu
 		nullptr
 	};
 
-	if (debug_enable) {
+	if (config->enable_validation_layers) {
 		if (!CheckValidationLayerSupport()) {
 			throw std::runtime_error("validation layers requested, but not available!");
 		}
-		
+
 		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
 		
 		instance.layers.push_back("VK_LAYER_KHRONOS_validation");
@@ -115,7 +115,7 @@ lvk_instance lvk::initialize(const char* name, SDL_Window* sdl_window, bool debu
 		requiredExtensionArray.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
 		std::unordered_set<std::string> requiredExtensions, availableExtensions;
-		
+
 		for (const auto& extension: requiredExtensionArray) {
 			requiredExtensions.insert(extension);
 		}
@@ -147,7 +147,7 @@ lvk_instance lvk::initialize(const char* name, SDL_Window* sdl_window, bool debu
     }
 	dloggln("Instance Created");
 
-	if (debug_enable) {
+	if (config->enable_validation_layers) {
 		if (CreateDebugUtilsMessengerEXT(instance._instance, &debugCreateInfo, nullptr, &instance._debug_messenger) != VK_SUCCESS) {
 			throw std::runtime_error("debug messenger creation failed!");
 		}
@@ -225,6 +225,8 @@ lvk_device lvk_physical_device::init_device(std::vector<const char*> layers, std
 		VK_NULL_HANDLE,
 		VK_NULL_HANDLE,
 		VK_NULL_HANDLE,
+		VK_NULL_HANDLE,
+		VK_NULL_HANDLE,
 		extensions,
 		layers,
 		this,
@@ -232,27 +234,32 @@ lvk_device lvk_physical_device::init_device(std::vector<const char*> layers, std
 		{}
 	};
 	
-	std::vector<VkDeviceQueueCreateInfo> queueCreateInfoArray;
-    std::set<uint32_t> uniqueQueueFamilies = { _queue_family_indices.graphics.value(), _queue_family_indices.present.value() };
+	std::set<uint32_t> unique_queue_indices = {
+		_queue_family_indices.graphics.value(),
+		_queue_family_indices.present.value(),
+		_queue_family_indices.compute.value(),
+		_queue_family_indices.transfer.value(),
+	};
 
-    float queuePriority = 1.0f;
-    for (uint32_t queueFamily: uniqueQueueFamilies) {
-		queueCreateInfoArray.push_back({
-			VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-			nullptr,
-			0,
-			queueFamily,
-			1,
-			&queuePriority
-		});
+	VkDeviceQueueCreateInfo* queue_create_info_array = new VkDeviceQueueCreateInfo[unique_queue_indices.size()];
+
+    float priority = 1.0f;
+	uint32_t i = 0;
+    for (uint32_t index: unique_queue_indices) {
+		queue_create_info_array[i++] = {
+			.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+			.queueFamilyIndex = index,
+			.queueCount = static_cast<uint32_t>(unique_queue_indices.size()),
+			.pQueuePriorities = &priority
+		};
     }
 
 	VkDeviceCreateInfo createInfo = {
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 		nullptr,
 		0,
-		static_cast<uint32_t>(std::size(queueCreateInfoArray)),
-		queueCreateInfoArray.data(),
+		static_cast<uint32_t>(unique_queue_indices.size()),
+		queue_create_info_array,
 		static_cast<uint32_t>(std::size(device.layers)),
 		device.layers.data(),
 		static_cast<uint32_t>(std::size(device.extensions)),
@@ -265,10 +272,29 @@ lvk_device lvk_physical_device::init_device(std::vector<const char*> layers, std
     }
 	dloggln("Logical Device Created");
 
-    vkGetDeviceQueue(device._device, _queue_family_indices.graphics.value(), 0, &device._graphicsQueue);
-	dloggln("Graphics Queue Created");
-    vkGetDeviceQueue(device._device, _queue_family_indices.present.value(), 0, &device._presentQueue);
-	dloggln("Present Queue Created");
+    for (uint32_t index: unique_queue_indices) {
+		VkQueue queue;
+    	vkGetDeviceQueue(device._device, index, 0, &queue);
+
+		if (index == _queue_family_indices.graphics.value()) {
+			device._graphics_queue = queue;
+			dloggln("Graphics Queue Created");
+		}
+		if (index == _queue_family_indices.present.value()) {
+			device._present_queue = queue;
+			dloggln("Present Queue Created");
+		}
+		if (index == _queue_family_indices.compute.value()) {
+			device._compute_queue = queue;
+			dloggln("Compute Queue Created");
+		}
+		if (index == _queue_family_indices.transfer.value()) {
+			device._transfer_queue = queue;
+			dloggln("Transfer Queue Created");
+		}
+	}
+	
+	delete [] queue_create_info_array;
 	
 	return device;
 }
@@ -277,12 +303,29 @@ void lvk_device::wait_idle() const {
 	vkDeviceWaitIdle(_device);
 }
 
+VkResult lvk_device::submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const lvk_fence* fence, uint64_t timeout) const {
+	auto result = vkQueueSubmit(_graphics_queue, 1, submit_info, fence->_fence);
+
+	fence->wait(timeout);
+	fence->reset();
+
+	return result;
+}
+
+VkResult lvk_device::present(const VkPresentInfoKHR* present_info) const {
+	return vkQueuePresentKHR(_present_queue, present_info);
+}
+
 lvk_device::~lvk_device()
 {
 	deletion_queue.flush();
-	
+
 	vkDestroyDevice(_device, VK_NULL_HANDLE);
 	dloggln("Device Destroyed");
+}
+
+VkResult lvk_queue::present(const VkPresentInfoKHR* present_info) {
+	return vkQueuePresentKHR(_present, present_info);
 }
 
 
@@ -388,7 +431,7 @@ bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
 			physical_device->_queue_family_indices.present.value()
 		};
 
-		if (physical_device->_queue_family_indices.unique()) {
+		if (physical_device->_queue_family_indices.present == physical_device->_queue_family_indices.graphics) {
 			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			createInfo.queueFamilyIndexCount = 0;
 			createInfo.pQueueFamilyIndices = nullptr;
@@ -542,14 +585,13 @@ void lvk_command_buffer::begin(const VkCommandBufferBeginInfo* beginInfo) {
 }
 
 void lvk_command_buffer::begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info) {
-	VkCommandBufferBeginInfo beginInfo = {
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		VK_NULL_HANDLE,
-		flags,
-		inheritance_info
+	VkCommandBufferBeginInfo cmdBeginInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.flags = flags,
+		.pInheritanceInfo = inheritance_info
 	};
 
-	vkBeginCommandBuffer(_command_buffer, &beginInfo);
+	vkBeginCommandBuffer(_command_buffer, &cmdBeginInfo);
 }
 
 void lvk_command_buffer::end() {
@@ -794,11 +836,11 @@ lvk_fence lvk_device::init_fence(VkFenceCreateFlags flags) {
 	return fence;
 }
 
-VkResult lvk_fence::wait(uint64_t timeout) {
+VkResult lvk_fence::wait(uint64_t timeout) const {
 	return vkWaitForFences(device->_device, 1, &_fence, false, timeout);
 }
 
-VkResult lvk_fence::reset() {
+VkResult lvk_fence::reset() const {
 	return vkResetFences(device->_device, 1, &_fence);
 }
 
@@ -879,6 +921,7 @@ lvk_pipeline lvk_pipeline_layout::init_graphics_pipeline(const lvk_render_pass* 
 		.pipeline_layout = this,
 		.render_pass = render_pass,
 		.device = device,
+		.type = VK_PIPELINE_BIND_POINT_GRAPHICS,
 		.deletion_queue = deletion_queue,
 	};
 

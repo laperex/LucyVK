@@ -8,17 +8,35 @@ namespace lvk::config {
 
 		VkPipelineVertexInputStateCreateInfo vertex_input_state;
 		VkPipelineInputAssemblyStateCreateInfo input_assembly_state;
-		// VkPipelineTessellationStateCreateInfo testallation_state;
-		// VkPipelineViewportStateCreateInfo viewport_state;
+		VkPipelineTessellationStateCreateInfo testallation_state;
+		VkPipelineViewportStateCreateInfo viewport_state;
 		VkPipelineRasterizationStateCreateInfo rasterization_state;
 		VkPipelineMultisampleStateCreateInfo multisample_state;
 		VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
-		// VkPipelineColorBlendStateCreateInfo color_blend_state;
-		// VkPipelineDynamicStateCreateInfo dynamic_state;
+		VkPipelineColorBlendStateCreateInfo color_blend_state;
+		VkPipelineDynamicStateCreateInfo dynamic_state;
 		
 		VkPipelineColorBlendAttachmentState color_blend_attachment;
 		
 		VkViewport viewport;
 		VkRect2D scissor;
+	};
+	
+	struct instance {
+		const char* name;
+
+		std::vector<const char*> layers;
+		std::vector<const char*> extensions;
+
+		bool enable_validation_layers;
+	};
+
+	struct device {
+		const char* name;
+
+		std::vector<const char*> layers;
+		std::vector<const char*> extensions;
+
+		bool enable_validation_layers;
 	};
 }

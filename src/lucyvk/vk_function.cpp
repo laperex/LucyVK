@@ -31,7 +31,7 @@ lvk::queue_family_indices lvk::query_queue_family_indices(VkPhysicalDevice physi
 	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
 
-	lvk::queue_family_indices indices;
+	lvk::queue_family_indices indices = {};
 
 	for (int i = 0; i < queueFamilies.size(); i++) {
 		VkBool32 presentSupport = false;
@@ -41,13 +41,13 @@ lvk::queue_family_indices lvk::query_queue_family_indices(VkPhysicalDevice physi
 			indices.present = i;
 		}
 		
-		// if (queueFamilies[i].queueCount > 0 && queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
-		// 	indices.compute = i;
-		// }
+		if (queueFamilies[i].queueCount > 0 && queueFamilies[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
+			indices.compute = i;
+		}
 
-		// if (queueFamilies[i].queueCount > 0 && queueFamilies[i].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT) {
-		// 	indices.sparse_binding = i;
-		// }
+		if (queueFamilies[i].queueCount > 0 && queueFamilies[i].queueFlags & VK_QUEUE_TRANSFER_BIT) {
+			indices.transfer = i;
+		}
 
 		if (queueFamilies[i].queueCount > 0 && queueFamilies[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 			indices.graphics = i;

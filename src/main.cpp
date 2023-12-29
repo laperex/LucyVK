@@ -98,16 +98,22 @@ int main(int count, char** args) {
 	lucy::Window window = {};
 	window.InitWindow();
 
-	auto instance = lvk::initialize("Lucy", window.sdl_window, true);
+	lvk::config::instance config = {
+		.name = "Lucy Framework v7",
+		.enable_validation_layers = true
+	};
+
+	auto instance = lvk_init_instance(&config, window.sdl_window);
 	auto physical_device = instance.init_physical_device();
 	auto device = physical_device.init_device();
 	auto allocator = device.init_allocator();
 	auto render_pass = device.init_render_pass();
+	// auto queue = device.init_queue();
 
 	auto swapchain = device.init_swapchain(window.size.x, window.size.y);
-	
+
 	Frame frame[FRAMES_IN_FLIGHT];
-	
+
 	for (int i = 0; i < std::size(frame); i++) {
 		frame[i].command_pool = device.init_command_pool();
 		frame[i].command_buffer = frame[i].command_pool.init_command_buffer();
@@ -126,7 +132,7 @@ int main(int count, char** args) {
 			.depthStencil = {
 				.depth = 1.0f
 			}
-		}
+		},
 	};
 
 	VkPushConstantRange push_constant = {
@@ -139,12 +145,10 @@ int main(int count, char** args) {
 
 	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/mesh.vert.spv");
 	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
-
-
+	auto vertex_layout = lucy::Vertex::get_vertex_description();
+	
 	lvk_pipeline graphics_pipeline = {};
 	{
-		auto vertex_layout = lucy::Vertex::get_vertex_description();
-
 		lvk::config::graphics_pipeline config = {
 			.shader_stage_array = {
 				lvk::info::shader_stage(&vertex_shader, nullptr),
@@ -176,9 +180,9 @@ int main(int count, char** args) {
 		graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
 	}
 
-	auto* framebuffers = new lvk_framebuffer[swapchain._image_count];
 	auto* depth_images = new lvk_image[swapchain._image_count];
 	auto* depth_image_views = new lvk_image_view[swapchain._image_count];
+	auto* framebuffers = new lvk_framebuffer[swapchain._image_count];
 
 	for (int i = 0; i < swapchain._image_count; i++) {
 		depth_images[i] = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_TYPE_2D, { swapchain._extent.width, swapchain._extent.height, 1 });
@@ -198,13 +202,6 @@ int main(int count, char** args) {
 
 	uint32_t framenumber = 0;
 
-	VkCommandBufferBeginInfo cmdBeginInfo = {};
-	cmdBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	cmdBeginInfo.pNext = nullptr;
-
-	cmdBeginInfo.pInheritanceInfo = nullptr;
-	cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
 		const auto& start_time = std::chrono::high_resolution_clock::now();
@@ -221,6 +218,7 @@ int main(int count, char** args) {
 			// auto t0 = std::chrono::high_resolution_clock::now();
 			{
 				auto& current_frame = frame[framenumber % FRAMES_IN_FLIGHT];
+
 				uint32_t image_index;
 				swapchain.acquire_next_image(&image_index, current_frame.present_semaphore._semaphore, VK_NULL_HANDLE);
 				current_frame.image_index = image_index;
@@ -229,6 +227,7 @@ int main(int count, char** args) {
 				current_frame.command_buffer.begin_render_pass(&framebuffers[image_index], clearValue, 2, VK_SUBPASS_CONTENTS_INLINE);
 
 				vkCmdBindPipeline(current_frame.command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
+
 				VkDeviceSize offset = 0;
 				vkCmdBindVertexBuffers(current_frame.command_buffer._command_buffer, 0, 1, &monkey_mesh.vertex_buffer._buffer, &offset);
 
@@ -252,52 +251,38 @@ int main(int count, char** args) {
 			if (framenumber > 0) {
 				auto& prev_frame = frame[(framenumber - 1) % FRAMES_IN_FLIGHT];
 				
-				VkSubmitInfo submit = {};
-				submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-				submit.pNext = nullptr;
-
 				VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-				submit.pWaitDstStageMask = &waitStage;
+				VkSubmitInfo submit = {
+					.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+					
+					.waitSemaphoreCount = 1,
+					.pWaitSemaphores = &prev_frame.present_semaphore._semaphore,
 
-				submit.waitSemaphoreCount = 1;
-				submit.pWaitSemaphores = &prev_frame.present_semaphore._semaphore;
+					.pWaitDstStageMask = &waitStage,
 
-				submit.signalSemaphoreCount = 1;
-				submit.pSignalSemaphores = &prev_frame.render_semaphore._semaphore;
+					.commandBufferCount = 1,
+					.pCommandBuffers = &prev_frame.command_buffer._command_buffer,
 
-				submit.commandBufferCount = 1;
-				submit.pCommandBuffers = &prev_frame.command_buffer._command_buffer;
+					.signalSemaphoreCount = 1,
+					.pSignalSemaphores = &prev_frame.render_semaphore._semaphore,
+				};
 
-				//submit command buffer to the queue and execute it.
-				// _renderFence will now block until the graphic commands finish execution
-				vkQueueSubmit(device._graphicsQueue, 1, &submit, prev_frame.render_fence._fence);
-
-				// auto x0 = std::chrono::high_resolution_clock::now();
-
-				prev_frame.render_fence.wait();
-				prev_frame.render_fence.reset();
-
-				prev_frame.command_buffer.reset();
+				device.submit(&submit, 1, &prev_frame.render_fence);
 				
-				
-				VkPresentInfoKHR presentInfo = {};
-				presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-				presentInfo.pNext = nullptr;
+				VkPresentInfoKHR presentInfo = {
+					.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+					
+					.waitSemaphoreCount = 1,
+					.pWaitSemaphores = &prev_frame.render_semaphore._semaphore,
+					
+					.swapchainCount = 1,
+					.pSwapchains = &swapchain._swapchain,
+					
+					.pImageIndices = &prev_frame.image_index,
+				};
 
-				presentInfo.pSwapchains = &swapchain._swapchain;
-				presentInfo.swapchainCount = 1;
-
-				presentInfo.pWaitSemaphores = &prev_frame.render_semaphore._semaphore;
-				presentInfo.waitSemaphoreCount = 1;
-
-				presentInfo.pImageIndices = &prev_frame.image_index;
-
-				// auto x1 = std::chrono::high_resolution_clock::now();
-
-				// dloggln("Wait: ", std::chrono::duration_cast<std::chrono::microseconds>(x1 - x0).count());
-
-				vkQueuePresentKHR(device._graphicsQueue, &presentInfo);
+				device.present(&presentInfo);
 			}
 
 			// auto t2 = std::chrono::high_resolution_clock::now();

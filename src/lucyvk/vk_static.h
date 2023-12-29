@@ -17,6 +17,8 @@
 // |--------------------------------------------------
 
 
+lvk_instance lvk_init_instance(const lvk::config::instance* config, SDL_Window* sdl_window);
+
 struct lvk_instance {
 	VkDebugUtilsMessengerEXT _debug_messenger;
 	VkSurfaceKHR _surface;
@@ -63,8 +65,10 @@ struct lvk_physical_device {
 struct lvk_device {
 	VkDevice _device;
 	
-	VkQueue _graphicsQueue;
-	VkQueue _presentQueue;
+	VkQueue _present_queue;
+	VkQueue _compute_queue;
+	VkQueue _transfer_queue;
+	VkQueue _graphics_queue;
 
 	std::vector<const char*> extensions = {};
 	std::vector<const char*> layers = {};
@@ -81,6 +85,8 @@ struct lvk_device {
 	lvk_command_pool init_command_pool();
 	lvk_command_pool init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
 	
+	lvk_queue init_queue();
+	
 	lvk_render_pass init_render_pass();
 	lvk_render_pass init_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform = false);
 
@@ -94,6 +100,26 @@ struct lvk_device {
 	lvk_allocator init_allocator();
 
 	void wait_idle() const;
+
+	VkResult submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const lvk_fence* fence, uint64_t timeout = LVK_TIMEOUT) const;
+	VkResult present(const VkPresentInfoKHR* present_info) const;
+};
+
+
+// |--------------------------------------------------
+// ----------------> QUEUE
+// |--------------------------------------------------
+
+
+struct lvk_queue {
+	VkQueue _graphics;
+	VkQueue _present;
+	VkQueue _compute;
+	VkQueue _transfer;
+	
+	VkResult submit();
+
+	VkResult present(const VkPresentInfoKHR* present_info);
 };
 
 
@@ -155,14 +181,17 @@ struct lvk_command_buffer {
 	const lvk_device* device;
 
 	void reset(VkCommandBufferResetFlags flags = 0);
+
 	void begin(const VkCommandBufferBeginInfo* beginInfo);
-	void end();
-	void end_render_pass();
+	void begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info = VK_NULL_HANDLE);
 
 	void begin_render_pass(const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents);
 	void begin_render_pass(const lvk_framebuffer* framebuffer, const VkClearValue* clear_values, const uint32_t clear_value_count, const VkSubpassContents subpass_contents);
+	
+	void bind(lvk_pipeline);
 
-	void begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info = VK_NULL_HANDLE);
+	void end();
+	void end_render_pass();
 };
 
 
@@ -183,8 +212,6 @@ struct lvk_render_pass {
 	lvk_framebuffer init_framebuffer(const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count);
 
 	lvk::deletion_queue deletion_queue;
-
-	lvk_framebuffer_array init_framebuffer_array(const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count);
 };
 
 
@@ -224,8 +251,8 @@ struct lvk_fence {
 
 	const lvk_device* device;
 
-	VkResult wait(uint64_t timeout = LVK_TIMEOUT);
-	VkResult reset();
+	VkResult wait(uint64_t timeout = LVK_TIMEOUT) const;
+	VkResult reset() const;
 };
 
 
@@ -292,6 +319,8 @@ struct lvk_pipeline {
 	const lvk_pipeline_layout* pipeline_layout;
 	const lvk_render_pass* render_pass;
 	const lvk_device* device;
+	
+	VkPipelineBindPoint type;
 	
 	lvk::deletion_queue* deletion_queue;
 	
