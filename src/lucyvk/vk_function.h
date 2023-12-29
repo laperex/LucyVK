@@ -8,9 +8,9 @@ namespace lvk {
 	lvk::swapchain_support_details query_swapchain_support_details(VkPhysicalDevice physical_device, VkSurfaceKHR surface);
 	lvk::queue_family_indices query_queue_family_indices(VkPhysicalDevice physicalDevice, VkSurfaceKHR _surfaceKHR);
 
-	VkPhysicalDevice default_physical_device(const std::vector<VkPhysicalDevice>& physicalDeviceArray, const lvk_instance* instance);
-	
 	const char* to_string(const VkBufferUsageFlagBits usage);
+
+	VkPhysicalDevice default_physical_device(const std::vector<VkPhysicalDevice>& physicalDeviceArray, const lvk_instance* instance);
 
 	VkPipelineColorBlendAttachmentState color_blend_attachment();
 }

@@ -560,20 +560,6 @@ void lvk_command_buffer::begin_render_pass(const VkRenderPassBeginInfo* beginInf
 	vkCmdBeginRenderPass(_command_buffer, beginInfo, subpass_contents);
 }
 
-void lvk_command_buffer::begin_render_pass(const uint32_t image_index, const lvk_framebuffer_array* framebuffer, const VkClearValue* clear_values, const uint32_t clear_value_count, const VkSubpassContents subpass_contents) {
-	VkRenderPassBeginInfo beginInfo = {
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		VK_NULL_HANDLE,
-		framebuffer->render_pass->_render_pass,
-		framebuffer->_framebuffers[image_index],
-		{ { 0, 0 }, framebuffer->_extent },
-		clear_value_count,
-		clear_values,
-	};
-	
-	begin_render_pass(&beginInfo, subpass_contents);
-}
-
 void lvk_command_buffer::begin_render_pass(const lvk_framebuffer* framebuffer, const VkClearValue* clear_values, const uint32_t clear_value_count, const VkSubpassContents subpass_contents) {
 	VkRenderPassBeginInfo beginInfo = {
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -744,57 +730,6 @@ lvk_framebuffer lvk_render_pass::init_framebuffer(const VkExtent2D extent, const
 	});
 
 	return framebuffer;
-}
-
-lvk_framebuffer::~lvk_framebuffer()
-{
-	// vkDestroyFramebuffer(device->_device, _framebuffer, VK_NULL_HANDLE);
-	// dloggln("Framebuffer Destroyed");
-}
-
-lvk_framebuffer_array lvk_render_pass::init_framebuffer_array(const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count) {
-	lvk_framebuffer_array framebuffer = {
-		new VkFramebuffer[image_views_count],
-		image_views_count,
-		extent,
-		this,
-		device
-	};
-	
-	VkFramebufferCreateInfo createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	createInfo.flags = 0;
-	createInfo.renderPass = _render_pass;
-	createInfo.width = extent.width;
-	createInfo.height = extent.height;
-	createInfo.attachmentCount = 1;
-	createInfo.layers = 1;
-
-	for (int i = 0; i < image_views_count; i++) {
-		createInfo.pAttachments = &image_views[i];
-
-		if (vkCreateFramebuffer(device->_device, &createInfo, VK_NULL_HANDLE, &framebuffer._framebuffers[i]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create framebuffer");
-		}
-	}
-	dloggln("Framebuffer Created");
-	
-	deletion_queue.push([=]{
-		for (int i = 0; i < image_views_count; i++) {
-			vkDestroyFramebuffer(device->_device, framebuffer._framebuffers[i], VK_NULL_HANDLE);
-		}
-		
-		delete [] framebuffer._framebuffers;
-
-		dloggln("Framebuffer Destroyed");
-	});
-
-	return framebuffer;
-}
-
-lvk_framebuffer_array::~lvk_framebuffer_array()
-{
-	
 }
 
 

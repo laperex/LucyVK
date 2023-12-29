@@ -157,16 +157,12 @@ struct lvk_command_buffer {
 	void reset(VkCommandBufferResetFlags flags = 0);
 	void begin(const VkCommandBufferBeginInfo* beginInfo);
 	void end();
-	void begin_render_pass(const uint32_t image_index, const lvk_framebuffer_array* framebuffer, const VkClearValue* clear_values, const uint32_t clear_value_count, const VkSubpassContents subpass_contents);
 	void end_render_pass();
 
-	// ~lvk_command_buffer();
-
 	void begin_render_pass(const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents);
+	void begin_render_pass(const lvk_framebuffer* framebuffer, const VkClearValue* clear_values, const uint32_t clear_value_count, const VkSubpassContents subpass_contents);
 
 	void begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info = VK_NULL_HANDLE);
-
-	void begin_render_pass(const lvk_framebuffer* framebuffer, const VkClearValue* clear_values, const uint32_t clear_value_count, const VkSubpassContents subpass_contents);
 };
 
 
@@ -200,20 +196,6 @@ struct lvk_render_pass {
 struct lvk_framebuffer {
 	VkFramebuffer _framebuffer;
 	VkExtent2D _extent;
-	
-	~lvk_framebuffer();
-
-	const lvk_render_pass* render_pass;
-	const lvk_device* device;
-};
-
-struct lvk_framebuffer_array {
-	VkFramebuffer* _framebuffers;
-	uint32_t _count;
-
-	VkExtent2D _extent;
-
-	~lvk_framebuffer_array();
 
 	const lvk_render_pass* render_pass;
 	const lvk_device* device;
@@ -344,6 +326,7 @@ struct lvk_allocator {
 // ----------------> BUFFER
 // |--------------------------------------------------
 
+
 struct lvk_buffer {
 	VkBuffer _buffer;
 	VmaAllocation _allocation;
@@ -360,6 +343,7 @@ struct lvk_buffer {
 // |--------------------------------------------------
 // ----------------> IMAGE
 // |--------------------------------------------------
+
 
 struct lvk_image {
 	VkImage _image;

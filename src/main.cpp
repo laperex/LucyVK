@@ -212,6 +212,10 @@ int main(int count, char** args) {
 		lucy::Events::Update();
 
 		camera.Update(dt);
+		
+		// TODO: Shader Module creation/deletion/query - management
+		// TODO: vk_shaders.h
+		// TODO: maybe restructure init_ based creation
 
 		{
 			// auto t0 = std::chrono::high_resolution_clock::now();
