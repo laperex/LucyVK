@@ -26,6 +26,40 @@
 #include <util/logger.h>
 #include <lucyvk/vk_static.h>
 
+typedef uint32_t lve_vertex;
+
+#define LVE_CHUNK_SIZE (32)
+
+#define LVE_VERTEX(x, y, z, n, u, v) ((x * LVE_CHUNK_SIZE * LVE_CHUNK_SIZE) + y * LVE_CHUNK_SIZE + z) & 0x7fff
+
+static lvk::vertex_input_description lve_vertex_description() {
+	lvk::vertex_input_description description;
+
+	//we will have just 1 vertex buffer binding, with a per-vertex rate
+	VkVertexInputBindingDescription mainBinding = {};
+	mainBinding.binding = 0;
+	mainBinding.stride = sizeof(lve_vertex);
+	mainBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+	description.bindings.push_back(mainBinding);
+
+	//Position will be stored at Location 0
+	VkVertexInputAttributeDescription positionAttribute = {};
+	positionAttribute.binding = 0;
+	positionAttribute.location = 0;
+	positionAttribute.format = VK_FORMAT_R32_UINT;
+	positionAttribute.offset = 0;
+
+	description.attributes.push_back(positionAttribute);
+
+	return description;
+}
+
+std::vector<lve_vertex> lve_vertex_triangle = {
+	LVE_VERTEX(0, 0, 0, 1, 0, 0),
+	LVE_VERTEX(0, 0, 0, 1, 1, 1),
+};
+
 lucy::Mesh load_triangle_mesh() {
 	lucy::Mesh triangle_mesh;
 	
@@ -56,6 +90,8 @@ struct Frame {
 };
 
 static constexpr const int FRAMES_IN_FLIGHT = 2;
+
+// TODO: Add delta time Macros
 
 int main(int count, char** args) {
 	lucy::Window window = {};
@@ -92,44 +128,74 @@ int main(int count, char** args) {
 	clearValue[0].color = { { 0.0f, 0.0f, 0, 0.0f } };
 	clearValue[1].depthStencil.depth = 1.0f;
 
-	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/mesh.vert.spv");
-	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
 
-	auto vertex_layout = lucy::Vertex::get_vertex_description();
-
-	lvk::graphics_pipeline_config config = {};
-	{
-		config.shader_stage_array.push_back(lvk::shader_stage_create_info(&fragment_shader, nullptr));
-		// config.shader_stage_array.push_back(lvk::shader_stage_create_info(&fragment_shader, nullptr));
-		config.shader_stage_array.push_back(lvk::shader_stage_create_info(&vertex_shader, nullptr));
-		
-		config.color_blend_attachment = lvk::color_blend_attachment();
-		// config.color_blend_state = lvk::color_blend_state(nullptr)
-		config.depth_stencil_state = lvk::depth_stencil_state_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
-
-		config.vertex_input_state = lvk::vertex_input_state_create_info(vertex_layout.bindings.data(), vertex_layout.bindings.size(), vertex_layout.attributes.data(), vertex_layout.attributes.size());
-		config.input_assembly_state = lvk::input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
-		config.rasterization_state = lvk::rasterization_state_create_info(VK_POLYGON_MODE_FILL);
-		config.multisample_state = lvk::multisample_state_create_info();
-
-		config.viewport.x = 0.0f;
-		config.viewport.y = 0.0f;
-		config.viewport.width = (float)swapchain._extent.width;
-		config.viewport.height = (float)swapchain._extent.height;
-		config.viewport.minDepth = 0.0f;
-		config.viewport.maxDepth = 1.0f;
-
-		config.scissor.offset = { 0, 0 };
-		config.scissor.extent = swapchain._extent;
-	}
+	// auto vertex_layout = lucy::Vertex::get_vertex_description();
+	auto vertex_layout = lve_vertex_description();
 
 	VkPushConstantRange push_constant;
 	push_constant.offset = 0;
 	push_constant.size = sizeof(lucy::MeshPushConstants);
 	push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-	auto pipeline_layout = device.init_pipeline_layout(&push_constant, 1);
-	auto graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
+	lvk_pipeline_layout pipeline_layout = device.init_pipeline_layout(&push_constant, 1);
+	lvk_pipeline graphics_pipeline = {};
+	{
+		auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.vert.spv");
+		auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
+
+		lvk::graphics_pipeline_config config = {
+			.shader_stage_array = {
+				lvk::shader_stage_create_info(&fragment_shader, nullptr),
+				lvk::shader_stage_create_info(&vertex_shader, nullptr)
+			},
+			// .vertex_input_state = lvk::vertex_input_state_create_info(vertex_layout.bindings.data(), vertex_layout.bindings.size(), vertex_layout.attributes.data(), vertex_layout.attributes.size()),
+			.input_assembly_state = lvk::input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false),
+			.rasterization_state = lvk::rasterization_state_create_info(VK_POLYGON_MODE_FILL),
+			.multisample_state = lvk::multisample_state_create_info(),
+			.depth_stencil_state = lvk::depth_stencil_state_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
+			.color_blend_attachment = lvk::color_blend_attachment(),
+			
+			.viewport = {
+				.x = 0.0f,
+				.y = 0.0f,
+				.width = (float)swapchain._extent.width,
+				.height = (float)swapchain._extent.height,
+				.minDepth = 0.0f,
+				.maxDepth = 1.0f
+			},
+			
+			.scissor = {
+				.offset = { 0, 0 },
+				.extent = swapchain._extent
+			}
+		};
+
+		// config.shader_stage_array.push_back(lvk::shader_stage_create_info(&fragment_shader, nullptr));
+		// // config.shader_stage_array.push_back(lvk::shader_stage_create_info(&fragment_shader, nullptr));
+		// config.shader_stage_array.push_back(lvk::shader_stage_create_info(&vertex_shader, nullptr));
+		
+		// config.color_blend_attachment = lvk::color_blend_attachment();
+		// // config.color_blend_state = lvk::color_blend_state(nullptr)
+		// config.depth_stencil_state = lvk::depth_stencil_state_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+
+		// config.vertex_input_state = lvk::vertex_input_state_create_info(vertex_layout.bindings.data(), vertex_layout.bindings.size(), vertex_layout.attributes.data(), vertex_layout.attributes.size());
+		// config.input_assembly_state = lvk::input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
+		// config.rasterization_state = lvk::rasterization_state_create_info(VK_POLYGON_MODE_FILL);
+		// config.multisample_state = lvk::multisample_state_create_info();
+
+		// config.viewport.x = 0.0f;
+		// config.viewport.y = 0.0f;
+		// config.viewport.width = (float)swapchain._extent.width;
+		// config.viewport.height = (float)swapchain._extent.height;
+		// config.viewport.minDepth = 0.0f;
+		// config.viewport.maxDepth = 1.0f;
+
+		// config.scissor.offset = { 0, 0 };
+		// config.scissor.extent = swapchain._extent;
+
+		graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
+	}
+
 
 	auto* framebuffers = new lvk_framebuffer[swapchain._image_count];
 	auto* depth_images = new lvk_image[swapchain._image_count];
@@ -157,14 +223,14 @@ int main(int count, char** args) {
 	while (!lucy::Events::IsQuittable()) {
 		const auto& start_time = std::chrono::high_resolution_clock::now();
 
-		auto& current_frame = frame[framenumber % FRAMES_IN_FLIGHT];
-
 		lucy::Events::Update();
 
 		camera.Update(dt);
 
 		{
+			auto t0 = std::chrono::high_resolution_clock::now();
 			{
+				auto& current_frame = frame[framenumber % FRAMES_IN_FLIGHT];
 				uint32_t image_index;
 				swapchain.acquire_next_image(&image_index, current_frame.present_semaphore._semaphore, VK_NULL_HANDLE);
 				current_frame.image_index = image_index;
@@ -172,31 +238,30 @@ int main(int count, char** args) {
 				current_frame.command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 				current_frame.command_buffer.begin_render_pass(&framebuffers[image_index], clearValue, 2, VK_SUBPASS_CONTENTS_INLINE);
 
-				VkDeviceSize offset = 0;
 				vkCmdBindPipeline(current_frame.command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
-				vkCmdBindVertexBuffers(current_frame.command_buffer._command_buffer, 0, 1, &monkey_mesh.vertex_buffer._buffer, &offset);
+				VkDeviceSize offset = 0;
+				// vkCmdBindVertexBuffers(current_frame.command_buffer._command_buffer, 0, 1, &monkey_mesh.vertex_buffer._buffer, &offset);
 
 				glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(framenumber * 0.4f), glm::vec3(0, 1, 0));
 
-				framenumber += 1;
 
-				glm::mat4 mesh_matrix = camera.projection * camera.view * model;
+				glm::mat4 mesh_matrix = camera.projection * camera.view;// * model;
 
 				lucy::MeshPushConstants constants;
 				constants.render_matrix = mesh_matrix;
+				constants.offset = { 0, 0, 0, 0};
 
-				//upload the matrix to the GPU via push constants
 				vkCmdPushConstants(current_frame.command_buffer._command_buffer, pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
 
-				//we can now draw
-				vkCmdDraw(current_frame.command_buffer._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
+				vkCmdDraw(current_frame.command_buffer._command_buffer, 6, 1, 0, 0);
 
 				current_frame.command_buffer.end_render_pass();
 				current_frame.command_buffer.end();
 			}
+			auto t1 = std::chrono::high_resolution_clock::now();
 
-			if (framenumber > 1) {
-				auto& prev_frame = frame[(framenumber - 2) % FRAMES_IN_FLIGHT];
+			if (framenumber > 0) {
+				auto& prev_frame = frame[(framenumber - 1) % FRAMES_IN_FLIGHT];
 				
 				VkSubmitInfo submit = {};
 				submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -217,10 +282,15 @@ int main(int count, char** args) {
 
 				//submit command buffer to the queue and execute it.
 				// _renderFence will now block until the graphic commands finish execution
-				prev_frame.render_fence.reset();
 				vkQueueSubmit(device._graphicsQueue, 1, &submit, prev_frame.render_fence._fence);
+
+				auto x0 = std::chrono::high_resolution_clock::now();
+
 				prev_frame.render_fence.wait();
+				prev_frame.render_fence.reset();
+
 				prev_frame.command_buffer.reset();
+				
 				
 				VkPresentInfoKHR presentInfo = {};
 				presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -234,11 +304,21 @@ int main(int count, char** args) {
 
 				presentInfo.pImageIndices = &prev_frame.image_index;
 
+				auto x1 = std::chrono::high_resolution_clock::now();
+
+				// dloggln("Wait: ", std::chrono::duration_cast<std::chrono::microseconds>(x1 - x0).count());
+
 				vkQueuePresentKHR(device._graphicsQueue, &presentInfo);
 			}
+
+			auto t2 = std::chrono::high_resolution_clock::now();
+
+			// dloggln("Record: ", std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count(), " | Submit: ", std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count());
 		}
 
+		framenumber += 1;
 		// window.SwapWindow();
+		// if (framenumber == 20) lucy::Events::IsQuittable() = true;
 
 		const auto& end_time = std::chrono::high_resolution_clock::now();
 		dt = std::chrono::duration<double, std::ratio<1, 60>>(end_time - start_time).count();

@@ -287,12 +287,14 @@ struct lvk_shader_module {
 struct lvk_pipeline_layout {
 	VkPipelineLayout _pipeline_layout;
 	
+	// const lvk_render_pass* render_pass;
+	const lvk_device* device;
+	
+	lvk::deletion_queue* deletion_queue;
+
 	~lvk_pipeline_layout();
 	
 	lvk_pipeline init_graphics_pipeline(const lvk_render_pass* render_pass, const lvk::graphics_pipeline_config* config);
-	
-	// const lvk_render_pass* render_pass;
-	const lvk_device* device;
 };
 
 
@@ -304,11 +306,13 @@ struct lvk_pipeline_layout {
 struct lvk_pipeline {
 	VkPipeline _pipeline;
 	
-	~lvk_pipeline();
-	
 	const lvk_pipeline_layout* pipeline_layout;
 	const lvk_render_pass* render_pass;
 	const lvk_device* device;
+	
+	lvk::deletion_queue* deletion_queue;
+	
+	~lvk_pipeline();
 };
 
 

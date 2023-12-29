@@ -12,7 +12,7 @@ glm::vec3 initpos;
 
 lucy::Camera::Camera() {
 	// position = { 0, 0, 500 };
-	position = { 0, 0, -10 };
+	position = { 0, 0, -5 };
 	// c_near = 0.1f;
 	// c_far = 200.0f;
 }

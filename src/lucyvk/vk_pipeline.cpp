@@ -19,11 +19,9 @@ VkShaderModuleCreateInfo lvk::shader_module_create_info(const char* filename) {
 	file.close();
 	
 	return {
-		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-		nullptr,
-		0,
-		size,
-		reinterpret_cast<const uint32_t*>(buffer)
+		.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+		.codeSize = size,
+		.pCode = reinterpret_cast<const uint32_t*>(buffer)
 	};
 }
 
@@ -141,10 +139,8 @@ VkPipelineColorBlendStateCreateInfo lvk::color_blend_state(const VkPipelineColor
 }
 
 VkPipelineColorBlendAttachmentState lvk::color_blend_attachment() {
-	// TODO: Better Implementation
-	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-		VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-	colorBlendAttachment.blendEnable = VK_FALSE;
-	return colorBlendAttachment;
+	return {
+		.blendEnable = VK_FALSE,
+		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+	};
 }

@@ -331,10 +331,10 @@ lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height) {
 			swapchain._present_mode = availablePresentMode;
 			break;
 		}
-		// if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
-		// 	self->_present_mode = availablePresentMode;
-		// 	break;
-		// }
+		if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+			swapchain._present_mode = availablePresentMode;
+			break;
+		}
 	}
 	
 	swapchain.recreate(width, height);
@@ -906,8 +906,9 @@ lvk_shader_module::~lvk_shader_module()
 
 lvk_pipeline_layout lvk_device::init_pipeline_layout(const VkPushConstantRange* push_constant_range, uint32_t push_constant_range_count) {
 	lvk_pipeline_layout pipeline_layout = {
-		VK_NULL_HANDLE,
-		this
+		._pipeline_layout = VK_NULL_HANDLE,
+		.device = this,
+		.deletion_queue = &deletion_queue,
 	};
 
 	VkPipelineLayoutCreateInfo pipeline_layout_create_info = {
@@ -925,21 +926,25 @@ lvk_pipeline_layout lvk_device::init_pipeline_layout(const VkPushConstantRange* 
 	}
 	dloggln("Pipeline Layout Created");
 	
+	deletion_queue.push([=]{
+		vkDestroyPipelineLayout(_device, pipeline_layout._pipeline_layout, VK_NULL_HANDLE);
+		dloggln("Pipeline Layout Destroyed");
+	});
+	
 	return pipeline_layout;
 }
 
 lvk_pipeline_layout::~lvk_pipeline_layout()
 {
-	vkDestroyPipelineLayout(device->_device, _pipeline_layout, VK_NULL_HANDLE);
-	dloggln("Pipeline Layout Destroyed");
 }
 
 lvk_pipeline lvk_pipeline_layout::init_graphics_pipeline(const lvk_render_pass* render_pass, const lvk::graphics_pipeline_config* config) {
 	lvk_pipeline pipeline = {
-		VK_NULL_HANDLE,
-		this,
-		render_pass,
-		device
+		._pipeline = VK_NULL_HANDLE,
+		.pipeline_layout = this,
+		.render_pass = render_pass,
+		.device = device,
+		.deletion_queue = deletion_queue,
 	};
 
 	// TODO: Support for multiple viewport and scissors
@@ -987,13 +992,16 @@ lvk_pipeline lvk_pipeline_layout::init_graphics_pipeline(const lvk_render_pass* 
 	}
 	dloggln("Pipeline Created");
 	
+	deletion_queue->push([=]{
+		vkDestroyPipeline(device->_device, pipeline._pipeline, VK_NULL_HANDLE);
+		dloggln("Pipeline Destroyed");
+	});
+	
 	return pipeline;
 }
 
 lvk_pipeline::~lvk_pipeline()
 {
-	vkDestroyPipeline(device->_device, _pipeline, VK_NULL_HANDLE);
-	dloggln("Pipeline Destroyed");
 }
 
 

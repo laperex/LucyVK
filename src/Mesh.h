@@ -7,7 +7,7 @@
 
 namespace lucy {
 	struct MeshPushConstants {
-		glm::vec4 data;
+		glm::vec4 offset;
 		glm::mat4 render_matrix;
 	};
 
