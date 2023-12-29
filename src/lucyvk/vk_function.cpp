@@ -141,23 +141,6 @@ VkPhysicalDevice lvk::default_physical_device(const std::vector<VkPhysicalDevice
 	return VK_NULL_HANDLE;
 }
 
-VkImageViewCreateInfo lvk::image_view_create_info(VkImage image, VkFormat format, VkImageViewType view_type, VkImageSubresourceRange subresource_range, VkComponentMapping components) {
-	return {
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		VK_NULL_HANDLE,
-		0,
-		image,
-		view_type,
-		format,
-		components,
-		subresource_range
-	};
-}
-
-VkImageViewCreateInfo lvk::image_view_create_info(VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType view_type) {
-	return image_view_create_info(image, format, view_type, { aspect_flag, 0, 1, 0, 1 }, {});
-}
-
 const char* lvk::to_string(const VkBufferUsageFlagBits usage) {
 	switch (usage) {
         case VK_BUFFER_USAGE_TRANSFER_SRC_BIT:return "TRANSFER_SRC";
@@ -186,4 +169,11 @@ const char* lvk::to_string(const VkBufferUsageFlagBits usage) {
 	}
 	
 	return "";
+}
+
+VkPipelineColorBlendAttachmentState lvk::color_blend_attachment() {
+	return {
+		.blendEnable = VK_FALSE,
+		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+	};
 }

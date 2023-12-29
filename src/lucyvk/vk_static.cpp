@@ -3,7 +3,7 @@
 
 #include "lucyvk/vk_static.h"
 #include "lucyvk/vk_function.h"
-#include "lucyvk/vk_pipeline.h"
+#include "lucyvk/vk_info.h"
 #include "util/logger.h"
 #include <SDL_vulkan.h>
 #include <cassert>
@@ -880,7 +880,7 @@ lvk_shader_module lvk_device::init_shader_module(VkShaderStageFlagBits stage, co
 		this
 	};
 	
-	VkShaderModuleCreateInfo info = lvk::shader_module_create_info(filename);
+	VkShaderModuleCreateInfo info = lvk::info::shader_module(filename);
 
 	assert(info.codeSize);
 
@@ -938,7 +938,7 @@ lvk_pipeline_layout::~lvk_pipeline_layout()
 {
 }
 
-lvk_pipeline lvk_pipeline_layout::init_graphics_pipeline(const lvk_render_pass* render_pass, const lvk::graphics_pipeline_config* config) {
+lvk_pipeline lvk_pipeline_layout::init_graphics_pipeline(const lvk_render_pass* render_pass, const lvk::config::graphics_pipeline* config) {
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE,
 		.pipeline_layout = this,
@@ -1014,7 +1014,7 @@ lvk_allocator lvk_device::init_allocator() {
 	lvk_allocator allocator = {
 		VK_NULL_HANDLE,
 		this,
-		{}
+		&deletion_queue
 	};
 	
 	VmaAllocatorCreateInfo allocatorInfo = {};
@@ -1026,14 +1026,15 @@ lvk_allocator lvk_device::init_allocator() {
     vmaCreateAllocator(&allocatorInfo, &allocator._allocator);
 	dloggln("Allocator Created");
 	
+	deletion_queue.push([=]{
+		vmaDestroyAllocator(allocator._allocator);
+		dloggln("Allocator Destroyed");
+	});
+
 	return allocator;
 }
 
 lvk_allocator::~lvk_allocator() {
-	deletion_queue.flush();
-
-	vmaDestroyAllocator(_allocator);
-	dloggln("Allocator Destroyed");
 }
 
 
@@ -1077,7 +1078,7 @@ lvk_buffer lvk_allocator::init_buffer(VkBufferUsageFlagBits usage, const void* d
 		buffer.upload(data, size);
 	}
 
-	deletion_queue.push([=]{
+	deletion_queue->push([=]{
 		vmaDestroyBuffer(_allocator, buffer._buffer, buffer._allocation);
 		dloggln("Buffer Destroyed: ", lvk::to_string(buffer._usage));
 	});
@@ -1122,52 +1123,47 @@ lvk_image lvk_allocator::init_image(VkFormat format, VkImageUsageFlags usage, Vk
 		usage,
 		this,
 		device,
-		&deletion_queue
+		deletion_queue
 	};
 	
-	VkImageCreateInfo createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	createInfo.pNext = VK_NULL_HANDLE;
-	createInfo.flags = 0;
-	createInfo.imageType = image_type;
-	createInfo.format = format;
-	createInfo.extent = extent;
+	VkImageCreateInfo createInfo = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+		.imageType = image_type,
+		.format = format,
+		.extent = extent,
+		
+		// TODO: Mipmapping
+		.mipLevels = 1,
+		
+		// TODO: Cubemaps
+		.arrayLayers = 1,
+		
+		// TODO: MSAA
+		.samples = VK_SAMPLE_COUNT_1_BIT,
 
-	// TODO: Mipmapping
-	createInfo.mipLevels = 1;
+		// * VK_IMAGE_TILING_OPTIMAL					-> Let Vulkan Choose
+		// * VK_IMAGE_TILING_LINEAR						-> To read from CPU
+		// * VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT	-> Model Specific
+		.tiling = VK_IMAGE_TILING_OPTIMAL,
 
-	// TODO: Cubemaps
-	createInfo.arrayLayers = 1;
-	
-	// TODO: MSAA
-	createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	
-	// * VK_IMAGE_TILING_OPTIMAL					-> Let Vulkan Choose
-	// * VK_IMAGE_TILING_LINEAR						-> To read from CPU
-	// * VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT	-> Model Specific
-	createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		.usage = usage,
+	};
 
-	createInfo.usage = usage;
-
-	// createInfo.sharingMode;
-	// createInfo.queueFamilyIndexCount;
-	// createInfo.pQueueFamilyIndices;
-	// createInfo.initialLayout;
-
-	VmaAllocationCreateInfo allocationInfo = {};
-	allocationInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-	allocationInfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	VmaAllocationCreateInfo allocationInfo = {
+		.usage = VMA_MEMORY_USAGE_GPU_ONLY,
+		.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+	};
 
 	if (vmaCreateImage(_allocator, &createInfo, &allocationInfo, &image._image, &image._allocation, VK_NULL_HANDLE) != VK_SUCCESS) {
 		throw std::runtime_error("image creation failed!");
 	}
 	dloggln("Image Created");
 
-	deletion_queue.push([=]{
+	deletion_queue->push([=]{
 		vmaDestroyImage(_allocator, image._image, image._allocation);
 		dloggln("Image Destroyed");
 	});
-	
+
 	return image;
 }
 
@@ -1182,7 +1178,7 @@ lvk_image_view lvk_image::init_image_view(VkImageAspectFlags aspect_flag, VkImag
 		VK_NULL_HANDLE
 	};
 
-	VkImageViewCreateInfo createInfo = lvk::image_view_create_info(_image, _format, aspect_flag, image_view_type);
+	VkImageViewCreateInfo createInfo = lvk::info::image_view(_image, _format, aspect_flag, image_view_type);
 
 	if (vkCreateImageView(device->_device, &createInfo, VK_NULL_HANDLE, &image_view._image_view) != VK_SUCCESS) {
 		throw std::runtime_error("image_view creation failed!");

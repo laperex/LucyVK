@@ -1,10 +1,11 @@
+#include "lucyvk/vk_config.h"
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
 #include "Camera.h"
 #include "Mesh.h"
 #include "lucyvk/vk_function.h"
-#include "lucyvk/vk_pipeline.h"
+#include "lucyvk/vk_info.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_image.h>
@@ -117,42 +118,44 @@ int main(int count, char** args) {
 		frame[i].present_semaphore = device.init_semaphore();
 	}
 
-	VkCommandBufferBeginInfo cmdBeginInfo = {};
-	cmdBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	cmdBeginInfo.pNext = nullptr;
+	VkClearValue clearValue[2] = {
+		{
+			.color = { { 0.0f, 0.0f, 0, 0.0f } }
+		},
+		{
+			.depthStencil = {
+				.depth = 1.0f
+			}
+		}
+	};
 
-	cmdBeginInfo.pInheritanceInfo = nullptr;
-	cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-	VkClearValue clearValue[2];
-	clearValue[0].color = { { 0.0f, 0.0f, 0, 0.0f } };
-	clearValue[1].depthStencil.depth = 1.0f;
-
-
-	// auto vertex_layout = lucy::Vertex::get_vertex_description();
-	auto vertex_layout = lve_vertex_description();
-
-	VkPushConstantRange push_constant;
-	push_constant.offset = 0;
-	push_constant.size = sizeof(lucy::MeshPushConstants);
-	push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	VkPushConstantRange push_constant = {
+		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+		.offset = 0,
+		.size = sizeof(lucy::MeshPushConstants),
+	};
 
 	lvk_pipeline_layout pipeline_layout = device.init_pipeline_layout(&push_constant, 1);
+
+	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/mesh.vert.spv");
+	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
+
+
 	lvk_pipeline graphics_pipeline = {};
 	{
-		auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.vert.spv");
-		auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
+		auto vertex_layout = lucy::Vertex::get_vertex_description();
 
-		lvk::graphics_pipeline_config config = {
+		lvk::config::graphics_pipeline config = {
 			.shader_stage_array = {
-				lvk::shader_stage_create_info(&fragment_shader, nullptr),
-				lvk::shader_stage_create_info(&vertex_shader, nullptr)
+				lvk::info::shader_stage(&vertex_shader, nullptr),
+				lvk::info::shader_stage(&fragment_shader, nullptr),
 			},
-			// .vertex_input_state = lvk::vertex_input_state_create_info(vertex_layout.bindings.data(), vertex_layout.bindings.size(), vertex_layout.attributes.data(), vertex_layout.attributes.size()),
-			.input_assembly_state = lvk::input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false),
-			.rasterization_state = lvk::rasterization_state_create_info(VK_POLYGON_MODE_FILL),
-			.multisample_state = lvk::multisample_state_create_info(),
-			.depth_stencil_state = lvk::depth_stencil_state_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
+
+			.vertex_input_state = lvk::info::vertex_input_state(&vertex_layout),
+			.input_assembly_state = lvk::info::input_assembly_state(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false),
+			.rasterization_state = lvk::info::rasterization_state(VK_POLYGON_MODE_FILL),
+			.multisample_state = lvk::info::multisample_state(),
+			.depth_stencil_state = lvk::info::depth_stencil_state(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
 			.color_blend_attachment = lvk::color_blend_attachment(),
 			
 			.viewport = {
@@ -163,44 +166,20 @@ int main(int count, char** args) {
 				.minDepth = 0.0f,
 				.maxDepth = 1.0f
 			},
-			
+
 			.scissor = {
 				.offset = { 0, 0 },
 				.extent = swapchain._extent
 			}
 		};
 
-		// config.shader_stage_array.push_back(lvk::shader_stage_create_info(&fragment_shader, nullptr));
-		// // config.shader_stage_array.push_back(lvk::shader_stage_create_info(&fragment_shader, nullptr));
-		// config.shader_stage_array.push_back(lvk::shader_stage_create_info(&vertex_shader, nullptr));
-		
-		// config.color_blend_attachment = lvk::color_blend_attachment();
-		// // config.color_blend_state = lvk::color_blend_state(nullptr)
-		// config.depth_stencil_state = lvk::depth_stencil_state_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
-
-		// config.vertex_input_state = lvk::vertex_input_state_create_info(vertex_layout.bindings.data(), vertex_layout.bindings.size(), vertex_layout.attributes.data(), vertex_layout.attributes.size());
-		// config.input_assembly_state = lvk::input_assembly_state_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false);
-		// config.rasterization_state = lvk::rasterization_state_create_info(VK_POLYGON_MODE_FILL);
-		// config.multisample_state = lvk::multisample_state_create_info();
-
-		// config.viewport.x = 0.0f;
-		// config.viewport.y = 0.0f;
-		// config.viewport.width = (float)swapchain._extent.width;
-		// config.viewport.height = (float)swapchain._extent.height;
-		// config.viewport.minDepth = 0.0f;
-		// config.viewport.maxDepth = 1.0f;
-
-		// config.scissor.offset = { 0, 0 };
-		// config.scissor.extent = swapchain._extent;
-
 		graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
 	}
-
 
 	auto* framebuffers = new lvk_framebuffer[swapchain._image_count];
 	auto* depth_images = new lvk_image[swapchain._image_count];
 	auto* depth_image_views = new lvk_image_view[swapchain._image_count];
-	
+
 	for (int i = 0; i < swapchain._image_count; i++) {
 		depth_images[i] = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_TYPE_2D, { swapchain._extent.width, swapchain._extent.height, 1 });
 		depth_image_views[i] = depth_images[i].init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
@@ -219,6 +198,13 @@ int main(int count, char** args) {
 
 	uint32_t framenumber = 0;
 
+	VkCommandBufferBeginInfo cmdBeginInfo = {};
+	cmdBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	cmdBeginInfo.pNext = nullptr;
+
+	cmdBeginInfo.pInheritanceInfo = nullptr;
+	cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
 		const auto& start_time = std::chrono::high_resolution_clock::now();
@@ -228,7 +214,7 @@ int main(int count, char** args) {
 		camera.Update(dt);
 
 		{
-			auto t0 = std::chrono::high_resolution_clock::now();
+			// auto t0 = std::chrono::high_resolution_clock::now();
 			{
 				auto& current_frame = frame[framenumber % FRAMES_IN_FLIGHT];
 				uint32_t image_index;
@@ -240,12 +226,11 @@ int main(int count, char** args) {
 
 				vkCmdBindPipeline(current_frame.command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
 				VkDeviceSize offset = 0;
-				// vkCmdBindVertexBuffers(current_frame.command_buffer._command_buffer, 0, 1, &monkey_mesh.vertex_buffer._buffer, &offset);
+				vkCmdBindVertexBuffers(current_frame.command_buffer._command_buffer, 0, 1, &monkey_mesh.vertex_buffer._buffer, &offset);
 
 				glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(framenumber * 0.4f), glm::vec3(0, 1, 0));
 
-
-				glm::mat4 mesh_matrix = camera.projection * camera.view;// * model;
+				glm::mat4 mesh_matrix = camera.projection * camera.view * model;
 
 				lucy::MeshPushConstants constants;
 				constants.render_matrix = mesh_matrix;
@@ -253,12 +238,12 @@ int main(int count, char** args) {
 
 				vkCmdPushConstants(current_frame.command_buffer._command_buffer, pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
 
-				vkCmdDraw(current_frame.command_buffer._command_buffer, 6, 1, 0, 0);
+				vkCmdDraw(current_frame.command_buffer._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
 
 				current_frame.command_buffer.end_render_pass();
 				current_frame.command_buffer.end();
 			}
-			auto t1 = std::chrono::high_resolution_clock::now();
+			// auto t1 = std::chrono::high_resolution_clock::now();
 
 			if (framenumber > 0) {
 				auto& prev_frame = frame[(framenumber - 1) % FRAMES_IN_FLIGHT];
@@ -284,7 +269,7 @@ int main(int count, char** args) {
 				// _renderFence will now block until the graphic commands finish execution
 				vkQueueSubmit(device._graphicsQueue, 1, &submit, prev_frame.render_fence._fence);
 
-				auto x0 = std::chrono::high_resolution_clock::now();
+				// auto x0 = std::chrono::high_resolution_clock::now();
 
 				prev_frame.render_fence.wait();
 				prev_frame.render_fence.reset();
@@ -304,14 +289,14 @@ int main(int count, char** args) {
 
 				presentInfo.pImageIndices = &prev_frame.image_index;
 
-				auto x1 = std::chrono::high_resolution_clock::now();
+				// auto x1 = std::chrono::high_resolution_clock::now();
 
 				// dloggln("Wait: ", std::chrono::duration_cast<std::chrono::microseconds>(x1 - x0).count());
 
 				vkQueuePresentKHR(device._graphicsQueue, &presentInfo);
 			}
 
-			auto t2 = std::chrono::high_resolution_clock::now();
+			// auto t2 = std::chrono::high_resolution_clock::now();
 
 			// dloggln("Record: ", std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count(), " | Submit: ", std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count());
 		}

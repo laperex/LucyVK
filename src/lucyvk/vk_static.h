@@ -3,6 +3,7 @@
 #include "vk_mem_alloc.h"
 
 #include "vk_types.h"
+#include "vk_config.h"
 
 #include <SDL_video.h>
 #include <functional>
@@ -294,7 +295,7 @@ struct lvk_pipeline_layout {
 
 	~lvk_pipeline_layout();
 	
-	lvk_pipeline init_graphics_pipeline(const lvk_render_pass* render_pass, const lvk::graphics_pipeline_config* config);
+	lvk_pipeline init_graphics_pipeline(const lvk_render_pass* render_pass, const lvk::config::graphics_pipeline* config);
 };
 
 
@@ -326,7 +327,7 @@ struct lvk_allocator {
 	
 	const lvk_device* device;
 
-	lvk::deletion_queue deletion_queue;
+	lvk::deletion_queue* deletion_queue;
 	
 	~lvk_allocator();
 
