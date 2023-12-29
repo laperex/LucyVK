@@ -107,23 +107,6 @@ struct lvk_device {
 
 
 // |--------------------------------------------------
-// ----------------> QUEUE
-// |--------------------------------------------------
-
-
-struct lvk_queue {
-	VkQueue _graphics;
-	VkQueue _present;
-	VkQueue _compute;
-	VkQueue _transfer;
-	
-	VkResult submit();
-
-	VkResult present(const VkPresentInfoKHR* present_info);
-};
-
-
-// |--------------------------------------------------
 // ----------------> SWAPCHAIN
 // |--------------------------------------------------
 

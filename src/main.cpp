@@ -102,15 +102,16 @@ int main(int count, char** args) {
 		.name = "Lucy Framework v7",
 		.enable_validation_layers = true
 	};
+	
+	// ---------------> INSTANCE INIT
 
 	auto instance = lvk_init_instance(&config, window.sdl_window);
 	auto physical_device = instance.init_physical_device();
 	auto device = physical_device.init_device();
 	auto allocator = device.init_allocator();
 	auto render_pass = device.init_render_pass();
-	// auto queue = device.init_queue();
 
-	auto swapchain = device.init_swapchain(window.size.x, window.size.y);
+	// ---------------> COMMAND POOL INIT
 
 	Frame frame[FRAMES_IN_FLIGHT];
 
@@ -123,17 +124,23 @@ int main(int count, char** args) {
 		frame[i].render_semaphore = device.init_semaphore();
 		frame[i].present_semaphore = device.init_semaphore();
 	}
+	
+	// ---------------> SWAPCHAIN INIT
 
-	VkClearValue clearValue[2] = {
-		{
-			.color = { { 0.0f, 0.0f, 0, 0.0f } }
-		},
-		{
-			.depthStencil = {
-				.depth = 1.0f
-			}
-		},
-	};
+	auto swapchain = device.init_swapchain(window.size.x, window.size.y);
+	auto* depth_images = new lvk_image[swapchain._image_count];
+	auto* depth_image_views = new lvk_image_view[swapchain._image_count];
+	auto* framebuffers = new lvk_framebuffer[swapchain._image_count];
+
+	for (int i = 0; i < swapchain._image_count; i++) {
+		depth_images[i] = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_TYPE_2D, { swapchain._extent.width, swapchain._extent.height, 1 });
+		depth_image_views[i] = depth_images[i].init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+
+		VkImageView image_view[2] = { swapchain._image_views[i], depth_image_views[i]._image_view };
+		framebuffers[i] = render_pass.init_framebuffer(swapchain._extent, image_view, std::size(image_view));
+	}
+	
+	// ---------------> PIPELINE INIT
 
 	VkPushConstantRange push_constant = {
 		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
@@ -180,18 +187,6 @@ int main(int count, char** args) {
 		graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
 	}
 
-	auto* depth_images = new lvk_image[swapchain._image_count];
-	auto* depth_image_views = new lvk_image_view[swapchain._image_count];
-	auto* framebuffers = new lvk_framebuffer[swapchain._image_count];
-
-	for (int i = 0; i < swapchain._image_count; i++) {
-		depth_images[i] = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_TYPE_2D, { swapchain._extent.width, swapchain._extent.height, 1 });
-		depth_image_views[i] = depth_images[i].init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
-
-		VkImageView image_view[2] = { swapchain._image_views[i], depth_image_views[i]._image_view };
-		framebuffers[i] = render_pass.init_framebuffer(swapchain._extent, image_view, 2);
-	}
-
 	lucy::Mesh monkey_mesh;
 	monkey_mesh.load_obj("/home/laperex/Programming/C++/LucyVK/src/assets/monkey.obj");
 	monkey_mesh.vertex_buffer = allocator.init_vertex_buffer(monkey_mesh._vertices.data(), monkey_mesh._vertices.size() * sizeof(monkey_mesh._vertices[0]));
@@ -200,8 +195,18 @@ int main(int count, char** args) {
 	camera.width = swapchain._extent.width;
 	camera.height = swapchain._extent.height;
 
-	uint32_t framenumber = 0;
+	VkClearValue clearValue[2] = {
+		{
+			.color = { { 0.0f, 0.0f, 0, 0.0f } }
+		},
+		{
+			.depthStencil = {
+				.depth = 1.0f
+			}
+		},
+	};
 
+	uint32_t framenumber = 0;
 	double dt = 0;
 	while (!lucy::Events::IsQuittable()) {
 		const auto& start_time = std::chrono::high_resolution_clock::now();

@@ -316,18 +316,6 @@ VkResult lvk_device::present(const VkPresentInfoKHR* present_info) const {
 	return vkQueuePresentKHR(_present_queue, present_info);
 }
 
-lvk_device::~lvk_device()
-{
-	deletion_queue.flush();
-
-	vkDestroyDevice(_device, VK_NULL_HANDLE);
-	dloggln("Device Destroyed");
-}
-
-VkResult lvk_queue::present(const VkPresentInfoKHR* present_info) {
-	return vkQueuePresentKHR(_present, present_info);
-}
-
 
 // |--------------------------------------------------
 // ----------------> SWAPCHAIN
