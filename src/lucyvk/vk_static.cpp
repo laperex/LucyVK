@@ -1055,7 +1055,7 @@ lvk_buffer lvk_allocator::init_uniform_buffer(const void* data, const std::size_
 	return init_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, data, size);
 }
 
-void lvk_buffer::upload(const void* data, const std::size_t size) {
+void lvk_buffer::upload(const void* data, const std::size_t size) const {
 	if (size > _allocated_size) {
 		throw std::runtime_error("required size is greater than allocated size!");
 	}
@@ -1157,7 +1157,7 @@ lvk_image_view lvk_image::init_image_view(VkImageAspectFlags aspect_flag, VkImag
 
 
 // |--------------------------------------------------
-// ----------------> DESCRIPTOR SET
+// ----------------> DESCRIPTOR SET LAYOUT
 // |--------------------------------------------------
 
 

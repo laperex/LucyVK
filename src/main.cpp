@@ -78,7 +78,7 @@ lucy::Mesh load_triangle_mesh() {
 	return triangle_mesh;
 }
 
-struct GPUCamera {
+struct mvp_matrix {
 	glm::mat4 projection;
 	glm::mat4 view;
 	glm::mat4 model;
@@ -143,7 +143,7 @@ int main(int count, char** args) {
 		frame[i].render_semaphore = device.init_semaphore();
 		frame[i].present_semaphore = device.init_semaphore();
 
-		frame[i].camera_buffer = allocator.init_uniform_buffer(nullptr, sizeof(GPUCamera));
+		frame[i].camera_buffer = allocator.init_uniform_buffer(nullptr, sizeof(mvp_matrix));
 		frame[i].global_descriptor = descriptor_pool.init_descriptor_set(&descriptor_set_layout);
 
 		frame[i].global_descriptor.update(&frame[i].camera_buffer);
@@ -270,12 +270,13 @@ int main(int count, char** args) {
 				constants.render_matrix = mesh_matrix;
 				constants.offset = { 0, 0, 0, 0};
 
-				GPUCamera gpu_camera = {
+				mvp_matrix mvp = {
 					.projection = camera.projection,
 					.view = camera.view,
 					.model = model
 				};
-				current_frame.camera_buffer.upload(&gpu_camera, sizeof(gpu_camera));
+
+				current_frame.camera_buffer.upload(mvp);
 
 				// vkCmdPushConstants(current_frame.command_buffer._command_buffer, pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
 				vkCmdBindDescriptorSets(current_frame.command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout._pipeline_layout, 0, 1, &current_frame.global_descriptor._descriptor_set, 0, nullptr);

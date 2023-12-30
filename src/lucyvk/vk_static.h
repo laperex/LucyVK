@@ -329,7 +329,9 @@ struct lvk_buffer {
 
 	const lvk_allocator* allocator;
 
-	void upload(const void* data, const std::size_t size);
+	void upload(const void* data, const std::size_t size) const;
+
+	template <typename T> inline void upload(const T& data) const { upload(&data, sizeof(T)); }
 };
 
 
@@ -369,7 +371,7 @@ struct lvk_image_view {
 
 
 // |--------------------------------------------------
-// ----------------> DESCRIPTOR SET
+// ----------------> DESCRIPTOR SET LAYOUT
 // |--------------------------------------------------
 
 
