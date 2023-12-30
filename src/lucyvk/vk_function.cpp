@@ -3,6 +3,17 @@
 #include "util/logger.h"
 #include <vulkan/vulkan_core.h>
 
+
+VkSurfaceFormatKHR lvk::get_swapchain_surface_format(const std::vector<VkSurfaceFormatKHR>& format_array) {
+	for (const auto& availableFormat: format_array) {
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			return availableFormat;
+		}
+	}
+	
+	return format_array[0];
+}
+
 lvk::swapchain_support_details lvk::query_swapchain_support_details(VkPhysicalDevice physical_device, VkSurfaceKHR surface) {
 	lvk::swapchain_support_details details;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &details.capabilities);
@@ -175,5 +186,14 @@ VkPipelineColorBlendAttachmentState lvk::color_blend_attachment() {
 	return {
 		.blendEnable = VK_FALSE,
 		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+	};
+}
+
+VkDescriptorSetLayoutBinding lvk::descriptor_set_layout_binding(uint32_t binding, VkShaderStageFlags shader_stage_flags, VkDescriptorType descriptor_type, uint32_t descriptor_count) {
+	return {
+		.binding = binding,
+		.descriptorType = descriptor_type,
+		.descriptorCount = descriptor_count,
+		.stageFlags = shader_stage_flags,
 	};
 }

@@ -6,15 +6,22 @@ layout (location = 2) in vec3 vColor;
 
 layout (location = 0) out vec3 outColor;
 
+layout(set = 0, binding = 0) uniform  CameraBuffer {
+	mat4 projection;
+	mat4 view;
+	mat4 model;
+} camera_data;
+
 // push 
-layout( push_constant ) uniform constants
-{
-	vec4 data;
-	mat4 render_matrix;
-} PushConstants;
+// layout( push_constant ) uniform constants
+// {
+// 	vec4 data;
+// 	mat4 render_matrix;
+// } PushConstants;
 
 void main()
 {
-	gl_Position = PushConstants.render_matrix * vec4(vPosition, 1.0f);
+	// gl_Position = PushConstants.render_matrix * vec4(vPosition, 1.0f);
+	gl_Position = camera_data.projection * camera_data.view * camera_data.model * vec4(vPosition, 1.0f);
 	outColor = vColor;
 }

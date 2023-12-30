@@ -95,9 +95,12 @@ struct lvk_device {
 
 	lvk_shader_module init_shader_module(VkShaderStageFlagBits stage, const char* filename);
 	
-	lvk_pipeline_layout init_pipeline_layout(const VkPushConstantRange* push_constant_range, uint32_t push_constant_range_count);
+	lvk_pipeline_layout init_pipeline_layout(const VkPushConstantRange* push_constant_ranges, uint32_t push_constant_range_count, const VkDescriptorSetLayout* descriptor_set_layouts, uint32_t descriptor_set_layout_count);
 	
 	lvk_allocator init_allocator();
+	
+	lvk_descriptor_set_layout init_descriptor_set_layout(const VkDescriptorSetLayoutBinding* bindings, const uint32_t binding_count);
+	lvk_descriptor_pool init_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count);
 
 	void wait_idle() const;
 
@@ -245,31 +248,13 @@ struct lvk_fence {
 
 struct lvk_shader_module {
 	VkShaderModule _shader_module;
-	
+
 	const VkShaderStageFlagBits _stage;
 
 	~lvk_shader_module();
 
 	const lvk_device* device;
 };
-
-
-// // |--------------------------------------------------
-// // ----------------> SHADERS
-// // |--------------------------------------------------
-
-
-// struct lvk_graphics_shaders {
-// 	VkShaderModule _vertex_shader = VK_NULL_HANDLE;
-// 	VkShaderModule _testallation_control_shader = VK_NULL_HANDLE;
-// 	VkShaderModule _testallation_evaluation_shader = VK_NULL_HANDLE;
-// 	VkShaderModule _geometry_shader = VK_NULL_HANDLE;
-// 	VkShaderModule _fragment_shader = VK_NULL_HANDLE;
-
-// 	~lvk_graphics_shaders();
-
-// 	const lvk_device* device;
-// };
 
 
 // |--------------------------------------------------
@@ -285,8 +270,6 @@ struct lvk_pipeline_layout {
 	
 	lvk::deletion_queue* deletion_queue;
 
-	~lvk_pipeline_layout();
-	
 	lvk_pipeline init_graphics_pipeline(const lvk_render_pass* render_pass, const lvk::config::graphics_pipeline* config);
 };
 
@@ -323,12 +306,10 @@ struct lvk_allocator {
 
 	lvk::deletion_queue* deletion_queue;
 	
-	~lvk_allocator();
+	lvk_buffer init_buffer(VkBufferUsageFlagBits buffer_usage, VmaMemoryUsage memory_usage, const void* data, const std::size_t size);
 
-	lvk_buffer init_buffer(VkBufferUsageFlagBits usage, const void* data, const std::size_t size, const VkSharingMode sharing_mode, const uint32_t* queue_family_indices, uint32_t queue_family_indices_count);
-
-	lvk_buffer init_vertex_buffer(const std::size_t size);
 	lvk_buffer init_vertex_buffer(const void* data, const std::size_t size);
+	lvk_buffer init_uniform_buffer(const void* data, const std::size_t size);
 
 	lvk_image init_image(VkFormat format, VkImageUsageFlags usage, VkImageType image_type, VkExtent3D extent);
 };
@@ -348,7 +329,7 @@ struct lvk_buffer {
 
 	const lvk_allocator* allocator;
 
-	void upload(const void* vertex_data, const std::size_t vertex_size);
+	void upload(const void* data, const std::size_t size);
 };
 
 
@@ -384,4 +365,45 @@ struct lvk_image_view {
 	VkImageView _image_view;
 
 	const lvk_image* image;
+};
+
+
+// |--------------------------------------------------
+// ----------------> DESCRIPTOR SET
+// |--------------------------------------------------
+
+
+struct lvk_descriptor_set_layout {
+	VkDescriptorSetLayout _descriptor_set_layout;
+	
+	const lvk_device* device;
+};
+
+
+// |--------------------------------------------------
+// ----------------> DESCRIPTOR POOL
+// |--------------------------------------------------
+
+
+struct lvk_descriptor_pool {
+	VkDescriptorPool _descriptor_pool;
+	
+	const lvk_device* device;
+	
+	lvk_descriptor_set init_descriptor_set(const lvk_descriptor_set_layout* descriptor_set_layout);
+};
+
+
+// |--------------------------------------------------
+// ----------------> DESCRIPTOR SET
+// |--------------------------------------------------
+
+
+struct lvk_descriptor_set {
+	VkDescriptorSet _descriptor_set;
+	
+	const lvk_descriptor_pool* descriptor_pool;
+	const lvk_device* device;
+	
+	void update(const lvk_buffer* buffer, const std::size_t offset = 0) const;
 };

@@ -6,7 +6,7 @@
 
 namespace lucy {
 	struct Window {
-		glm::vec2 pos = { 50, 50 };
+		glm::vec2 pos = { 100, 100 };
 		glm::vec2 size = { 1366, 768 };
 
 		uint32_t flags = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN;
@@ -23,7 +23,6 @@ namespace lucy {
 
 		void InitWindow();
 		void InitWindow(const char* title, int pos_x, int pos_y, int width, int height, uint32_t flags);
-		void SwapWindow();
 		void Destroy();
 		void SetCurrent();
 		void ResetSize();

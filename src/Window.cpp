@@ -54,10 +54,6 @@ void lucy::Window::InitWindow(const char* title, int pos_x, int pos_y, int width
 	InitWindow();
 }
 
-void lucy::Window::SwapWindow() {
-	SDL_GL_SwapWindow(this->sdl_window);
-}
-
 void lucy::Window::Destroy() {
 	// if (this->framebuffer != nullptr) {
 	// 	delete this->framebuffer;

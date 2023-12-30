@@ -317,20 +317,18 @@ VkResult lvk_device::present(const VkPresentInfoKHR* present_info) const {
 }
 
 
+lvk_device::~lvk_device()
+{
+	deletion_queue.flush();
+
+	vkDestroyDevice(_device, VK_NULL_HANDLE);
+	dloggln("Logical Device Destroyed");
+}
+
+
 // |--------------------------------------------------
 // ----------------> SWAPCHAIN
 // |--------------------------------------------------
-
-
-static VkSurfaceFormatKHR get_swapchain_surface_format(const std::vector<VkSurfaceFormatKHR>& format_array) {
-	for (const auto& availableFormat: format_array) {
-		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-			return availableFormat;
-		}
-	}
-	
-	return format_array[0];
-}
 
 
 lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height) {
@@ -339,7 +337,7 @@ lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height) {
 	lvk_swapchain swapchain = {
 		VK_NULL_HANDLE,
 		VkExtent2D { width, height },
-		get_swapchain_surface_format(physical_device->_swapchain_support_details.formats),
+		lvk::get_swapchain_surface_format(physical_device->_swapchain_support_details.formats),
 		VK_PRESENT_MODE_FIFO_KHR,
 		0,
 		VK_NULL_HANDLE,
@@ -419,11 +417,14 @@ bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
 			physical_device->_queue_family_indices.present.value()
 		};
 
+		// TODO: Sharing Mode is always exclusive in lvk_buffer. Therefore only one queue is possible
 		if (physical_device->_queue_family_indices.present == physical_device->_queue_family_indices.graphics) {
 			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			createInfo.queueFamilyIndexCount = 0;
 			createInfo.pQueueFamilyIndices = nullptr;
 		} else {
+			throw std::runtime_error("VK_SHARING_MODE_CONCURRENT is not implemented yet");
+			
 			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 			createInfo.queueFamilyIndexCount = std::size(queueFamilyIndices);
 			createInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -617,7 +618,7 @@ void lvk_command_buffer::end_render_pass() {
 lvk_render_pass lvk_device::init_render_pass() {	
 	VkAttachmentDescription color_attachment = {};
 	color_attachment.flags = 0;
-    color_attachment.format = get_swapchain_surface_format(physical_device->_swapchain_support_details.formats).format;
+    color_attachment.format = lvk::get_swapchain_surface_format(physical_device->_swapchain_support_details.formats).format;
 	// 1 sample = No MSAA
     color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	// clear attachment when loaded
@@ -869,7 +870,7 @@ lvk_shader_module::~lvk_shader_module()
 // |--------------------------------------------------
 
 
-lvk_pipeline_layout lvk_device::init_pipeline_layout(const VkPushConstantRange* push_constant_range, uint32_t push_constant_range_count) {
+lvk_pipeline_layout lvk_device::init_pipeline_layout(const VkPushConstantRange* push_constant_ranges, uint32_t push_constant_range_count, const VkDescriptorSetLayout* descriptor_set_layouts, uint32_t descriptor_set_layout_count) {
 	lvk_pipeline_layout pipeline_layout = {
 		._pipeline_layout = VK_NULL_HANDLE,
 		.device = this,
@@ -877,13 +878,13 @@ lvk_pipeline_layout lvk_device::init_pipeline_layout(const VkPushConstantRange* 
 	};
 
 	VkPipelineLayoutCreateInfo pipeline_layout_create_info = {
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-		VK_NULL_HANDLE,
-		0,
-		0,
-		VK_NULL_HANDLE,
-		push_constant_range_count,
-		push_constant_range
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+
+		.setLayoutCount = descriptor_set_layout_count,
+		.pSetLayouts = descriptor_set_layouts,
+
+		.pushConstantRangeCount = push_constant_range_count,
+		.pPushConstantRanges = push_constant_ranges
 	};
 	
 	if (vkCreatePipelineLayout(this->_device, &pipeline_layout_create_info, VK_NULL_HANDLE, &pipeline_layout._pipeline_layout) != VK_SUCCESS) {
@@ -897,10 +898,6 @@ lvk_pipeline_layout lvk_device::init_pipeline_layout(const VkPushConstantRange* 
 	});
 	
 	return pipeline_layout;
-}
-
-lvk_pipeline_layout::~lvk_pipeline_layout()
-{
 }
 
 lvk_pipeline lvk_pipeline_layout::init_graphics_pipeline(const lvk_render_pass* render_pass, const lvk::config::graphics_pipeline* config) {
@@ -1000,45 +997,43 @@ lvk_allocator lvk_device::init_allocator() {
 	return allocator;
 }
 
-lvk_allocator::~lvk_allocator() {
-}
-
 
 // |--------------------------------------------------
 // ----------------> BUFFER
 // |--------------------------------------------------
 
 
-lvk_buffer lvk_allocator::init_buffer(VkBufferUsageFlagBits usage, const void* data, const std::size_t size, const VkSharingMode sharing_mode, const uint32_t* queue_family_indices, uint32_t queue_family_indices_count) {
+lvk_buffer lvk_allocator::init_buffer(VkBufferUsageFlagBits buffer_usage, VmaMemoryUsage memory_usage, const void* data, const std::size_t size) {
 	lvk_buffer buffer = {
-		VK_NULL_HANDLE,
-		VK_NULL_HANDLE,
-		size,
-		usage,
-		this
+		._buffer = VK_NULL_HANDLE,
+		._allocation = VK_NULL_HANDLE,
+		._allocated_size = size,
+		._usage = buffer_usage,
+		.allocator = this
 	};
 	
 	VkBufferCreateInfo bufferInfo = {
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		VK_NULL_HANDLE,
-		0,
-		size,
-		usage,
-		sharing_mode,
-		queue_family_indices_count,
-		queue_family_indices
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.size = size,
+		.usage = buffer_usage,
+		
+		// TODO: Logical Device Implementation does not support seperate presentation and graphics queue (VK_SHARING_MODE_CONCURRENT) yet
+		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+
+		// .queueFamilyIndexCount = queue_family_indices_count,
+		// .pQueueFamilyIndices = queue_family_indices
 	};
 
-	//let the VMA library know that this data should be writeable by CPU, but also readable by GPU
-	VmaAllocationCreateInfo vmaallocInfo = {};
-	vmaallocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+	VmaAllocationCreateInfo vmaallocInfo = {
+		.usage = memory_usage
+	};
 
 	//allocate the buffer
 	if (vmaCreateBuffer(_allocator, &bufferInfo, &vmaallocInfo, &buffer._buffer, &buffer._allocation, nullptr) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create buffer!");
 	}
 
-	dloggln("Buffer Created: ", lvk::to_string(usage));
+	dloggln("Buffer Created: ", lvk::to_string(buffer_usage));
 	
 	if (data != nullptr) {
 		buffer.upload(data, size);
@@ -1053,22 +1048,22 @@ lvk_buffer lvk_allocator::init_buffer(VkBufferUsageFlagBits usage, const void* d
 }
 
 lvk_buffer lvk_allocator::init_vertex_buffer(const void* data, const std::size_t size) {
-	return init_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, data, size, VK_SHARING_MODE_EXCLUSIVE, nullptr, 0);
+	return init_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, data, size);
 }
 
-lvk_buffer lvk_allocator::init_vertex_buffer(const std::size_t size) {
-	return init_vertex_buffer(nullptr, size);
+lvk_buffer lvk_allocator::init_uniform_buffer(const void* data, const std::size_t size) {
+	return init_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, data, size);
 }
 
-void lvk_buffer::upload(const void* vertex_data, const std::size_t vertex_size) {
-	if (vertex_size > _allocated_size) {
-		throw std::runtime_error("vertices size greater than allocated size!");
+void lvk_buffer::upload(const void* data, const std::size_t size) {
+	if (size > _allocated_size) {
+		throw std::runtime_error("required size is greater than allocated size!");
 	}
 
-	void* data;
-	vmaMapMemory(allocator->_allocator, _allocation, &data);
+	void* _data;
+	vmaMapMemory(allocator->_allocator, _allocation, &_data);
 
-	memcpy(data, vertex_data, vertex_size);
+	memcpy(_data, data, size);
 
 	vmaUnmapMemory(allocator->_allocator, _allocation);
 }
@@ -1141,7 +1136,8 @@ lvk_image lvk_allocator::init_image(VkFormat format, VkImageUsageFlags usage, Vk
 
 lvk_image_view lvk_image::init_image_view(VkImageAspectFlags aspect_flag, VkImageViewType image_view_type) {
 	lvk_image_view image_view = {
-		VK_NULL_HANDLE
+		._image_view = VK_NULL_HANDLE,
+		.image = this
 	};
 
 	VkImageViewCreateInfo createInfo = lvk::info::image_view(_image, _format, aspect_flag, image_view_type);
@@ -1157,4 +1153,114 @@ lvk_image_view lvk_image::init_image_view(VkImageAspectFlags aspect_flag, VkImag
 	});
 
 	return image_view;
+}
+
+
+// |--------------------------------------------------
+// ----------------> DESCRIPTOR SET
+// |--------------------------------------------------
+
+
+lvk_descriptor_set_layout lvk_device::init_descriptor_set_layout(const VkDescriptorSetLayoutBinding* bindings, const uint32_t binding_count) {
+	lvk_descriptor_set_layout descriptor_set_layout = {
+		._descriptor_set_layout = VK_NULL_HANDLE,
+		.device = this
+	};
+
+	VkDescriptorSetLayoutCreateInfo set_info = {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+		.bindingCount = binding_count,
+		.pBindings = bindings
+	};
+
+	if (vkCreateDescriptorSetLayout(_device, &set_info, VK_NULL_HANDLE, &descriptor_set_layout._descriptor_set_layout) != VK_SUCCESS) {
+		throw std::runtime_error("descriptor_set_layout creation failed!");
+	}
+	dloggln("DescriptorSetLayout Created");
+
+	deletion_queue.push([=]() {
+		vkDestroyDescriptorSetLayout(_device, descriptor_set_layout._descriptor_set_layout, VK_NULL_HANDLE);
+		dloggln("DescriptorSetLayout Destroyed");
+	});
+
+	return descriptor_set_layout;
+}
+
+
+// |--------------------------------------------------
+// ----------------> DESCRIPTOR POOL
+// |--------------------------------------------------
+
+
+lvk_descriptor_pool lvk_device::init_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count) {
+	lvk_descriptor_pool descriptor_pool = {
+		._descriptor_pool = VK_NULL_HANDLE,
+		.device = this
+	};
+
+	VkDescriptorPoolCreateInfo pool_info = {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+		.maxSets = max_descriptor_sets,
+		.poolSizeCount = descriptor_pool_sizes_count,
+		.pPoolSizes = descriptor_pool_sizes
+	};
+
+	if (vkCreateDescriptorPool(_device, &pool_info, VK_NULL_HANDLE, &descriptor_pool._descriptor_pool) != VK_SUCCESS) {
+		throw std::runtime_error("descriptor_pool creation failed");
+	}
+	dloggln("DescriptorPool Created");
+
+	deletion_queue.push([=]() {
+		vkDestroyDescriptorPool(_device, descriptor_pool._descriptor_pool, VK_NULL_HANDLE);
+		dloggln("DescriptorSetLayout Destroyed");	
+	});
+
+	return descriptor_pool;
+}
+
+
+// |--------------------------------------------------
+// ----------------> DESCRIPTOR SET
+// |--------------------------------------------------
+
+
+lvk_descriptor_set lvk_descriptor_pool::init_descriptor_set(const lvk_descriptor_set_layout* descriptor_set_layout) {
+	lvk_descriptor_set descriptor_set = {
+		._descriptor_set = VK_NULL_HANDLE,
+		.descriptor_pool = this,
+		.device = device
+	};
+
+	VkDescriptorSetAllocateInfo allocate_info ={
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		.descriptorPool = _descriptor_pool,
+		.descriptorSetCount = 1,
+		.pSetLayouts = &descriptor_set_layout->_descriptor_set_layout,
+	};
+
+	if (vkAllocateDescriptorSets(device->_device, &allocate_info, &descriptor_set._descriptor_set) != VK_SUCCESS) {
+		throw std::runtime_error("descriptor_set allocation failed!");
+	}
+	dloggln("Description Set Allocated");
+
+	return descriptor_set;
+}
+
+void lvk_descriptor_set::update(const lvk_buffer* buffer, const std::size_t offset) const {
+	VkDescriptorBufferInfo buffer_info = {
+		.buffer = buffer->_buffer,
+		.offset = offset,
+		.range = buffer->_allocated_size
+	};
+	
+	VkWriteDescriptorSet write_set = {
+		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		.dstSet = _descriptor_set,
+		.dstBinding = 0,
+		.descriptorCount = 1,
+		.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		.pBufferInfo = &buffer_info,
+	};
+
+	vkUpdateDescriptorSets(device->_device, 1, &write_set, 0, VK_NULL_HANDLE);
 }

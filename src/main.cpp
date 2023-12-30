@@ -1,11 +1,13 @@
-#include "lucyvk/vk_config.h"
+
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
 #include "Camera.h"
 #include "Mesh.h"
+#include "lucyvk/vk_config.h"
 #include "lucyvk/vk_function.h"
 #include "lucyvk/vk_info.h"
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_image.h>
@@ -22,10 +24,7 @@
 
 #include <glm/gtx/transform.hpp>
 
-#include <vulkan/vulkan_core.h>
-
 #include <util/logger.h>
-#include <lucyvk/vk_static.h>
 
 typedef uint32_t lve_vertex;
 
@@ -79,6 +78,12 @@ lucy::Mesh load_triangle_mesh() {
 	return triangle_mesh;
 }
 
+struct GPUCamera {
+	glm::mat4 projection;
+	glm::mat4 view;
+	glm::mat4 model;
+};
+
 struct Frame {
 	lvk_fence render_fence;
 	lvk_semaphore present_semaphore;
@@ -88,6 +93,10 @@ struct Frame {
 	lvk_command_buffer command_buffer;
 	
 	uint32_t image_index;
+	
+	lvk_buffer camera_buffer;
+
+	lvk_descriptor_set global_descriptor;
 };
 
 static constexpr const int FRAMES_IN_FLIGHT = 2;
@@ -98,20 +107,30 @@ int main(int count, char** args) {
 	lucy::Window window = {};
 	window.InitWindow();
 
-	lvk::config::instance config = {
+	lvk::config::instance instance_config = {
 		.name = "Lucy Framework v7",
 		.enable_validation_layers = true
 	};
 	
-	// ---------------> INSTANCE INIT
+	//* ---------------> INSTANCE INIT
 
-	auto instance = lvk_init_instance(&config, window.sdl_window);
+	auto instance = lvk_init_instance(&instance_config, window.sdl_window);
+
 	auto physical_device = instance.init_physical_device();
 	auto device = physical_device.init_device();
 	auto allocator = device.init_allocator();
 	auto render_pass = device.init_render_pass();
 
-	// ---------------> COMMAND POOL INIT
+	//* ---------------> COMMAND POOL INIT
+
+	auto binding = lvk::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1);
+
+	auto descriptor_set_layout = device.init_descriptor_set_layout(&binding, 1);
+
+	VkDescriptorPoolSize descriptor_pool_sizes[] = {
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }
+	};
+	auto descriptor_pool = device.init_descriptor_pool(10, descriptor_pool_sizes, std::size(descriptor_pool_sizes));
 
 	Frame frame[FRAMES_IN_FLIGHT];
 
@@ -123,24 +142,14 @@ int main(int count, char** args) {
 
 		frame[i].render_semaphore = device.init_semaphore();
 		frame[i].present_semaphore = device.init_semaphore();
+
+		frame[i].camera_buffer = allocator.init_uniform_buffer(nullptr, sizeof(GPUCamera));
+		frame[i].global_descriptor = descriptor_pool.init_descriptor_set(&descriptor_set_layout);
+
+		frame[i].global_descriptor.update(&frame[i].camera_buffer);
 	}
-	
-	// ---------------> SWAPCHAIN INIT
 
-	auto swapchain = device.init_swapchain(window.size.x, window.size.y);
-	auto* depth_images = new lvk_image[swapchain._image_count];
-	auto* depth_image_views = new lvk_image_view[swapchain._image_count];
-	auto* framebuffers = new lvk_framebuffer[swapchain._image_count];
-
-	for (int i = 0; i < swapchain._image_count; i++) {
-		depth_images[i] = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_TYPE_2D, { swapchain._extent.width, swapchain._extent.height, 1 });
-		depth_image_views[i] = depth_images[i].init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
-
-		VkImageView image_view[2] = { swapchain._image_views[i], depth_image_views[i]._image_view };
-		framebuffers[i] = render_pass.init_framebuffer(swapchain._extent, image_view, std::size(image_view));
-	}
-	
-	// ---------------> PIPELINE INIT
+	//* ---------------> PIPELINE INIT
 
 	VkPushConstantRange push_constant = {
 		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
@@ -148,7 +157,7 @@ int main(int count, char** args) {
 		.size = sizeof(lucy::MeshPushConstants),
 	};
 
-	lvk_pipeline_layout pipeline_layout = device.init_pipeline_layout(&push_constant, 1);
+	lvk_pipeline_layout pipeline_layout = device.init_pipeline_layout(&push_constant, 1, &descriptor_set_layout._descriptor_set_layout, 1);
 
 	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/mesh.vert.spv");
 	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
@@ -172,19 +181,34 @@ int main(int count, char** args) {
 			.viewport = {
 				.x = 0.0f,
 				.y = 0.0f,
-				.width = (float)swapchain._extent.width,
-				.height = (float)swapchain._extent.height,
+				.width = (float)window.size.x,
+				.height = (float)window.size.y,
 				.minDepth = 0.0f,
 				.maxDepth = 1.0f
 			},
 
 			.scissor = {
 				.offset = { 0, 0 },
-				.extent = swapchain._extent
+				.extent = { static_cast<uint32_t>(window.size.x), static_cast<uint32_t>(window.size.y) }
 			}
 		};
 
 		graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
+	}
+	
+	//* ---------------> SWAPCHAIN INIT
+
+	auto swapchain = device.init_swapchain(window.size.x, window.size.y);
+	auto* depth_images = new lvk_image[swapchain._image_count];
+	auto* depth_image_views = new lvk_image_view[swapchain._image_count];
+	auto* framebuffers = new lvk_framebuffer[swapchain._image_count];
+
+	for (int i = 0; i < swapchain._image_count; i++) {
+		depth_images[i] = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_TYPE_2D, { swapchain._extent.width, swapchain._extent.height, 1 });
+		depth_image_views[i] = depth_images[i].init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+
+		VkImageView image_view[2] = { swapchain._image_views[i], depth_image_views[i]._image_view };
+		framebuffers[i] = render_pass.init_framebuffer(swapchain._extent, image_view, std::size(image_view));
 	}
 
 	lucy::Mesh monkey_mesh;
@@ -192,10 +216,10 @@ int main(int count, char** args) {
 	monkey_mesh.vertex_buffer = allocator.init_vertex_buffer(monkey_mesh._vertices.data(), monkey_mesh._vertices.size() * sizeof(monkey_mesh._vertices[0]));
 
 	lucy::Camera camera;
-	camera.width = swapchain._extent.width;
-	camera.height = swapchain._extent.height;
+	camera.width = window.size.x;
+	camera.height = window.size.y;
 
-	VkClearValue clearValue[2] = {
+	VkClearValue clear_value[2] = {
 		{
 			.color = { { 0.0f, 0.0f, 0, 0.0f } }
 		},
@@ -214,13 +238,15 @@ int main(int count, char** args) {
 		lucy::Events::Update();
 
 		camera.Update(dt);
-		
-		// TODO: Shader Module creation/deletion/query - management
+
+		// TODO: Shader Module creation/deletion/query management
 		// TODO: vk_shaders.h
 		// TODO: maybe restructure init_ based creation
+		// TODO: Remove deletion_queue and find a better approach
+		// TODO: Better approach for PhysicalDevice selection and Initialization
+		// *TODO: multi_init feature for initialization of multiple vulkan types
 
 		{
-			// auto t0 = std::chrono::high_resolution_clock::now();
 			{
 				auto& current_frame = frame[framenumber % FRAMES_IN_FLIGHT];
 
@@ -229,7 +255,7 @@ int main(int count, char** args) {
 				current_frame.image_index = image_index;
 
 				current_frame.command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-				current_frame.command_buffer.begin_render_pass(&framebuffers[image_index], clearValue, 2, VK_SUBPASS_CONTENTS_INLINE);
+				current_frame.command_buffer.begin_render_pass(&framebuffers[image_index], clear_value, 2, VK_SUBPASS_CONTENTS_INLINE);
 
 				vkCmdBindPipeline(current_frame.command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
 
@@ -244,14 +270,21 @@ int main(int count, char** args) {
 				constants.render_matrix = mesh_matrix;
 				constants.offset = { 0, 0, 0, 0};
 
-				vkCmdPushConstants(current_frame.command_buffer._command_buffer, pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
+				GPUCamera gpu_camera = {
+					.projection = camera.projection,
+					.view = camera.view,
+					.model = model
+				};
+				current_frame.camera_buffer.upload(&gpu_camera, sizeof(gpu_camera));
+
+				// vkCmdPushConstants(current_frame.command_buffer._command_buffer, pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
+				vkCmdBindDescriptorSets(current_frame.command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout._pipeline_layout, 0, 1, &current_frame.global_descriptor._descriptor_set, 0, nullptr);
 
 				vkCmdDraw(current_frame.command_buffer._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
 
 				current_frame.command_buffer.end_render_pass();
 				current_frame.command_buffer.end();
 			}
-			// auto t1 = std::chrono::high_resolution_clock::now();
 
 			if (framenumber > 0) {
 				auto& prev_frame = frame[(framenumber - 1) % FRAMES_IN_FLIGHT];
@@ -289,10 +322,6 @@ int main(int count, char** args) {
 
 				device.present(&presentInfo);
 			}
-
-			// auto t2 = std::chrono::high_resolution_clock::now();
-
-			// dloggln("Record: ", std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count(), " | Submit: ", std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count());
 		}
 
 		framenumber += 1;
@@ -303,8 +332,6 @@ int main(int count, char** args) {
 		dt = std::chrono::duration<double, std::ratio<1, 60>>(end_time - start_time).count();
 	}
 	
-	// vmaDestroyBuffer(allocator->_allocator, _buffer, _allocation);
-
 	device.wait_idle();
 
 	window.Destroy();

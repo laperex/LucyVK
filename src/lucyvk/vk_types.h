@@ -39,6 +39,10 @@ struct lvk_shader_module;
 struct lvk_pipeline_layout;
 struct lvk_pipeline;
 
+struct lvk_descriptor_set_layout;
+struct lvk_descriptor_pool;
+struct lvk_descriptor_set;
+
 struct lvk_allocator;
 struct lvk_buffer;
 struct lvk_image;

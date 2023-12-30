@@ -39,4 +39,11 @@ namespace lvk::config {
 
 		bool enable_validation_layers;
 	};
+	
+	struct pipeline_layout {
+		const VkPushConstantRange* push_constant_ranges;
+		uint32_t push_constant_range_count;
+		const VkDescriptorSetLayout* descriptor_set_layouts;
+		uint32_t descriptor_set_layout_count;
+	};
 }
