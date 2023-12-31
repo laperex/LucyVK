@@ -216,27 +216,6 @@ struct lvk_pipeline {
 
 
 // |--------------------------------------------------
-// ----------------> ALLOCATOR
-// |--------------------------------------------------
-
-
-struct lvk_allocator {
-	VmaAllocator _allocator;
-	
-	const lvk_device* device;
-
-	lvk::deletion_queue* deletion_queue;
-	
-	lvk_buffer init_buffer(VkBufferUsageFlagBits buffer_usage, VmaMemoryUsage memory_usage, const void* data, const std::size_t size);
-
-	lvk_buffer init_vertex_buffer(const void* data, const std::size_t size);
-	lvk_buffer init_uniform_buffer(const void* data, const std::size_t size);
-
-	lvk_image init_image(VkFormat format, VkImageUsageFlags usage, VkImageType image_type, VkExtent3D extent);
-};
-
-
-// |--------------------------------------------------
 // ----------------> BUFFER
 // |--------------------------------------------------
 
@@ -253,6 +232,38 @@ struct lvk_buffer {
 	void upload(const void* data, const std::size_t size) const;
 
 	template <typename T> inline void upload(const T& data) const { upload(&data, sizeof(T)); }
+};
+
+
+// |--------------------------------------------------
+// ----------------> ALLOCATOR
+// |--------------------------------------------------
+
+
+struct lvk_allocator {
+	VmaAllocator _allocator;
+	
+	const lvk_device* device;
+
+	lvk::deletion_queue* deletion_queue;
+	
+	lvk_buffer init_buffer(VkBufferUsageFlagBits buffer_usage, VmaMemoryUsage memory_usage, const void* data, const std::size_t size);
+
+	lvk_buffer init_vertex_buffer(const void* data, const std::size_t size);
+
+	template <typename T, std::size_t N> [[nodiscard, __gnu__::__always_inline__]]
+	constexpr lvk_buffer init_vertex_buffer(const T (&data)[N]) noexcept {
+		return init_vertex_buffer(data, sizeof(T) * N);
+	}
+
+	lvk_buffer init_uniform_buffer(const void* data, const std::size_t size);
+
+	template <typename T> [[nodiscard, __gnu__::__always_inline__]]
+	constexpr lvk_buffer init_uniform_buffer(const T* data = nullptr) noexcept {
+		return init_uniform_buffer(data, sizeof(T));
+	}
+
+	lvk_image init_image(VkFormat format, VkImageUsageFlags usage, VkImageType image_type, VkExtent3D extent);
 };
 
 

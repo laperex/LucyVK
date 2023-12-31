@@ -21,7 +21,7 @@ namespace lucy {
 				{
 					{
 						.binding = 0,
-						.stride = 0,
+						.stride = sizeof(Vertex),
 						.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
 					}
 				},

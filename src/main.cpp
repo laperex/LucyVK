@@ -105,48 +105,9 @@ struct Frame {
 
 static constexpr const int FRAMES_IN_FLIGHT = 2;
 
-template <std::size_t B, std::size_t A>
-struct Description {
-    VkVertexInputBindingDescription binding[B];
-	VkVertexInputAttributeDescription attributes[A];
-};
-
-template<std::size_t B, std::size_t A>
-Description(const VkVertexInputBindingDescription (&)[B], const VkVertexInputAttributeDescription (&)[A]) -> Description<B, A>;
-
 int main(int count, char** args) {
 	lucy::Window window = {};
 	window.InitWindow();
-
-	Description s = {
-		{
-			{
-				.binding = 0,
-				.stride = 0,
-				.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-			}
-		},
-		{
-			{
-				.location = 0,
-				.binding = 0,
-				.format = VK_FORMAT_R32G32B32_SFLOAT,
-				.offset = offsetof(lucy::Vertex, position),
-			},
-			{
-				.location = 1,
-				.binding = 0,
-				.format = VK_FORMAT_R32G32B32_SFLOAT,
-				.offset = offsetof(lucy::Vertex, normal),
-			},
-			{
-				.location = 2,
-				.binding = 0,
-				.format = VK_FORMAT_R32G32B32_SFLOAT,
-				.offset = offsetof(lucy::Vertex, color),
-			}
-		}
-	};
 
 	lvk::config::instance instance_config = {
 		.name = "Lucy Framework v7",
@@ -169,22 +130,22 @@ int main(int count, char** args) {
 
 	auto descriptor_pool = device.init_descriptor_pool(10, {{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }});
 
-	Frame frame[FRAMES_IN_FLIGHT];
+	Frame frame_array[FRAMES_IN_FLIGHT];
 	
 
-	for (int i = 0; i < std::size(frame); i++) {
-		frame[i].command_pool = device.init_command_pool();
-		frame[i].command_buffer = frame[i].command_pool.init_command_buffer();
+	for (auto& frame: frame_array) {
+		frame.command_pool = device.init_command_pool();
+		frame.command_buffer = frame.command_pool.init_command_buffer();
 
-		frame[i].render_fence = device.init_fence();
+		frame.render_fence = device.init_fence();
 
-		frame[i].render_semaphore = device.init_semaphore();
-		frame[i].present_semaphore = device.init_semaphore();
+		frame.render_semaphore = device.init_semaphore();
+		frame.present_semaphore = device.init_semaphore();
 
-		frame[i].camera_buffer = allocator.init_uniform_buffer(nullptr, sizeof(mvp_matrix));
-		frame[i].global_descriptor = descriptor_pool.init_descriptor_set(&descriptor_set_layout);
+		frame.camera_buffer = allocator.init_uniform_buffer<mvp_matrix>();
+		frame.global_descriptor = descriptor_pool.init_descriptor_set(&descriptor_set_layout);
 
-		frame[i].global_descriptor.update(&frame[i].camera_buffer);
+		frame.global_descriptor.update(&frame.camera_buffer);
 	}
 	
 	//* ---------------> SWAPCHAIN INIT
@@ -223,7 +184,7 @@ int main(int count, char** args) {
 
 	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/mesh.vert.spv");
 	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
-	// auto vertex_layout = lucy::Vertex::get_vertex_description();
+	auto vertex_layout = lucy::Vertex::get_vertex_description();
 	
 	lvk_pipeline graphics_pipeline = {};
 	{
@@ -233,7 +194,8 @@ int main(int count, char** args) {
 				lvk::info::shader_stage(&fragment_shader, nullptr),
 			},
 
-			.vertex_input_state = lvk::info::vertex_input_state({
+			.vertex_input_state = lvk::info::vertex_input_state(
+				{
 					{
 						.binding = 0,
 						.stride = sizeof(lucy::Vertex),
@@ -325,7 +287,7 @@ int main(int count, char** args) {
 
 		{
 			{
-				auto& current_frame = frame[framenumber % FRAMES_IN_FLIGHT];
+				auto& current_frame = frame_array[framenumber % FRAMES_IN_FLIGHT];
 				auto& cmd = current_frame.command_buffer;
 
 				uint32_t image_index;
@@ -377,7 +339,7 @@ int main(int count, char** args) {
 			}
 
 			if (framenumber > 0) {
-				auto& prev_frame = frame[(framenumber - 1) % FRAMES_IN_FLIGHT];
+				auto& prev_frame = frame_array[(framenumber - 1) % FRAMES_IN_FLIGHT];
 				
 				VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
