@@ -13,103 +13,6 @@
 // #include <vulkan/vulkan_>
 
 // |--------------------------------------------------
-// ----------------> INSTANCE
-// |--------------------------------------------------
-
-
-lvk_instance lvk_init_instance(const lvk::config::instance* config, SDL_Window* sdl_window);
-
-struct lvk_instance {
-	VkDebugUtilsMessengerEXT _debug_messenger;
-	VkSurfaceKHR _surface;
-	VkInstance _instance;
-
-	std::vector<const char*> layers = {};
-	
-	~lvk_instance();
-
-	bool is_debug_enable();
-
-	lvk_physical_device init_physical_device(lvk::SelectPhysicalDeviceFunction function = nullptr);
-};
-
-
-// |--------------------------------------------------
-// ----------------> PHYSICAL DEVICE
-// |--------------------------------------------------
-
-
-struct lvk_physical_device {
-	VkPhysicalDevice _physical_device;
-
-	VkPhysicalDeviceFeatures _features;
-	VkPhysicalDeviceProperties _properties;
-
-	lvk::queue_family_indices _queue_family_indices;
-	lvk::swapchain_support_details _swapchain_support_details;
-	
-	const lvk_instance* instance;
-
-	lvk_device init_device(std::vector<const char*> layers = {}, std::vector<const char*> extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME });
-
-	const VkFormat find_supported_format(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
-	const uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags property_flags) const;
-};
-
-
-// |--------------------------------------------------
-// ----------------> DEVICE
-// |--------------------------------------------------
-
-
-struct lvk_device {
-	VkDevice _device;
-	
-	VkQueue _present_queue;
-	VkQueue _compute_queue;
-	VkQueue _transfer_queue;
-	VkQueue _graphics_queue;
-
-	std::vector<const char*> extensions = {};
-	std::vector<const char*> layers = {};
-	
-	~lvk_device();
-
-	const lvk_physical_device* physical_device;
-	const lvk_instance* instance;
-	
-	lvk::deletion_queue deletion_queue;
-
-	lvk_swapchain init_swapchain(uint32_t width, uint32_t height);
-	
-	lvk_command_pool init_command_pool();
-	lvk_command_pool init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
-	
-	lvk_queue init_queue();
-	
-	lvk_render_pass init_render_pass();
-	lvk_render_pass init_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform = false);
-
-	lvk_semaphore init_semaphore();
-	lvk_fence init_fence(VkFenceCreateFlags flags = 0);
-
-	lvk_shader_module init_shader_module(VkShaderStageFlagBits stage, const char* filename);
-	
-	lvk_pipeline_layout init_pipeline_layout(const VkPushConstantRange* push_constant_ranges, uint32_t push_constant_range_count, const VkDescriptorSetLayout* descriptor_set_layouts, uint32_t descriptor_set_layout_count);
-	
-	lvk_allocator init_allocator();
-	
-	lvk_descriptor_set_layout init_descriptor_set_layout(const VkDescriptorSetLayoutBinding* bindings, const uint32_t binding_count);
-	lvk_descriptor_pool init_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count);
-
-	void wait_idle() const;
-
-	VkResult submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const lvk_fence* fence, uint64_t timeout = LVK_TIMEOUT) const;
-	VkResult present(const VkPresentInfoKHR* present_info) const;
-};
-
-
-// |--------------------------------------------------
 // ----------------> SWAPCHAIN
 // |--------------------------------------------------
 
@@ -119,6 +22,7 @@ struct lvk_swapchain {
 	VkExtent2D _extent = { 0, 0 };
 	VkSurfaceFormatKHR _surface_format;
 	VkPresentModeKHR _present_mode;
+	VkImageUsageFlags _image_usage;
 
 	uint32_t _image_count;
 	VkImage* _images;
@@ -126,8 +30,6 @@ struct lvk_swapchain {
 
 	bool recreate(const uint32_t width, const uint32_t height);
 	VkResult acquire_next_image(uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT);
-	
-	~lvk_swapchain();
 	
 	const lvk_device* device;
 	const lvk_physical_device* physical_device;
@@ -170,9 +72,25 @@ struct lvk_command_buffer {
 
 	void begin(const VkCommandBufferBeginInfo* beginInfo);
 	void begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info = VK_NULL_HANDLE);
+	
+	void bind_pipeline(const lvk_pipeline* pipeline);
+	
+	void bind_vertex_buffer(const lvk_buffer* vertex_buffer, const VkDeviceSize offset);
 
+	void bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count);
+	template <std::size_t _Nm> [[__gnu__::__always_inline__]]
+    constexpr void bind_vertex_buffers(const VkBuffer (&vertex_buffers)[_Nm], const VkDeviceSize (&offset_array)[_Nm]) noexcept {
+		bind_vertex_buffers(vertex_buffers, offset_array, _Nm);
+	}
+
+	void transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout);
+
+	template<std::size_t _cv_N> [[__gnu__::__always_inline__]]
+	constexpr void begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue (&clear_values)[_cv_N]) noexcept {
+		begin_render_pass(framebuffer, subpass_contents, clear_values, _cv_N);
+	}
+	void begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count);
 	void begin_render_pass(const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents);
-	void begin_render_pass(const lvk_framebuffer* framebuffer, const VkClearValue* clear_values, const uint32_t clear_value_count, const VkSubpassContents subpass_contents);
 	
 	void bind(lvk_pipeline);
 
@@ -189,15 +107,13 @@ struct lvk_command_buffer {
 struct lvk_render_pass {
 	VkRenderPass _render_pass;
 
-	~lvk_render_pass();
-
 	const lvk_device* device;
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
+	
+	lvk::deletion_queue* deletion_queue;
 
 	lvk_framebuffer init_framebuffer(const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count);
-
-	lvk::deletion_queue deletion_queue;
 };
 
 

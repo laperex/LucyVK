@@ -1,4 +1,8 @@
 
+#include "lucyvk/vk_instance.h"
+#include "lucyvk/vk_physical_device.h"
+#include "lucyvk/vk_device.h"
+
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
@@ -119,7 +123,6 @@ int main(int count, char** args) {
 	auto physical_device = instance.init_physical_device();
 	auto device = physical_device.init_device();
 	auto allocator = device.init_allocator();
-	auto render_pass = device.init_render_pass();
 
 	//* ---------------> COMMAND POOL INIT
 
@@ -133,6 +136,7 @@ int main(int count, char** args) {
 	auto descriptor_pool = device.init_descriptor_pool(10, descriptor_pool_sizes, std::size(descriptor_pool_sizes));
 
 	Frame frame[FRAMES_IN_FLIGHT];
+	
 
 	for (int i = 0; i < std::size(frame); i++) {
 		frame[i].command_pool = device.init_command_pool();
@@ -148,16 +152,42 @@ int main(int count, char** args) {
 
 		frame[i].global_descriptor.update(&frame[i].camera_buffer);
 	}
+	
+	//* ---------------> SWAPCHAIN INIT
+
+	auto swapchain = device.init_swapchain(window.size.x, window.size.y, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
+		.format = VK_FORMAT_B8G8R8A8_UNORM,
+		.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+	});
+	auto* depth_images = new lvk_image[swapchain._image_count];
+	auto* depth_image_views = new lvk_image_view[swapchain._image_count];
+	auto* framebuffers = new lvk_framebuffer[swapchain._image_count];
+
+	auto render_pass = device.init_default_render_pass(swapchain._surface_format.format);
+
+	for (int i = 0; i < swapchain._image_count; i++) {
+		depth_images[i] = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_TYPE_2D, { swapchain._extent.width, swapchain._extent.height, 1 });
+		depth_image_views[i] = depth_images[i].init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+
+		VkImageView image_view[2] = { swapchain._image_views[i], depth_image_views[i]._image_view };
+		framebuffers[i] = render_pass.init_framebuffer(swapchain._extent, image_view, std::size(image_view));
+	}
 
 	//* ---------------> PIPELINE INIT
 
-	VkPushConstantRange push_constant = {
-		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-		.offset = 0,
-		.size = sizeof(lucy::MeshPushConstants),
+	VkPushConstantRange push_constants[1] = {
+		{
+			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+			.offset = 0,
+			.size = sizeof(lucy::MeshPushConstants),
+		}
 	};
 
-	lvk_pipeline_layout pipeline_layout = device.init_pipeline_layout(&push_constant, 1, &descriptor_set_layout._descriptor_set_layout, 1);
+	VkDescriptorSetLayout descriptor_set_layout_array[1] = {
+		descriptor_set_layout._descriptor_set_layout
+	};
+
+	lvk_pipeline_layout pipeline_layout = device.init_pipeline_layout(push_constants, descriptor_set_layout_array);
 
 	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/mesh.vert.spv");
 	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
@@ -195,21 +225,6 @@ int main(int count, char** args) {
 
 		graphics_pipeline = pipeline_layout.init_graphics_pipeline(&render_pass, &config);
 	}
-	
-	//* ---------------> SWAPCHAIN INIT
-
-	auto swapchain = device.init_swapchain(window.size.x, window.size.y);
-	auto* depth_images = new lvk_image[swapchain._image_count];
-	auto* depth_image_views = new lvk_image_view[swapchain._image_count];
-	auto* framebuffers = new lvk_framebuffer[swapchain._image_count];
-
-	for (int i = 0; i < swapchain._image_count; i++) {
-		depth_images[i] = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_TYPE_2D, { swapchain._extent.width, swapchain._extent.height, 1 });
-		depth_image_views[i] = depth_images[i].init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
-
-		VkImageView image_view[2] = { swapchain._image_views[i], depth_image_views[i]._image_view };
-		framebuffers[i] = render_pass.init_framebuffer(swapchain._extent, image_view, std::size(image_view));
-	}
 
 	lucy::Mesh monkey_mesh;
 	monkey_mesh.load_obj("/home/laperex/Programming/C++/LucyVK/src/assets/monkey.obj");
@@ -245,22 +260,32 @@ int main(int count, char** args) {
 		// TODO: Remove deletion_queue and find a better approach
 		// TODO: Better approach for PhysicalDevice selection and Initialization
 		// *TODO: multi_init feature for initialization of multiple vulkan types
+		
+		// TODO! IMPLEMENT COMPUTE SHADERS 
 
 		{
 			{
 				auto& current_frame = frame[framenumber % FRAMES_IN_FLIGHT];
+				auto& cmd = current_frame.command_buffer;
 
 				uint32_t image_index;
 				swapchain.acquire_next_image(&image_index, current_frame.present_semaphore._semaphore, VK_NULL_HANDLE);
 				current_frame.image_index = image_index;
+				
+				cmd.reset();
 
-				current_frame.command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-				current_frame.command_buffer.begin_render_pass(&framebuffers[image_index], clear_value, 2, VK_SUBPASS_CONTENTS_INLINE);
+				cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+				// std::size(clear_value);
+				
+				// cmd.end();
 
-				vkCmdBindPipeline(current_frame.command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
+				cmd.begin_render_pass(&framebuffers[image_index], VK_SUBPASS_CONTENTS_INLINE, clear_value);
 
-				VkDeviceSize offset = 0;
-				vkCmdBindVertexBuffers(current_frame.command_buffer._command_buffer, 0, 1, &monkey_mesh.vertex_buffer._buffer, &offset);
+				vkCmdBindPipeline(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
+				
+				{
+					cmd.bind_vertex_buffers({ monkey_mesh.vertex_buffer._buffer }, { 0 });
+				}
 
 				glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(framenumber * 0.4f), glm::vec3(0, 1, 0));
 
@@ -278,13 +303,13 @@ int main(int count, char** args) {
 
 				current_frame.camera_buffer.upload(mvp);
 
-				// vkCmdPushConstants(current_frame.command_buffer._command_buffer, pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
-				vkCmdBindDescriptorSets(current_frame.command_buffer._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout._pipeline_layout, 0, 1, &current_frame.global_descriptor._descriptor_set, 0, nullptr);
+				vkCmdPushConstants(cmd._command_buffer, pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
+				vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout._pipeline_layout, 0, 1, &current_frame.global_descriptor._descriptor_set, 0, nullptr);
 
-				vkCmdDraw(current_frame.command_buffer._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
+				vkCmdDraw(cmd._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
 
-				current_frame.command_buffer.end_render_pass();
-				current_frame.command_buffer.end();
+				cmd.end_render_pass();
+				cmd.end();
 			}
 
 			if (framenumber > 0) {

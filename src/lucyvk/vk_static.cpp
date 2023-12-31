@@ -4,6 +4,11 @@
 #include "lucyvk/vk_static.h"
 #include "lucyvk/vk_function.h"
 #include "lucyvk/vk_info.h"
+
+#include "lucyvk/vk_instance.h"
+#include "lucyvk/vk_device.h"
+#include "lucyvk/vk_physical_device.h"
+
 #include "util/logger.h"
 #include <SDL_vulkan.h>
 #include <cassert>
@@ -331,24 +336,22 @@ lvk_device::~lvk_device()
 // |--------------------------------------------------
 
 
-lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height) {
+lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format) {
 	const auto& capabilities = physical_device->_swapchain_support_details.capabilities;
 
 	lvk_swapchain swapchain = {
-		VK_NULL_HANDLE,
-		VkExtent2D { width, height },
-		lvk::get_swapchain_surface_format(physical_device->_swapchain_support_details.formats),
-		VK_PRESENT_MODE_FIFO_KHR,
-		0,
-		VK_NULL_HANDLE,
-		{},
-		this,
-		physical_device,
-		instance
+		._swapchain = VK_NULL_HANDLE,
+		._extent = VkExtent2D { width, height },
+		._surface_format = surface_format,
+		._present_mode = VK_PRESENT_MODE_FIFO_KHR,
+		._image_usage = image_usage_flags,
+		.device = this,
+		.physical_device = physical_device,
+		.instance = instance
 	};
 
 	// TODO: support for more presentMode types
-	// * VK_PRESENT_MODE_IMMEDIATE_KHR
+	// * VK_PRESENT_MODE_IMMEDIATE_KHR = Not suggested causes tearing
 	// * VK_PRESENT_MODE_MAILBOX_KHR = Mailbox
 	// * VK_PRESENT_MODE_FIFO_KHR = V-sync
 	// * VK_PRESENT_MODE_FIFO_RELAXED_KHR
@@ -360,13 +363,26 @@ lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height) {
 			swapchain._present_mode = availablePresentMode;
 			break;
 		}
-		if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
+		if (availablePresentMode == VK_PRESENT_MODE_FIFO_RELAXED_KHR) {
 			swapchain._present_mode = availablePresentMode;
 			break;
 		}
 	}
 	
 	swapchain.recreate(width, height);
+	
+	deletion_queue.push([=]{
+		vkDestroySwapchainKHR(_device, swapchain._swapchain, VK_NULL_HANDLE);
+		dloggln("Swapchain Destroyed");
+
+		for (int i = 0; i < swapchain._image_count; i++) {
+			vkDestroyImageView(_device, swapchain._image_views[i], VK_NULL_HANDLE);
+		}
+		dloggln("ImageViews Destroyed");
+		
+		delete [] swapchain._image_views;
+		delete [] swapchain._images;
+	});
 
 	return swapchain;
 }
@@ -409,7 +425,7 @@ bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
 				std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, this->_extent.height))
 			};
 		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		createInfo.imageUsage = _image_usage;
 
 		// TODO: better approach
 		uint32_t queueFamilyIndices[] = {
@@ -482,20 +498,6 @@ VkResult lvk_swapchain::acquire_next_image(uint32_t* index, VkSemaphore semaphor
 	return vkAcquireNextImageKHR(device->_device, _swapchain, timeout, semaphore, fence, index);
 }
 
-lvk_swapchain::~lvk_swapchain()
-{
-	vkDestroySwapchainKHR(device->_device, _swapchain, VK_NULL_HANDLE);
-	dloggln("Swapchain Destroyed");
-
-	for (int i = 0; i < _image_count; i++) {
-		vkDestroyImageView(device->_device, _image_views[i], VK_NULL_HANDLE);
-	}
-	dloggln("ImageViews Destroyed");
-	
-	delete [] _image_views;
-	delete [] _images;
-}
-
 
 // |--------------------------------------------------
 // ----------------> COMMAND POOL
@@ -503,7 +505,7 @@ lvk_swapchain::~lvk_swapchain()
 
 
 lvk_command_pool lvk_device::init_command_pool() {
-	return init_command_pool(physical_device->_queue_family_indices.graphics.value(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+	return init_command_pool(physical_device->_queue_family_indices.graphics.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 }
 
 lvk_command_pool lvk_device::init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags) {
@@ -583,6 +585,46 @@ void lvk_command_buffer::begin(const VkCommandBufferUsageFlags flags, const VkCo
 	vkBeginCommandBuffer(_command_buffer, &cmdBeginInfo);
 }
 
+void lvk_command_buffer::bind_pipeline(const lvk_pipeline* pipeline) {
+	vkCmdBindPipeline(_command_buffer, pipeline->type, pipeline->_pipeline);
+}
+
+void lvk_command_buffer::bind_vertex_buffer(const lvk_buffer* vertex_buffer, const VkDeviceSize offset) {
+	vkCmdBindVertexBuffers(_command_buffer, 0, 1, &vertex_buffer->_buffer, &offset);
+}
+
+void lvk_command_buffer::bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count) {
+	vkCmdBindVertexBuffers(_command_buffer, 0, 1, vertex_buffers, offset_array);
+}
+
+void lvk_command_buffer::transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout) {
+    VkImageAspectFlags aspect_mask = (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+    VkImageMemoryBarrier2 image_barrier {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+
+		.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+		.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+		.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+		.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT,
+		.oldLayout = current_layout,
+		.newLayout = new_layout,
+		.image = image->_image,
+		.subresourceRange = {
+			.aspectMask = aspect_mask
+		},
+	};
+
+    VkDependencyInfo dependency_info {};
+    dependency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+    dependency_info.pNext = nullptr;
+
+    dependency_info.imageMemoryBarrierCount = 1;
+    dependency_info.pImageMemoryBarriers = &image_barrier;
+
+    vkCmdPipelineBarrier2(_command_buffer, &dependency_info);
+}
+
 void lvk_command_buffer::end() {
 	vkEndCommandBuffer(_command_buffer);
 }
@@ -591,7 +633,7 @@ void lvk_command_buffer::begin_render_pass(const VkRenderPassBeginInfo* beginInf
 	vkCmdBeginRenderPass(_command_buffer, beginInfo, subpass_contents);
 }
 
-void lvk_command_buffer::begin_render_pass(const lvk_framebuffer* framebuffer, const VkClearValue* clear_values, const uint32_t clear_value_count, const VkSubpassContents subpass_contents) {
+void lvk_command_buffer::begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count) {
 	VkRenderPassBeginInfo beginInfo = {
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 		VK_NULL_HANDLE,
@@ -615,80 +657,85 @@ void lvk_command_buffer::end_render_pass() {
 // |--------------------------------------------------
 
 
-lvk_render_pass lvk_device::init_render_pass() {	
-	VkAttachmentDescription color_attachment = {};
-	color_attachment.flags = 0;
-    color_attachment.format = lvk::get_swapchain_surface_format(physical_device->_swapchain_support_details.formats).format;
-	// 1 sample = No MSAA
-    color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	// clear attachment when loaded
-    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	// store attachment when renderpass ends
-    color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	// no stencil
-    color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	
-    color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+lvk_render_pass lvk_device::init_default_render_pass(VkFormat format) {	
+	VkAttachmentDescription attachments[2] = {
+		{
+			.format = format,
 
-	VkAttachmentReference color_attachment_ref = {};
-	color_attachment_ref.attachment = 0;
-    color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	
+			// TODO: MSAA
+			.samples = VK_SAMPLE_COUNT_1_BIT,
 
-	VkAttachmentDescription depth_attachment = {};
-    // Depth attachment
-    depth_attachment.flags = 0;
-    depth_attachment.format = VK_FORMAT_D32_SFLOAT;
-    depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
 
-    VkAttachmentReference depth_attachment_ref = {};
-    depth_attachment_ref.attachment = 1;
-    depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		},
+		{
+			.format = VK_FORMAT_D32_SFLOAT,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		}
+	};
 
-	VkSubpassDescription subpass = {};
-	subpass.flags = 0;
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	// subpassDesc.inputAttachmentCount;
-	// subpassDesc.pInputAttachments;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &color_attachment_ref;
-	subpass.pDepthStencilAttachment = &depth_attachment_ref;
+	VkSubpassDependency dependency[2] = {
+		{
+			.srcSubpass = VK_SUBPASS_EXTERNAL,
+			.dstSubpass = 0,
 
-	// subpassDesc.pResolveAttachments;
-	// subpassDesc.pDepthStencilAttachment;
-	// subpassDesc.preserveAttachmentCount;
-	// subpassDesc.pPreserveAttachments;
-	
-	// VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT -> VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT -> VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT
+			.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 
-	VkSubpassDependency color_dependency = {};
-	color_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	color_dependency.srcAccessMask = 0;
-	color_dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;	// | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-	color_dependency.dstSubpass = 0;
-	color_dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;	// | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-	color_dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			.srcAccessMask = 0,
+			.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+		},
+		{
+			.srcSubpass = VK_SUBPASS_EXTERNAL,
+			.dstSubpass = 0,
+			
+			.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+			.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 
-	VkSubpassDependency depth_dependency = {};
-	depth_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	depth_dependency.dstSubpass = 0;
-	depth_dependency.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-	depth_dependency.srcAccessMask = 0;
-	depth_dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-	depth_dependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			.srcAccessMask = 0,
+			.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+		}
+	};
 
-	VkAttachmentDescription attachments[2] = { color_attachment, depth_attachment };
-	VkSubpassDependency dependency[2] = { color_dependency, depth_dependency };
+	VkAttachmentReference attachment_ref[2] = {
+		{
+			.attachment = 0,
+			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		},
+		{
+			.attachment = 1,
+			.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		}
+	};
 
-	return init_render_pass(attachments, 2, &subpass, 1, dependency, 1);
+	VkSubpassDescription subpasses[1] = {
+		{
+			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+			.colorAttachmentCount = 1,
+
+			.pColorAttachments = &attachment_ref[0],
+			.pDepthStencilAttachment = &attachment_ref[1],
+		}
+	};
+
+	return init_render_pass(attachments, subpasses, dependency);
+}
+
+template <std::size_t _ad_N, std::size_t _sdn_N, std::size_t _sdc_N>
+lvk_render_pass lvk_device::init_render_pass(const VkAttachmentDescription (&attachment)[_ad_N], const VkSubpassDescription (&subpass)[_sdn_N], const VkSubpassDependency (&dependency)[_sdc_N], bool enable_transform) {
+	return init_render_pass(attachment, _ad_N, subpass, _sdn_N, dependency, _sdc_N);
 }
 
 lvk_render_pass lvk_device::init_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform) {
@@ -697,6 +744,7 @@ lvk_render_pass lvk_device::init_render_pass(const VkAttachmentDescription* atta
 		this,
 		physical_device,
 		instance,
+		&deletion_queue
 	};
 
 	VkRenderPassCreateInfo createInfo = {};
@@ -714,16 +762,13 @@ lvk_render_pass lvk_device::init_render_pass(const VkAttachmentDescription* atta
 		throw std::runtime_error("failed to create renderpass!");
 	}
 	dloggln("RenderPass Created");
+	
+	deletion_queue.push([=]{
+		vkDestroyRenderPass(_device, render_pass._render_pass, VK_NULL_HANDLE);
+		dloggln("RenderPass Destroyed");
+	});
 
 	return render_pass;
-}
-
-lvk_render_pass::~lvk_render_pass()
-{
-	deletion_queue.flush();
-
-	vkDestroyRenderPass(device->_device, _render_pass, VK_NULL_HANDLE);
-	dloggln("RenderPass Destroyed");
 }
 
 
@@ -755,7 +800,7 @@ lvk_framebuffer lvk_render_pass::init_framebuffer(const VkExtent2D extent, const
 	}
 	dloggln("Framebuffer Created");
 	
-	deletion_queue.push([=]{
+	deletion_queue->push([=]{
 		vkDestroyFramebuffer(device->_device, framebuffer._framebuffer, VK_NULL_HANDLE);
 		dloggln("Framebuffer Destroyed");
 	});
