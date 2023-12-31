@@ -77,15 +77,15 @@ struct lvk_command_buffer {
 	
 	void bind_vertex_buffer(const lvk_buffer* vertex_buffer, const VkDeviceSize offset);
 
-	void bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count);
+	void bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding = 0);
 	template <std::size_t _Nm> [[__gnu__::__always_inline__]]
-    constexpr void bind_vertex_buffers(const VkBuffer (&vertex_buffers)[_Nm], const VkDeviceSize (&offset_array)[_Nm]) noexcept {
-		bind_vertex_buffers(vertex_buffers, offset_array, _Nm);
+    constexpr void bind_vertex_buffers(const VkBuffer (&vertex_buffers)[_Nm], const VkDeviceSize (&offset_array)[_Nm], const uint32_t first_binding = 0) noexcept {
+		bind_vertex_buffers(vertex_buffers, offset_array, _Nm, first_binding);
 	}
 
 	void transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout);
 
-	template<std::size_t _cv_N> [[__gnu__::__always_inline__]]
+	template <std::size_t _cv_N> [[__gnu__::__always_inline__]]
 	constexpr void begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue (&clear_values)[_cv_N]) noexcept {
 		begin_render_pass(framebuffer, subpass_contents, clear_values, _cv_N);
 	}
@@ -96,6 +96,20 @@ struct lvk_command_buffer {
 
 	void end();
 	void end_render_pass();
+};
+
+
+// |--------------------------------------------------
+// ----------------> FRAMEBUFFER
+// |--------------------------------------------------
+
+
+struct lvk_framebuffer {
+	VkFramebuffer _framebuffer;
+	VkExtent2D _extent;
+
+	const lvk_render_pass* render_pass;
+	const lvk_device* device;
 };
 
 
@@ -114,20 +128,11 @@ struct lvk_render_pass {
 	lvk::deletion_queue* deletion_queue;
 
 	lvk_framebuffer init_framebuffer(const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count);
-};
 
-
-// |--------------------------------------------------
-// ----------------> FRAMEBUFFER
-// |--------------------------------------------------
-
-
-struct lvk_framebuffer {
-	VkFramebuffer _framebuffer;
-	VkExtent2D _extent;
-
-	const lvk_render_pass* render_pass;
-	const lvk_device* device;
+	template <std::size_t _iv_N> [[nodiscard, __gnu__::__always_inline__]]
+	constexpr lvk_framebuffer init_framebuffer(const VkExtent2D extent, const VkImageView (&image_views)[_iv_N]) noexcept {
+		return init_framebuffer(extent, image_views, _iv_N);
+	}
 };
 
 

@@ -36,28 +36,28 @@ typedef uint32_t lve_vertex;
 
 #define LVE_VERTEX(x, y, z, n, u, v) ((x * LVE_CHUNK_SIZE * LVE_CHUNK_SIZE) + y * LVE_CHUNK_SIZE + z) & 0x7fff
 
-static lvk::vertex_input_description lve_vertex_description() {
-	lvk::vertex_input_description description;
+// static lvk::vertex_input_description lve_vertex_description() {
+// 	lvk::vertex_input_description description;
 
-	//we will have just 1 vertex buffer binding, with a per-vertex rate
-	VkVertexInputBindingDescription mainBinding = {};
-	mainBinding.binding = 0;
-	mainBinding.stride = sizeof(lve_vertex);
-	mainBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+// 	//we will have just 1 vertex buffer binding, with a per-vertex rate
+// 	VkVertexInputBindingDescription mainBinding = {};
+// 	mainBinding.binding = 0;
+// 	mainBinding.stride = sizeof(lve_vertex);
+// 	mainBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-	description.bindings.push_back(mainBinding);
+// 	description.bindings.push_back(mainBinding);
 
-	//Position will be stored at Location 0
-	VkVertexInputAttributeDescription positionAttribute = {};
-	positionAttribute.binding = 0;
-	positionAttribute.location = 0;
-	positionAttribute.format = VK_FORMAT_R32_UINT;
-	positionAttribute.offset = 0;
+// 	//Position will be stored at Location 0
+// 	VkVertexInputAttributeDescription positionAttribute = {};
+// 	positionAttribute.binding = 0;
+// 	positionAttribute.location = 0;
+// 	positionAttribute.format = VK_FORMAT_R32_UINT;
+// 	positionAttribute.offset = 0;
 
-	description.attributes.push_back(positionAttribute);
+// 	description.attributes.push_back(positionAttribute);
 
-	return description;
-}
+// 	return description;
+// }
 
 std::vector<lve_vertex> lve_vertex_triangle = {
 	LVE_VERTEX(0, 0, 0, 1, 0, 0),
@@ -105,11 +105,48 @@ struct Frame {
 
 static constexpr const int FRAMES_IN_FLIGHT = 2;
 
-// TODO: Add delta time Macros
+template <std::size_t B, std::size_t A>
+struct Description {
+    VkVertexInputBindingDescription binding[B];
+	VkVertexInputAttributeDescription attributes[A];
+};
+
+template<std::size_t B, std::size_t A>
+Description(const VkVertexInputBindingDescription (&)[B], const VkVertexInputAttributeDescription (&)[A]) -> Description<B, A>;
 
 int main(int count, char** args) {
 	lucy::Window window = {};
 	window.InitWindow();
+
+	Description s = {
+		{
+			{
+				.binding = 0,
+				.stride = 0,
+				.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+			}
+		},
+		{
+			{
+				.location = 0,
+				.binding = 0,
+				.format = VK_FORMAT_R32G32B32_SFLOAT,
+				.offset = offsetof(lucy::Vertex, position),
+			},
+			{
+				.location = 1,
+				.binding = 0,
+				.format = VK_FORMAT_R32G32B32_SFLOAT,
+				.offset = offsetof(lucy::Vertex, normal),
+			},
+			{
+				.location = 2,
+				.binding = 0,
+				.format = VK_FORMAT_R32G32B32_SFLOAT,
+				.offset = offsetof(lucy::Vertex, color),
+			}
+		}
+	};
 
 	lvk::config::instance instance_config = {
 		.name = "Lucy Framework v7",
@@ -126,14 +163,11 @@ int main(int count, char** args) {
 
 	//* ---------------> COMMAND POOL INIT
 
-	auto binding = lvk::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1);
+	auto descriptor_set_layout = device.init_descriptor_set_layout({ 
+		lvk::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1)
+	});
 
-	auto descriptor_set_layout = device.init_descriptor_set_layout(&binding, 1);
-
-	VkDescriptorPoolSize descriptor_pool_sizes[] = {
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }
-	};
-	auto descriptor_pool = device.init_descriptor_pool(10, descriptor_pool_sizes, std::size(descriptor_pool_sizes));
+	auto descriptor_pool = device.init_descriptor_pool(10, {{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }});
 
 	Frame frame[FRAMES_IN_FLIGHT];
 	
@@ -159,8 +193,8 @@ int main(int count, char** args) {
 		.format = VK_FORMAT_B8G8R8A8_UNORM,
 		.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 	});
-	auto* depth_images = new lvk_image[swapchain._image_count];
 	auto* depth_image_views = new lvk_image_view[swapchain._image_count];
+	auto* depth_images = new lvk_image[swapchain._image_count];
 	auto* framebuffers = new lvk_framebuffer[swapchain._image_count];
 
 	auto render_pass = device.init_default_render_pass(swapchain._surface_format.format);
@@ -169,29 +203,27 @@ int main(int count, char** args) {
 		depth_images[i] = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_TYPE_2D, { swapchain._extent.width, swapchain._extent.height, 1 });
 		depth_image_views[i] = depth_images[i].init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
 
-		VkImageView image_view[2] = { swapchain._image_views[i], depth_image_views[i]._image_view };
-		framebuffers[i] = render_pass.init_framebuffer(swapchain._extent, image_view, std::size(image_view));
+		framebuffers[i] = render_pass.init_framebuffer(swapchain._extent, { swapchain._image_views[i], depth_image_views[i]._image_view });
 	}
 
 	//* ---------------> PIPELINE INIT
 
-	VkPushConstantRange push_constants[1] = {
+	auto pipeline_layout = device.init_pipeline_layout(
 		{
-			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-			.offset = 0,
-			.size = sizeof(lucy::MeshPushConstants),
+			{
+				VK_SHADER_STAGE_VERTEX_BIT,
+				0,
+				sizeof(lucy::MeshPushConstants),
+			}
+		},
+		{
+			descriptor_set_layout._descriptor_set_layout
 		}
-	};
-
-	VkDescriptorSetLayout descriptor_set_layout_array[1] = {
-		descriptor_set_layout._descriptor_set_layout
-	};
-
-	lvk_pipeline_layout pipeline_layout = device.init_pipeline_layout(push_constants, descriptor_set_layout_array);
+	);
 
 	auto vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/mesh.vert.spv");
 	auto fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
-	auto vertex_layout = lucy::Vertex::get_vertex_description();
+	// auto vertex_layout = lucy::Vertex::get_vertex_description();
 	
 	lvk_pipeline graphics_pipeline = {};
 	{
@@ -201,7 +233,34 @@ int main(int count, char** args) {
 				lvk::info::shader_stage(&fragment_shader, nullptr),
 			},
 
-			.vertex_input_state = lvk::info::vertex_input_state(&vertex_layout),
+			.vertex_input_state = lvk::info::vertex_input_state({
+					{
+						.binding = 0,
+						.stride = sizeof(lucy::Vertex),
+						.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+					}
+				},
+				{
+					{
+						.location = 0,
+						.binding = 0,
+						.format = VK_FORMAT_R32G32B32_SFLOAT,
+						.offset = offsetof(lucy::Vertex, position),
+					},
+					{
+						.location = 1,
+						.binding = 0,
+						.format = VK_FORMAT_R32G32B32_SFLOAT,
+						.offset = offsetof(lucy::Vertex, normal),
+					},
+					{
+						.location = 2,
+						.binding = 0,
+						.format = VK_FORMAT_R32G32B32_SFLOAT,
+						.offset = offsetof(lucy::Vertex, color),
+					}
+				}
+			),
 			.input_assembly_state = lvk::info::input_assembly_state(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false),
 			.rasterization_state = lvk::info::rasterization_state(VK_POLYGON_MODE_FILL),
 			.multisample_state = lvk::info::multisample_state(),
@@ -259,6 +318,7 @@ int main(int count, char** args) {
 		// TODO: maybe restructure init_ based creation
 		// TODO: Remove deletion_queue and find a better approach
 		// TODO: Better approach for PhysicalDevice selection and Initialization
+		// TODO: Add delta time Macros
 		// *TODO: multi_init feature for initialization of multiple vulkan types
 		
 		// TODO! IMPLEMENT COMPUTE SHADERS 
@@ -275,17 +335,21 @@ int main(int count, char** args) {
 				cmd.reset();
 
 				cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-				// std::size(clear_value);
-				
-				// cmd.end();
 
-				cmd.begin_render_pass(&framebuffers[image_index], VK_SUBPASS_CONTENTS_INLINE, clear_value);
+				cmd.begin_render_pass(&framebuffers[image_index], VK_SUBPASS_CONTENTS_INLINE, {
+					{
+						.color = { { 0.0f, 0.0f, 0, 0.0f } }
+					},
+					{
+						.depthStencil = {
+							.depth = 1.0f
+						}
+					},
+				});
 
 				vkCmdBindPipeline(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
 				
-				{
-					cmd.bind_vertex_buffers({ monkey_mesh.vertex_buffer._buffer }, { 0 });
-				}
+				cmd.bind_vertex_buffers({ monkey_mesh.vertex_buffer._buffer }, { 0 });
 
 				glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(framenumber * 0.4f), glm::vec3(0, 1, 0));
 
@@ -303,7 +367,7 @@ int main(int count, char** args) {
 
 				current_frame.camera_buffer.upload(mvp);
 
-				vkCmdPushConstants(cmd._command_buffer, pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
+				// vkCmdPushConstants(cmd._command_buffer, pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
 				vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout._pipeline_layout, 0, 1, &current_frame.global_descriptor._descriptor_set, 0, nullptr);
 
 				vkCmdDraw(cmd._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);

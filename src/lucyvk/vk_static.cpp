@@ -593,8 +593,8 @@ void lvk_command_buffer::bind_vertex_buffer(const lvk_buffer* vertex_buffer, con
 	vkCmdBindVertexBuffers(_command_buffer, 0, 1, &vertex_buffer->_buffer, &offset);
 }
 
-void lvk_command_buffer::bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count) {
-	vkCmdBindVertexBuffers(_command_buffer, 0, 1, vertex_buffers, offset_array);
+void lvk_command_buffer::bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding) {
+	vkCmdBindVertexBuffers(_command_buffer, first_binding, vertex_buffers_count, vertex_buffers, offset_array);
 }
 
 void lvk_command_buffer::transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout) {
@@ -1255,7 +1255,7 @@ lvk_descriptor_pool lvk_device::init_descriptor_pool(const uint32_t max_descript
 	}
 	dloggln("DescriptorPool Created");
 
-	deletion_queue.push([=]() {
+	deletion_queue.push([=](){
 		vkDestroyDescriptorPool(_device, descriptor_pool._descriptor_pool, VK_NULL_HANDLE);
 		dloggln("DescriptorSetLayout Destroyed");	
 	});

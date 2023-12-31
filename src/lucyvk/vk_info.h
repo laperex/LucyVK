@@ -12,7 +12,16 @@ namespace lvk::info {
 	VkPipelineShaderStageCreateInfo shader_stage(const lvk_shader_module* shader_module, const VkSpecializationInfo* specialization = nullptr);
 
 	VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription* binding_description, uint32_t binding_description_count, const VkVertexInputAttributeDescription* attribute_description, uint32_t attribute_description_count);
-	VkPipelineVertexInputStateCreateInfo vertex_input_state(const lvk::vertex_input_description* description);
+	template <std::size_t B, std::size_t A>  [[nodiscard, __gnu__::__always_inline__]]
+	constexpr VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription (&bindings)[B], const VkVertexInputAttributeDescription (&attributes)[A]) noexcept {
+		return {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+			.vertexBindingDescriptionCount = static_cast<uint32_t>(B),
+			.pVertexBindingDescriptions = bindings,
+			.vertexAttributeDescriptionCount = static_cast<uint32_t>(A),
+			.pVertexAttributeDescriptions = attributes
+		};
+	}
 	
 	VkPipelineInputAssemblyStateCreateInfo input_assembly_state(const VkPrimitiveTopology topology, bool primitive_restart_enable);
 	

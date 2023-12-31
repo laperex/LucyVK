@@ -70,16 +70,6 @@ VkPipelineVertexInputStateCreateInfo lvk::info::vertex_input_state(const VkVerte
 	};
 }
 
-VkPipelineVertexInputStateCreateInfo lvk::info::vertex_input_state(const lvk::vertex_input_description* description) {
-	return {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		.vertexBindingDescriptionCount = static_cast<uint32_t>(description->bindings.size()),
-		.pVertexBindingDescriptions = description->bindings.data(),
-		.vertexAttributeDescriptionCount = static_cast<uint32_t>(description->attributes.size()),
-		.pVertexAttributeDescriptions = description->attributes.data()
-	};
-}
-
 VkPipelineInputAssemblyStateCreateInfo lvk::info::input_assembly_state(const VkPrimitiveTopology topology, bool primitive_restart_enable) {
 	return {
 		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,

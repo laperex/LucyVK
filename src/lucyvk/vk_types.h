@@ -49,12 +49,19 @@ struct lvk_image;
 struct lvk_image_view;
 
 namespace lvk {
+	template <std::size_t B, std::size_t A>
 	struct vertex_input_description {
-		std::vector<VkVertexInputBindingDescription> bindings;
-		std::vector<VkVertexInputAttributeDescription> attributes;
+		VkVertexInputBindingDescription bindings[B];
+		VkVertexInputAttributeDescription attributes[A];
 
-		VkPipelineVertexInputStateCreateFlags flags = 0;
+		// VkPipelineVertexInputStateCreateFlags flags = 0;
+
+		// template <typename T>
+		// static auto def() -> vertex_input_description<B, A>;
 	};
+	
+	template<std::size_t B, std::size_t A>
+	vertex_input_description(const VkVertexInputBindingDescription (&)[B], const VkVertexInputAttributeDescription (&)[A]) -> vertex_input_description<B, A>;
 
 	struct deletion_queue {
 		std::deque<std::function<void()>> deletion_queue;
