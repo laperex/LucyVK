@@ -189,7 +189,7 @@ int main(int count, char** args) {
 	
 	lvk_descriptor_set_layout compute_descriptor_set_layout = device.init_descriptor_set_layout({
 		lvk::descriptor_set_layout_binding(0, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1),
-		// lvk::descriptor_set_layout_binding(1, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1)
+		lvk::descriptor_set_layout_binding(1, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1)
 	});
 
 	lvk_pipeline_layout compute_pipeline_layout = device.init_pipeline_layout({
@@ -308,7 +308,8 @@ int main(int count, char** args) {
 
 	// frame_array[i].camera_descriptor.update(&frame_array[i].camera_buffer);
 	draw.compute_descriptor.update(0, &draw.image_view, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-	// draw.compute_descriptor.update(1, &draw.uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	draw.compute_descriptor.update(1, &draw.uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	
 	draw.graphics_descriptor.update(1, &draw.uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	
 	draw.depth_image = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
