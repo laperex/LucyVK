@@ -54,7 +54,17 @@ struct lvk_device {
 
 	template <std::size_t _pcr_N, std::size_t _dsl_N> [[nodiscard, __gnu__::__always_inline__]]
     constexpr lvk_pipeline_layout init_pipeline_layout(const VkPushConstantRange (&push_constant_ranges)[_pcr_N], const VkDescriptorSetLayout (&descriptor_set_layouts)[_dsl_N]) noexcept {
-		return init_pipeline_layout(nullptr, 0, descriptor_set_layouts, _dsl_N);
+		return init_pipeline_layout(push_constant_ranges, _pcr_N, descriptor_set_layouts, _dsl_N);
+	}
+	
+	template <std::size_t _pcr_N> [[nodiscard, __gnu__::__always_inline__]]
+    constexpr lvk_pipeline_layout init_pipeline_layout(const VkPushConstantRange (&push_constant_ranges)[_pcr_N]) noexcept {
+		return init_pipeline_layout(push_constant_ranges, _pcr_N, VK_NULL_HANDLE, 0);
+	}
+	
+	template <std::size_t _dsl_N> [[nodiscard, __gnu__::__always_inline__]]
+    constexpr lvk_pipeline_layout init_pipeline_layout(const VkDescriptorSetLayout (&descriptor_set_layouts)[_dsl_N]) noexcept {
+		return init_pipeline_layout(VK_NULL_HANDLE, 0, descriptor_set_layouts, _dsl_N);
 	}
 	
 	template <std::size_t _dslb_N> [[nodiscard, __gnu__::__always_inline__]]

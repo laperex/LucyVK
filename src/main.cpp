@@ -125,15 +125,16 @@ int main(int count, char** args) {
 	lvk_descriptor_set_layout descriptor_set_layout = {};
 	lvk_descriptor_pool descriptor_pool = {};
 
-	// {
-		struct PoolSizeRatio {
+	{
+		struct {
 			VkDescriptorType type;
 			float ratio;
 		} pool_size_ratios[] = {
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 }
 		};
 
-		VkDescriptorPoolSize descriptor_pool_sizes[sizeof(pool_size_ratios)];
+		VkDescriptorPoolSize descriptor_pool_sizes[std::size(pool_size_ratios)];
 		uint32_t descriptor_set_max_size = 10;
 		
 		for (int i = 0; i < sizeof(pool_size_ratios); i++) {
@@ -146,9 +147,10 @@ int main(int count, char** args) {
 		descriptor_pool = device.init_descriptor_pool(descriptor_set_max_size, descriptor_pool_sizes);
 
 		descriptor_set_layout = device.init_descriptor_set_layout({
-			lvk::descriptor_set_layout_binding(0, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1)
+			lvk::descriptor_set_layout_binding(0, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1),
+			lvk::descriptor_set_layout_binding(1, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1)
 		});
-	// }
+	}
 
 	Frame frame_array[FRAMES_IN_FLIGHT];
 
@@ -192,13 +194,6 @@ int main(int count, char** args) {
 	
 	
 	auto pipeline_layout = device.init_pipeline_layout(
-		{
-			{
-				VK_SHADER_STAGE_VERTEX_BIT,
-				0,
-				sizeof(lucy::MeshPushConstants),
-			}
-		},
 		{
 			descriptor_set_layout._descriptor_set_layout
 		}
@@ -289,13 +284,26 @@ int main(int count, char** args) {
 		VkExtent2D extent;
 
 		lvk_descriptor_set descriptor;
+		lvk_buffer uniform_buffer;
 	} draw;
+	
+	struct lucy_camera_data {
+		glm::vec4 color;
+	};
+	
+	lucy_camera_data cam_data = {{ 1.0f, 0.0f, 0.0f, 1.0f }};
 	
 	draw.image = allocator.init_image(VK_FORMAT_R16G16B16A16_SFLOAT, draw_image_usages, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
  	draw.image_view = draw.image.init_image_view(VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
 	draw.descriptor = descriptor_pool.init_descriptor_set(&descriptor_set_layout);
 	
-	draw.descriptor.update(&draw.image_view, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+	draw.uniform_buffer = allocator.init_uniform_buffer<lucy_camera_data>();
+
+	// frame_array[i].camera_descriptor.update(&frame_array[i].camera_buffer);
+	draw.descriptor.update(0, &draw.image_view, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+	draw.descriptor.update(1, &draw.uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	
+	draw.uniform_buffer.upload(cam_data);
 
 	lucy::Camera camera = {};
 	camera.width = window.size.x;
@@ -359,7 +367,9 @@ int main(int count, char** args) {
 					//clear image
 					// vkCmdClearColorImage(cmd._command_buffer, draw.image._image, VK_IMAGE_LAYOUT_GENERAL, &clear_color_value, 1, &clear_range);
 					cmd.bind_pipeline(&compute_pipeline);
+
 					vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_layout._pipeline_layout, 0, 1, &draw.descriptor._descriptor_set, 0, VK_NULL_HANDLE);
+
 					vkCmdDispatch(cmd._command_buffer, std::ceil(draw.extent.width / 16.0), std::ceil(draw.extent.height / 16.0), 1);
 				}
 
@@ -367,7 +377,7 @@ int main(int count, char** args) {
 
 				cmd.transition_image(swapchain._images[image_index], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 				
-				cmd.copy_image_to_image(draw.image._image, swapchain._images[image_index], draw.extent, swapchain._extent);
+				cmd.blit_image_to_image(draw.image._image, swapchain._images[image_index], draw.extent, swapchain._extent);
 				
 				cmd.transition_image(swapchain._images[image_index], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 

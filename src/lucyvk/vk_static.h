@@ -78,7 +78,7 @@ struct lvk_command_buffer {
 	void transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout);
 	void transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout);
 	
-	void copy_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size);
+	void blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size);
 	
 	void bind_pipeline(const lvk_pipeline* pipeline);
 	
@@ -101,6 +101,8 @@ struct lvk_command_buffer {
 
 	void end();
 	void end_render_pass();
+
+	void copy_image_to_image(VkImage source, VkImage destination, VkImageLayout source_layout, VkImageLayout destination_layout, VkExtent2D src_size, VkExtent2D dst_size);
 };
 
 
@@ -349,6 +351,6 @@ struct lvk_descriptor_set {
 	const lvk_descriptor_pool* descriptor_pool;
 	const lvk_device* device;
 	
-	void update(const lvk_buffer* buffer, VkDescriptorType type, const std::size_t offset = 0) const;
-	void update(const lvk_image_view* image_view, VkDescriptorType type, const std::size_t offset = 0) const;
+	void update(uint32_t binding, const lvk_buffer* buffer, VkDescriptorType type, const std::size_t offset = 0) const;
+	void update(uint32_t binding, const lvk_image_view* image_view, VkDescriptorType type, const std::size_t offset = 0) const;
 };

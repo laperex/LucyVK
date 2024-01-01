@@ -187,7 +187,6 @@ VkResult lvk_swapchain::acquire_next_image(uint32_t* index, VkSemaphore semaphor
 	return vkAcquireNextImageKHR(device->_device, _swapchain, timeout, semaphore, fence, index);
 }
 
-
 // |--------------------------------------------------
 // ----------------> COMMAND POOL
 // |--------------------------------------------------
@@ -198,18 +197,18 @@ lvk_command_pool lvk_device::init_command_pool() {
 }
 
 lvk_command_pool lvk_device::init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags) {
-	lvk_command_pool command_pool = {};
-	
-	command_pool.device = this;
-	command_pool.physical_device = this->physical_device;
-	command_pool.instance = this->instance;
-	command_pool.deletion_queue = &deletion_queue;
-	
-	VkCommandPoolCreateInfo poolInfo = {};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	lvk_command_pool command_pool = {
+		.instance = instance,
+		.physical_device = physical_device,
+		.device = this,
+		.deletion_queue = &deletion_queue,
+	};
 
-    poolInfo.queueFamilyIndex = queue_family_index;
-    poolInfo.flags = flags;
+	VkCommandPoolCreateInfo poolInfo = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		.flags = flags,
+		.queueFamilyIndex = queue_family_index,
+	};
 
     if (vkCreateCommandPool(_device, &poolInfo, VK_NULL_HANDLE, &command_pool._command_pool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create command pool!");
@@ -325,7 +324,27 @@ void lvk_command_buffer::transition_image(const lvk_image* image, VkImageLayout 
 	return transition_image(image->_image, current_layout, new_layout);
 }
 
-void lvk_command_buffer::copy_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size) {
+void lvk_command_buffer::copy_image_to_image(VkImage source, VkImage destination, VkImageLayout source_layout, VkImageLayout destination_layout, VkExtent2D src_size, VkExtent2D dst_size) {
+	VkImageCopy2 copy_region = {
+		
+	};
+
+	VkCopyImageInfo2 copy_info = {
+		.sType = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2,
+		.srcImage = source,
+		.srcImageLayout = source_layout,
+
+		.dstImage = destination,
+		.dstImageLayout = destination_layout,
+
+		.regionCount = 1,
+		.pRegions = &copy_region
+	};
+	
+	vkCmdCopyImage2(_command_buffer, &copy_info);
+}
+
+void lvk_command_buffer::blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size) {
 	VkImageBlit2 blitRegion = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
 	};
@@ -1066,7 +1085,7 @@ lvk_descriptor_set lvk_descriptor_pool::init_descriptor_set(const lvk_descriptor
 	return descriptor_set;
 }
 
-void lvk_descriptor_set::update(const lvk_buffer* buffer, VkDescriptorType type, const std::size_t offset) const {
+void lvk_descriptor_set::update(uint32_t binding, const lvk_buffer* buffer, VkDescriptorType type, const std::size_t offset) const {
 	VkDescriptorBufferInfo buffer_info = {
 		.buffer = buffer->_buffer,
 		.offset = offset,
@@ -1076,7 +1095,7 @@ void lvk_descriptor_set::update(const lvk_buffer* buffer, VkDescriptorType type,
 	VkWriteDescriptorSet write_set = {
 		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 		.dstSet = _descriptor_set,
-		.dstBinding = 0,
+		.dstBinding = binding,
 		.descriptorCount = 1,
 		.descriptorType = type,
 		.pBufferInfo = &buffer_info,
@@ -1085,7 +1104,7 @@ void lvk_descriptor_set::update(const lvk_buffer* buffer, VkDescriptorType type,
 	vkUpdateDescriptorSets(device->_device, 1, &write_set, 0, VK_NULL_HANDLE);
 }
 
-void lvk_descriptor_set::update(const lvk_image_view* image_view, VkDescriptorType type, const std::size_t offset) const {
+void lvk_descriptor_set::update(uint32_t binding, const lvk_image_view* image_view, VkDescriptorType type, const std::size_t offset) const {
 	VkDescriptorImageInfo image_info = {
 		.imageView = image_view->_image_view,
 		.imageLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -1094,7 +1113,7 @@ void lvk_descriptor_set::update(const lvk_image_view* image_view, VkDescriptorTy
 	VkWriteDescriptorSet write_set = {
 		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 		.dstSet = _descriptor_set,
-		.dstBinding = 0,
+		.dstBinding = binding,
 		.descriptorCount = 1,
 		.descriptorType = type,
 		.pImageInfo = &image_info,
