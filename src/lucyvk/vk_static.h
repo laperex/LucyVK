@@ -198,7 +198,7 @@ struct lvk_pipeline_layout {
 	
 	lvk::deletion_queue* deletion_queue;
 
-	lvk_pipeline init_graphics_pipeline(const lvk_render_pass* render_pass, const lvk::config::graphics_pipeline* config);
+	lvk_pipeline init_graphics_pipeline(const lvk::config::graphics_pipeline* config);
 
 	lvk_pipeline init_compute_pipeline(const VkPipelineShaderStageCreateInfo stage_info);
 };

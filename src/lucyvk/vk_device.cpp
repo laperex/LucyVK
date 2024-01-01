@@ -48,8 +48,14 @@ lvk_device lvk_physical_device::init_device(std::vector<const char*> extensions,
 	
 	const void* additional_features;
 	
+	VkPhysicalDeviceDynamicRenderingFeatures dynamic_features = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
+		.dynamicRendering = VK_TRUE,
+	};
+	
 	VkPhysicalDeviceSynchronization2Features sync2_features = {
 		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
+		.pNext = &dynamic_features,
 		.synchronization2 = VK_TRUE,
 	};
 	

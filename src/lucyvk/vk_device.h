@@ -41,7 +41,7 @@ struct lvk_device {
 
 	lvk_shader_module init_shader_module(VkShaderStageFlagBits stage, const char* filename);
 	
-	lvk_pipeline_layout init_pipeline_layout(const VkPushConstantRange* push_constant_ranges, const uint32_t push_constant_range_count, const VkDescriptorSetLayout* descriptor_set_layouts, const uint32_t descriptor_set_layout_count);
+	lvk_pipeline_layout init_pipeline_layout(const VkPushConstantRange* push_constant_ranges = VK_NULL_HANDLE, const uint32_t push_constant_range_count = 0, const VkDescriptorSetLayout* descriptor_set_layouts = VK_NULL_HANDLE, const uint32_t descriptor_set_layout_count = 0);
 	
 	lvk_allocator init_allocator();
 	

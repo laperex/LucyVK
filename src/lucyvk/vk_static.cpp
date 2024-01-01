@@ -731,11 +731,11 @@ lvk_pipeline lvk_pipeline_layout::init_compute_pipeline(const VkPipelineShaderSt
 	return pipeline;
 }
 
-lvk_pipeline lvk_pipeline_layout::init_graphics_pipeline(const lvk_render_pass* render_pass, const lvk::config::graphics_pipeline* config) {
+lvk_pipeline lvk_pipeline_layout::init_graphics_pipeline(const lvk::config::graphics_pipeline* config) {
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE,
 		.pipeline_layout = this,
-		.render_pass = render_pass,
+		// .render_pass = render_pass,
 		.device = device,
 		.type = VK_PIPELINE_BIND_POINT_GRAPHICS,
 		.deletion_queue = deletion_queue,
@@ -763,23 +763,30 @@ lvk_pipeline lvk_pipeline_layout::init_graphics_pipeline(const lvk_render_pass* 
 	color_blending.attachmentCount = 1;
 	color_blending.pAttachments = &config->color_blend_attachment;
 	
-	VkGraphicsPipelineCreateInfo pipeline_info = {};
-	pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipeline_info.pNext = nullptr;
+	VkPipelineRenderingCreateInfo render_info = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+		.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT,
+		// .
+	};
+	
+	VkGraphicsPipelineCreateInfo pipeline_info = {
+		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+		.pNext = &render_info,
+		.stageCount = static_cast<uint32_t>(config->shader_stage_array.size()),
+		.pStages = config->shader_stage_array.data(),
+		.pVertexInputState = &config->vertex_input_state,
+		.pInputAssemblyState = &config->input_assembly_state,
+		.pViewportState = &viewport_state,
+		.pRasterizationState = &config->rasterization_state,
+		.pMultisampleState = &config->multisample_state,
+		.pDepthStencilState = &config->depth_stencil_state,
+		.pColorBlendState = &color_blending,
+		.layout = this->_pipeline_layout,
+		// .renderPass = render_pass->_render_pass,
+		.subpass = 0,
+		.basePipelineHandle = VK_NULL_HANDLE,
+	};
 
-	pipeline_info.stageCount = config->shader_stage_array.size();
-	pipeline_info.pStages = config->shader_stage_array.data();
-	pipeline_info.pVertexInputState = &config->vertex_input_state;
-	pipeline_info.pInputAssemblyState = &config->input_assembly_state;
-	pipeline_info.pViewportState = &viewport_state;
-	pipeline_info.pRasterizationState = &config->rasterization_state;
-	pipeline_info.pMultisampleState = &config->multisample_state;
-	pipeline_info.pDepthStencilState = &config->depth_stencil_state;
-	pipeline_info.pColorBlendState = &color_blending;
-	pipeline_info.layout = this->_pipeline_layout;
-	pipeline_info.renderPass = render_pass->_render_pass;
-	pipeline_info.subpass = 0;
-	pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 	
 	if (vkCreateGraphicsPipelines(device->_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline._pipeline) != VK_SUCCESS) {
 		throw std::runtime_error("graphics pipeline creation failed!");
