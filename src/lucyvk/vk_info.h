@@ -35,4 +35,7 @@ namespace lvk::info {
 
 	VkImageViewCreateInfo image_view(VkImage image, VkFormat format, VkImageViewType view_type, VkImageSubresourceRange subresource_range, VkComponentMapping components);
 	VkImageViewCreateInfo image_view(VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType view_type);
+	
+	VkSemaphoreSubmitInfo semaphore_submit(VkPipelineStageFlags2 stageMask, VkSemaphore semaphore);
+	VkSubmitInfo2 submit2(const VkCommandBufferSubmitInfo* command_buffer, const VkSemaphoreSubmitInfo* signal_semaphore_info, const VkSemaphoreSubmitInfo* wait_semaphore_info);
 }

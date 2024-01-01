@@ -72,6 +72,13 @@ struct lvk_command_buffer {
 
 	void begin(const VkCommandBufferBeginInfo* beginInfo);
 	void begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info = VK_NULL_HANDLE);
+
+	VkCommandBufferSubmitInfo submit_info();
+
+	void transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout);
+	void transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout);
+	
+	void copy_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size);
 	
 	void bind_pipeline(const lvk_pipeline* pipeline);
 	
@@ -82,9 +89,7 @@ struct lvk_command_buffer {
     constexpr void bind_vertex_buffers(const VkBuffer (&vertex_buffers)[_Nm], const VkDeviceSize (&offset_array)[_Nm], const uint32_t first_binding = 0) noexcept {
 		bind_vertex_buffers(vertex_buffers, offset_array, _Nm, first_binding);
 	}
-
-	void transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout);
-
+	
 	template <std::size_t _cv_N> [[__gnu__::__always_inline__]]
 	constexpr void begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue (&clear_values)[_cv_N]) noexcept {
 		begin_render_pass(framebuffer, subpass_contents, clear_values, _cv_N);
@@ -192,6 +197,8 @@ struct lvk_pipeline_layout {
 	lvk::deletion_queue* deletion_queue;
 
 	lvk_pipeline init_graphics_pipeline(const lvk_render_pass* render_pass, const lvk::config::graphics_pipeline* config);
+
+	lvk_pipeline init_compute_pipeline(const VkPipelineShaderStageCreateInfo stage_info);
 };
 
 
@@ -263,7 +270,7 @@ struct lvk_allocator {
 		return init_uniform_buffer(data, sizeof(T));
 	}
 
-	lvk_image init_image(VkFormat format, VkImageUsageFlags usage, VkImageType image_type, VkExtent3D extent);
+	lvk_image init_image(VkFormat format, VkImageUsageFlags usage, VkExtent3D extent, VkImageType image_type);
 };
 
 
@@ -325,6 +332,9 @@ struct lvk_descriptor_pool {
 	const lvk_device* device;
 	
 	lvk_descriptor_set init_descriptor_set(const lvk_descriptor_set_layout* descriptor_set_layout);
+	void clear() const;
+
+	void destroy() const;
 };
 
 
@@ -339,5 +349,6 @@ struct lvk_descriptor_set {
 	const lvk_descriptor_pool* descriptor_pool;
 	const lvk_device* device;
 	
-	void update(const lvk_buffer* buffer, const std::size_t offset = 0) const;
+	void update(const lvk_buffer* buffer, VkDescriptorType type, const std::size_t offset = 0) const;
+	void update(const lvk_image_view* image_view, VkDescriptorType type, const std::size_t offset = 0) const;
 };

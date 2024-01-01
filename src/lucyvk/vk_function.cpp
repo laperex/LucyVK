@@ -199,3 +199,14 @@ VkDescriptorSetLayoutBinding lvk::descriptor_set_layout_binding(uint32_t binding
 		.stageFlags = shader_stage_flags,
 	};
 }
+
+VkImageSubresourceRange lvk::image_subresource_range(VkImageAspectFlags aspect_mask) {
+	return {
+		.aspectMask = aspect_mask,
+		.baseMipLevel = 0,
+		.levelCount = VK_REMAINING_MIP_LEVELS,
+		.baseArrayLayer = 0,
+		.layerCount = VK_REMAINING_ARRAY_LAYERS,
+	};
+}
+

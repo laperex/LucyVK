@@ -19,7 +19,7 @@ struct lvk_physical_device {
 	
 	const lvk_instance* instance;
 
-	lvk_device init_device(std::vector<const char*> layers = {}, std::vector<const char*> extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME });
+	lvk_device init_device(std::vector<const char*> extensions = {}, std::vector<const char*> layers = { VK_KHR_SWAPCHAIN_EXTENSION_NAME });
 
 	const VkFormat find_supported_format(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 	const uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags property_flags) const;

@@ -149,3 +149,29 @@ VkImageViewCreateInfo lvk::info::image_view(VkImage image, VkFormat format, VkIm
 VkImageViewCreateInfo lvk::info::image_view(VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType view_type) {
 	return image_view(image, format, view_type, { aspect_flag, 0, 1, 0, 1 }, {});
 }
+
+VkSemaphoreSubmitInfo lvk::info::semaphore_submit(VkPipelineStageFlags2 stage_mask, VkSemaphore semaphore) {
+	return {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+		.semaphore = semaphore,
+		.value = 1,
+		.stageMask = stage_mask,
+		.deviceIndex = 0,
+	};
+}
+
+VkSubmitInfo2 lvk::info::submit2(const VkCommandBufferSubmitInfo* command_buffer, const VkSemaphoreSubmitInfo* signal_semaphore_info, const VkSemaphoreSubmitInfo* wait_semaphore_info) {
+	return {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+		.pNext = nullptr,
+
+		.waitSemaphoreInfoCount = static_cast<uint32_t>(wait_semaphore_info == VK_NULL_HANDLE ? 0 : 1),
+		.pWaitSemaphoreInfos = wait_semaphore_info,
+
+		.commandBufferInfoCount = 1,
+		.pCommandBufferInfos = command_buffer,
+
+		.signalSemaphoreInfoCount = static_cast<uint32_t>(signal_semaphore_info == VK_NULL_HANDLE ? 0 : 1),
+		.pSignalSemaphoreInfos = signal_semaphore_info,
+	};
+}

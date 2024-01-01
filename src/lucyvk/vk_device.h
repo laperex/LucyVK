@@ -70,5 +70,13 @@ struct lvk_device {
 	void wait_idle() const;
 
 	VkResult submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const lvk_fence* fence, uint64_t timeout = LVK_TIMEOUT) const;
+
+	VkResult submit2(const VkSubmitInfo2* submit_info2, const uint32_t submit_info2_count, const lvk_fence* fence) const;
+	
+	template <std::size_t _si2_N> [[nodiscard, __gnu__::__always_inline__]]
+	constexpr VkResult submit2(const VkSubmitInfo2 (&submit_info2)[_si2_N], const lvk_fence* fence) noexcept {
+		return submit2(submit_info2, _si2_N, fence);
+	}
+
 	VkResult present(const VkPresentInfoKHR* present_info) const;
 };
