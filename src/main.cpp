@@ -98,10 +98,6 @@ struct Frame {
 	lvk_command_buffer command_buffer;
 	
 	uint32_t image_index;
-	
-	// lvk_buffer camera_buffer;
-
-	// lvk_descriptor_set camera_descriptor;
 };
 
 static constexpr const int FRAMES_IN_FLIGHT = 2;
@@ -117,10 +113,10 @@ int main(int count, char** args) {
 	
 	//* ---------------> INSTANCE INIT
 
-	auto instance = lvk_init_instance(&instance_config, window.sdl_window);
-	auto physical_device = instance.init_physical_device();
-	auto device = physical_device.init_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME });
-	auto allocator = device.init_allocator();
+	lvk_instance instance = lvk_init_instance(&instance_config, window.sdl_window);
+	lvk_physical_device physical_device = instance.init_physical_device();
+	lvk_device device = physical_device.init_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME });
+	lvk_allocator allocator = device.init_allocator();
 
 	//* ---------------> COMMAND POOL INIT
 
@@ -144,7 +140,7 @@ int main(int count, char** args) {
 	
 	//* ---------------> SWAPCHAIN INIT
 
-	auto swapchain = device.init_swapchain(window.size.x, window.size.y, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
+	lvk_swapchain swapchain = device.init_swapchain(window.size.x, window.size.y, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
 		.format = VK_FORMAT_B8G8R8A8_UNORM,
 		.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 	});
@@ -296,7 +292,6 @@ int main(int count, char** args) {
 
 		lvk_image depth_image;
 		lvk_image_view depth_image_view;
-		// lvk_framebuffer framebuffer;
 	} draw;
 	
 	draw.image = allocator.init_image(VK_FORMAT_R16G16B16A16_SFLOAT, draw_image_usages, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
@@ -306,7 +301,6 @@ int main(int count, char** args) {
 	
 	draw.uniform_buffer = allocator.init_uniform_buffer<mvp_matrix>();
 
-	// frame_array[i].camera_descriptor.update(&frame_array[i].camera_buffer);
 	draw.compute_descriptor.update(0, &draw.image_view, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 	draw.compute_descriptor.update(1, &draw.uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	
@@ -315,8 +309,6 @@ int main(int count, char** args) {
 	draw.depth_image = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
 	draw.depth_image_view = draw.depth_image.init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
 
-	// draw.framebuffer = render_pass.init_framebuffer(swapchain._extent, { draw.image_view._image_view, draw.depth_image_view._image_view });
-	
 	lucy::Camera camera = {};
 	camera.width = window.size.x;
 	camera.height = window.size.y;
@@ -374,9 +366,7 @@ int main(int count, char** args) {
 				cmd.reset();
 
 				cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-					//make the swapchain image into writeable mode before rendering
-				// cmd.begin_render_pass(&draw.framebuffer, VK_SUBPASS_CONTENTS_INLINE, clear_value);
-
+				
 				cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 				{
 					VkClearColorValue clear_color_value;
@@ -385,71 +375,66 @@ int main(int count, char** args) {
 
 					VkImageSubresourceRange clear_range = lvk::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
 
-					//clear image
 					// vkCmdClearColorImage(cmd._command_buffer, draw.image._image, VK_IMAGE_LAYOUT_GENERAL, &clear_color_value, 1, &clear_range);
 					cmd.bind_pipeline(&compute_pipeline);
 
 					vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, compute_pipeline_layout._pipeline_layout, 0, 1, &draw.compute_descriptor._descriptor_set, 0, VK_NULL_HANDLE);
 
-					vkCmdDispatch(cmd._command_buffer, std::ceil(draw.extent.width / 16.0), std::ceil(draw.extent.height / 16.0), 1);
+					vkCmdDispatch(cmd._command_buffer, std::ceil(draw.extent.width / 4.0), std::ceil(draw.extent.height / 4.0), 1);
 				}
 
-				cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+				// cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-					VkRenderingAttachmentInfo depth_attachment = {
-						.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-						.imageView = draw.depth_image_view._image_view,
-						.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-						.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-						.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-						.clearValue = {
-							.depthStencil = {
-								.depth = 1.0f
-							}
-						},
-					};
-				{
-					VkRenderingAttachmentInfo color_attachment = {
-						.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-						.imageView = draw.image_view._image_view,
-						.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-						.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-						.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-						.clearValue = {
-							.color = { 0, 0, 0, 0 }
-						}
-					};
+				// 	VkRenderingAttachmentInfo depth_attachment = {
+				// 		.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+				// 		.imageView = draw.depth_image_view._image_view,
+				// 		.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+				// 		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+				// 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+				// 		.clearValue = {
+				// 			.depthStencil = {
+				// 				.depth = 1.0f
+				// 			}
+				// 		},
+				// 	};
+				// {
+				// 	VkRenderingAttachmentInfo color_attachment = {
+				// 		.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+				// 		.imageView = draw.image_view._image_view,
+				// 		.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				// 		.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+				// 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+				// 		.clearValue = {
+				// 			.color = { 0, 0, 0, 0 }
+				// 		}
+				// 	};
 
-					
-					// VkPipelineRenderingCreateInfo
-
-					VkRenderingInfoKHR render_info = {
-						.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-						.renderArea = {
-							.offset = { 0, 0 },
-							.extent = swapchain._extent,
-						},
-						.layerCount = 1,
+				// 	VkRenderingInfoKHR render_info = {
+				// 		.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+				// 		.renderArea = {
+				// 			.offset = { 0, 0 },
+				// 			.extent = swapchain._extent,
+				// 		},
+				// 		.layerCount = 1,
 						
-						.colorAttachmentCount = 1,
-						.pColorAttachments = &color_attachment,
+				// 		.colorAttachmentCount = 1,
+				// 		.pColorAttachments = &color_attachment,
 
-						.pDepthAttachment = &depth_attachment,
-						// .viewMask
-					};
+				// 		.pDepthAttachment = &depth_attachment,
+				// 	};
 
-					vkCmdBeginRendering(cmd._command_buffer, &render_info);
+				// 	vkCmdBeginRendering(cmd._command_buffer, &render_info);
 
-					cmd.bind_vertex_buffers({ monkey_mesh.vertex_buffer._buffer }, { 0 });
-					vkCmdBindPipeline(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
-					vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout._pipeline_layout, 0, 1, &draw.graphics_descriptor._descriptor_set, 0, VK_NULL_HANDLE);
+				// 	cmd.bind_vertex_buffers({ monkey_mesh.vertex_buffer._buffer }, { 0 });
+				// 	vkCmdBindPipeline(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
+				// 	vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout._pipeline_layout, 0, 1, &draw.graphics_descriptor._descriptor_set, 0, VK_NULL_HANDLE);
 
-					vkCmdDraw(cmd._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
-					
-					vkCmdEndRendering(cmd._command_buffer);
-				}
+				// 	vkCmdDraw(cmd._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
 
-				cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+				// 	vkCmdEndRendering(cmd._command_buffer);
+				// }
+
+				cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 				cmd.transition_image(swapchain._images[image_index], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 				
@@ -457,37 +442,7 @@ int main(int count, char** args) {
 				
 				cmd.transition_image(swapchain._images[image_index], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
-				// cmd.begin_render_pass(&test_framebuffer, VK_SUBPASS_CONTENTS_INLINE, VK_NULL_HANDLE, 0);
-
-				// vkCmdBindPipeline(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
-				
-				// cmd.bind_vertex_buffers({ monkey_mesh.vertex_buffer._buffer }, { 0 });
-
-				// glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(frame_number * 0.4f), glm::vec3(0, 1, 0));
-
-				// mvp_matrix mvp = {
-				// 	.projection = camera.projection,
-				// 	.view = camera.view,
-				// 	.model = glm::rotate(glm::mat4(1.0f), glm::radians(frame_number * 0.4f), glm::vec3(0, 1, 0)),
-				// };
-
-				// glm::mat4 mesh_matrix = camera.projection * camera.view * model;
-
-				// lucy::MeshPushConstants constants;
-				// constants.render_matrix = mesh_matrix;
-				// constants.offset = { 0, 0, 0, 0};
-
-				// current_frame.camera_buffer.upload(mvp);
-
-				// // vkCmdPushConstants(cmd._command_buffer, pipeline_layout._pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(lucy::MeshPushConstants), &constants);
-				// vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout._pipeline_layout, 0, 1, &current_frame.global_descriptor._descriptor_set, 0, nullptr);
-
-				// vkCmdDraw(cmd._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
-
-				// cmd.end_render_pass();
-
 				cmd.end();
-				// exit(0);
 			}
 
 			if (frame_number > 0) {
@@ -497,34 +452,13 @@ int main(int count, char** args) {
 	
 				VkSemaphoreSubmitInfo wait_info = lvk::info::semaphore_submit(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, frame.present_semaphore._semaphore);
 				VkSemaphoreSubmitInfo signal_info = lvk::info::semaphore_submit(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, frame.render_semaphore._semaphore);
-				
-				// VkSubmitInfo2 submit = lvk::info::submit2(&cmdinfo, &signalInfo, &waitInfo);
-				
+
 				if (device.submit2({ lvk::info::submit2(&cmd_info, &signal_info, &wait_info) }, &frame.render_fence) != VK_SUCCESS) {
 					throw std::runtime_error("Submit2 failed!");
 				}
 				
 				frame.render_fence.wait();
 				frame.render_fence.reset();
-				
-				// VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-				// VkSubmitInfo submit = {
-				// 	.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-					
-				// 	.waitSemaphoreCount = 1,
-				// 	.pWaitSemaphores = &prev_frame.present_semaphore._semaphore,
-
-				// 	.pWaitDstStageMask = &waitStage,
-
-				// 	.commandBufferCount = 1,
-				// 	.pCommandBuffers = &prev_frame.command_buffer._command_buffer,
-
-				// 	.signalSemaphoreCount = 1,
-				// 	.pSignalSemaphores = &prev_frame.render_semaphore._semaphore,
-				// };
-
-				// device.submit(&submit, 1, &prev_frame.render_fence);
 				
 				VkPresentInfoKHR presentInfo = {
 					.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
