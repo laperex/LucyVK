@@ -1,7 +1,10 @@
 #pragma once
 
-#include "vk_static.h"
-
+// #include "vk_static.h"
+#include "vk_pipeline.h"
+#include "vk_descriptor.h"
+#include "vk_command.h"
+#include "vk_synchronization.h"
 
 // |--------------------------------------------------
 // ----------------> DEVICE

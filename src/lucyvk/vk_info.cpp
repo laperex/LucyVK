@@ -1,6 +1,6 @@
 #include "lucyvk/vk_info.h"
-#include "lucyvk/vk_static.h"
 #include "lucyvk/vk_function.h"
+#include "lucyvk/vk_shaders.h"
 #include <fstream>
 
 VkShaderModuleCreateInfo lvk::info::shader_module(const char* filename) {

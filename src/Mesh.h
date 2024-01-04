@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lucyvk/vk_static.h"
+#include "lucyvk/lucyvk.h"
 #include <vector>
 #include <glm/glm.hpp>
 // #include <math/math.hpp>

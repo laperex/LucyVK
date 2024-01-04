@@ -4,5 +4,6 @@
 	// "lldb.consoleMode": "commands",
 	// "lldb.showDisassembly": "auto"
 	
-	"debug.disassemblyView.showSourceCode": true
+	"debug.disassemblyView.showSourceCode": true,
+	"C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }

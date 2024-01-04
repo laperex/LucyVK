@@ -1,5 +1,4 @@
 #include "lucyvk/vk_function.h"
-#include "lucyvk/vk_static.h"
 #include "lucyvk/vk_physical_device.h"
 #include "lucyvk/vk_instance.h"
 #include "util/logger.h"

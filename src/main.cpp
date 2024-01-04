@@ -1,16 +1,12 @@
 
-#include "lucyvk/vk_instance.h"
-#include "lucyvk/vk_physical_device.h"
-#include "lucyvk/vk_device.h"
 
+#include "lucyvk/vk_function.h"
+#include "lucyvk/vk_info.h"
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
 #include "Camera.h"
 #include "Mesh.h"
-#include "lucyvk/vk_config.h"
-#include "lucyvk/vk_function.h"
-#include "lucyvk/vk_info.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
@@ -29,6 +25,8 @@
 #include <glm/gtx/transform.hpp>
 
 #include <util/logger.h>
+
+#include "lucyvk/lucyvk.h"
 
 typedef uint32_t lve_vertex;
 
@@ -105,6 +103,9 @@ static constexpr const int FRAMES_IN_FLIGHT = 2;
 int main(int count, char** args) {
 	lucy::Window window = {};
 	window.InitWindow();
+	
+	// dloggln(sizeof(std::span<VkRect2D>), ' ', sizeof(VkRect2D*));
+	
 
 	lvk::config::instance instance_config = {
 		.name = "Lucy Framework v7",
@@ -246,6 +247,7 @@ int main(int count, char** args) {
 					}
 				}
 			),
+
 			.input_assembly_state = lvk::info::input_assembly_state(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false),
 			.rasterization_state = lvk::info::rasterization_state(VK_POLYGON_MODE_FILL),
 			.multisample_state = lvk::info::multisample_state(),
