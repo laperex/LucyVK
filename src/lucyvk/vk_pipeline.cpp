@@ -1,5 +1,6 @@
 #include "lucyvk/vk_pipeline.h"
 #include "lucyvk/vk_device.h"
+#include "lucyvk/vk_render_pass.h"
 #include "util/logger.h"
 #include <stdexcept>
 
@@ -79,55 +80,28 @@ lvk_pipeline lvk_pipeline_layout::init_graphics_pipeline(const lvk::config::grap
 		.type = VK_PIPELINE_BIND_POINT_GRAPHICS,
 		.deletion_queue = deletion_queue,
 	};
-
-	// TODO: Support for multiple viewport and scissors
-	
-	VkPipelineViewportStateCreateInfo viewport_state = {};
-	viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	viewport_state.pNext = nullptr;
-
-	viewport_state.viewportCount = 1;
-	viewport_state.pViewports = &config->viewport;
-	viewport_state.scissorCount = 1;
-	viewport_state.pScissors = &config->scissor;
-
-	// TODO: Actual Blending to support Transparent Objects
-	
-	VkPipelineColorBlendStateCreateInfo color_blending = {};
-	color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	color_blending.pNext = nullptr;
-
-	color_blending.logicOpEnable = VK_FALSE;
-	color_blending.logicOp = VK_LOGIC_OP_COPY;
-	color_blending.attachmentCount = 1;
-	color_blending.pAttachments = &config->color_blend_attachment;
-	
-	VkPipelineRenderingCreateInfo render_info = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-		
-		// TODO: Better Implementation
-		.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT,
-	};
 	
 	VkGraphicsPipelineCreateInfo pipeline_info = {
 		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-		.pNext = &render_info,
+
+		.pNext = (config->rendering_info.sType == VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO) ? &config->rendering_info: VK_NULL_HANDLE,
+
 		.stageCount = static_cast<uint32_t>(config->shader_stage_array.size()),
 		.pStages = config->shader_stage_array.data(),
+
 		.pVertexInputState = &config->vertex_input_state,
 		.pInputAssemblyState = &config->input_assembly_state,
-		.pViewportState = &viewport_state,
+		.pViewportState = &config->viewport_state,
 		.pRasterizationState = &config->rasterization_state,
 		.pMultisampleState = &config->multisample_state,
 		.pDepthStencilState = &config->depth_stencil_state,
-		.pColorBlendState = &color_blending,
+		.pColorBlendState = &config->color_blend_state,
 		.layout = this->_pipeline_layout,
-		// .renderPass = render_pass->_render_pass,
+		.renderPass = (render_pass != VK_NULL_HANDLE) ? render_pass->_render_pass: VK_NULL_HANDLE,
 		.subpass = 0,
 		.basePipelineHandle = VK_NULL_HANDLE,
 	};
 
-	
 	if (vkCreateGraphicsPipelines(device->_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline._pipeline) != VK_SUCCESS) {
 		throw std::runtime_error("graphics pipeline creation failed!");
 	}

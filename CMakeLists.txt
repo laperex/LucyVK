@@ -27,10 +27,10 @@ find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
 # COMPILE SHADERS
 #
 
-set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/shaders)
+set(SHADER_SOURCE_DIR "src/shaders")
 set(SHADER_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
 
-file(GLOB SHADERS
+file(GLOB_RECURSE SHADERS
   ${SHADER_SOURCE_DIR}/*.vert
   ${SHADER_SOURCE_DIR}/*.frag
   ${SHADER_SOURCE_DIR}/*.comp

@@ -10,7 +10,7 @@ VkShaderModuleCreateInfo lvk::info::shader_module(const char* filename) {
 		throw std::runtime_error(std::string("failed to open file! ") + filename);
 	}
 
-	size_t size = (size_t)file.tellg();
+	std::size_t size = (std::size_t)file.tellg();
 	char* buffer = new char[size];
 	
 	file.seekg(0);
@@ -60,13 +60,13 @@ VkPipelineShaderStageCreateInfo lvk::info::shader_stage(const lvk_shader_module*
 
 VkPipelineVertexInputStateCreateInfo lvk::info::vertex_input_state(const VkVertexInputBindingDescription* binding_description, uint32_t binding_description_count, const VkVertexInputAttributeDescription* attribute_description, uint32_t attribute_description_count) {
 	return {
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-		VK_NULL_HANDLE,
-		0,
-		binding_description_count,
-		binding_description,
-		attribute_description_count,
-		attribute_description
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+
+		.vertexBindingDescriptionCount = binding_description_count,
+		.pVertexBindingDescriptions = binding_description,
+
+		.vertexAttributeDescriptionCount = attribute_description_count,
+		.pVertexAttributeDescriptions = attribute_description
 	};
 }
 
@@ -122,14 +122,25 @@ VkPipelineMultisampleStateCreateInfo lvk::info::multisample_state() {
 
 VkPipelineColorBlendStateCreateInfo lvk::info::color_blend_state(const VkPipelineColorBlendAttachmentState* attachments, const uint32_t attachment_count, const bool logic_op_enable, const VkLogicOp logic_op) {
 	return {
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-		VK_NULL_HANDLE,
-		0,
-		static_cast<VkBool32>(logic_op_enable),
-		logic_op,
-		attachment_count,
-		attachments,
-		{ 0, 0, 0, 0 }
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+
+		.logicOpEnable = static_cast<VkBool32>(logic_op_enable),
+		.logicOp = logic_op,
+
+		.attachmentCount = attachment_count,
+		.pAttachments = attachments,
+	};
+}
+
+VkPipelineViewportStateCreateInfo lvk::info::viewport_state(const VkViewport* viewports, const uint32_t viewports_count, const VkRect2D* scissors, const uint32_t scissors_count) noexcept {
+	return {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+		
+		.viewportCount = viewports_count,
+		.pViewports = viewports,
+		
+		.scissorCount = scissors_count,
+		.pScissors = scissors
 	};
 }
 

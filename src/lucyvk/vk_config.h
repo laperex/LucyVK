@@ -16,10 +16,7 @@ namespace lvk::config {
 		VkPipelineColorBlendStateCreateInfo color_blend_state;
 		VkPipelineDynamicStateCreateInfo dynamic_state;
 		
-		VkPipelineColorBlendAttachmentState color_blend_attachment;
-
-		VkViewport viewport;
-		VkRect2D scissor;
+		VkPipelineRenderingCreateInfo rendering_info;
 	};
 	
 	struct instance {

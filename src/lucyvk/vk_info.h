@@ -11,16 +11,18 @@ namespace lvk::info {
 	VkPipelineShaderStageCreateInfo shader_stage(VkShaderStageFlagBits flag, VkShaderModule shader_module, const VkSpecializationInfo* specialization = nullptr);
 	VkPipelineShaderStageCreateInfo shader_stage(const lvk_shader_module* shader_module, const VkSpecializationInfo* specialization = nullptr);
 
-	VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription* binding_description, uint32_t binding_description_count, const VkVertexInputAttributeDescription* attribute_description, uint32_t attribute_description_count);
-	template <std::size_t B, std::size_t A>  [[nodiscard, __gnu__::__always_inline__]]
-	constexpr VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription (&bindings)[B], const VkVertexInputAttributeDescription (&attributes)[A]) noexcept {
-		return {
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-			.vertexBindingDescriptionCount = static_cast<uint32_t>(B),
-			.pVertexBindingDescriptions = bindings,
-			.vertexAttributeDescriptionCount = static_cast<uint32_t>(A),
-			.pVertexAttributeDescriptions = attributes
-		};
+	VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription* binding_description = {}, uint32_t binding_description_count = 0, const VkVertexInputAttributeDescription* attribute_description = {}, uint32_t attribute_description_count = 0);
+	template <std::size_t _b_N, std::size_t _a_N>  [[nodiscard, __gnu__::__always_inline__]]
+	constexpr VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription (&bindings)[_b_N], const VkVertexInputAttributeDescription (&attributes)[_a_N]) noexcept {
+		return vertex_input_state(bindings, _b_N, attributes, _a_N);
+	}
+	template <std::size_t _b_N>  [[nodiscard, __gnu__::__always_inline__]]
+	constexpr VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription (&bindings)[_b_N]) noexcept {
+		return vertex_input_state(bindings, _b_N, nullptr, 0);
+	}
+	template <std::size_t _a_N>  [[nodiscard, __gnu__::__always_inline__]]
+	constexpr VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputAttributeDescription (&attributes)[_a_N]) noexcept {
+		return vertex_input_state(nullptr, 0, attributes, _a_N);
 	}
 	
 	VkPipelineInputAssemblyStateCreateInfo input_assembly_state(const VkPrimitiveTopology topology, bool primitive_restart_enable);
@@ -31,7 +33,25 @@ namespace lvk::info {
 	VkPipelineMultisampleStateCreateInfo multisample_state_create_info(VkSampleCountFlagBits rasterization_sample, bool sample_shading, float min_sample_shading = 1.0, const VkSampleMask* sample_mask = VK_NULL_HANDLE, bool alpha_to_coverage = false, bool alpha_to_one = false);
 	VkPipelineMultisampleStateCreateInfo multisample_state();
 
-	VkPipelineColorBlendStateCreateInfo color_blend_state(const VkPipelineColorBlendAttachmentState* attachments, const uint32_t attachment_count, const bool logic_op_enable = false, const VkLogicOp logic_op = VK_LOGIC_OP_COPY);
+	VkPipelineColorBlendStateCreateInfo color_blend_state(const VkPipelineColorBlendAttachmentState* attachments = nullptr, const uint32_t attachment_count = 0, const bool logic_op_enable = false, const VkLogicOp logic_op = VK_LOGIC_OP_COPY);
+	template <std::size_t _pcbas_N>  [[nodiscard, __gnu__::__always_inline__]]
+	constexpr VkPipelineColorBlendStateCreateInfo color_blend_state(const VkPipelineColorBlendAttachmentState (&attachments)[_pcbas_N], const bool logic_op_enable = false, const VkLogicOp logic_op = VK_LOGIC_OP_COPY) noexcept {
+		return color_blend_state(attachments, _pcbas_N, logic_op_enable, logic_op);
+	}
+	
+	VkPipelineViewportStateCreateInfo viewport_state(const VkViewport* viewports, const uint32_t viewports_count, const VkRect2D* scissors, const uint32_t scissors_count) noexcept;
+	template <std::size_t _v_N, std::size_t _s_N>  [[nodiscard, __gnu__::__always_inline__]]
+	constexpr VkPipelineViewportStateCreateInfo viewport_state(const VkViewport (&viewports)[_v_N], const VkRect2D (&scissors)[_s_N]) noexcept {
+		return viewport_state(viewports, _v_N, scissors, _s_N);
+	}
+	template <std::size_t _s_N>  [[nodiscard, __gnu__::__always_inline__]]
+	constexpr VkPipelineViewportStateCreateInfo viewport_state(const VkRect2D (&scissors)[_s_N]) noexcept {
+		return viewport_state(nullptr, 0, scissors, _s_N);
+	}
+	template <std::size_t _v_N>  [[nodiscard, __gnu__::__always_inline__]]
+	constexpr VkPipelineViewportStateCreateInfo viewport_state(const VkViewport (&viewports)[_v_N]) noexcept {
+		return viewport_state(viewports, _v_N, nullptr, 0);
+	}
 
 	VkImageViewCreateInfo image_view(VkImage image, VkFormat format, VkImageViewType view_type, VkImageSubresourceRange subresource_range, VkComponentMapping components);
 	VkImageViewCreateInfo image_view(VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType view_type);
