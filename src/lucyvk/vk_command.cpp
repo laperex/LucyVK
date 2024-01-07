@@ -58,14 +58,15 @@ lvk_command_buffer lvk_command_pool::init_command_buffer(VkCommandBufferLevel le
 		device
 	};
 
-	VkCommandBufferAllocateInfo allocateInfo = {};
-	allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocateInfo.pNext = nullptr;
-	allocateInfo.commandPool = _command_pool;
-	allocateInfo.level = level;
-	allocateInfo.commandBufferCount = 1;
+	VkCommandBufferAllocateInfo allocate_info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 
-	if (vkAllocateCommandBuffers(device->_device, &allocateInfo, &command_buffer._command_buffer) != VK_SUCCESS) {
+		.commandPool = _command_pool,
+		.level = level,
+		.commandBufferCount = 1,
+	};
+
+	if (vkAllocateCommandBuffers(device->_device, &allocate_info, &command_buffer._command_buffer) != VK_SUCCESS) {
 		throw std::runtime_error("command buffer allocation failed!");
 	}
 	dloggln("Command Buffer Allocated: ", &command_buffer._command_buffer);
@@ -94,15 +95,6 @@ void lvk_command_buffer::begin(const VkCommandBufferUsageFlags flags, const VkCo
 	};
 
 	vkBeginCommandBuffer(_command_buffer, &cmdBeginInfo);
-}
-
-VkCommandBufferSubmitInfo lvk_command_buffer::submit_info() {
-	return {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-		.pNext = nullptr,
-		.commandBuffer = _command_buffer,
-		.deviceMask = 0,
-	};
 }
 
 void lvk_command_buffer::bind_pipeline(const lvk_pipeline* pipeline) {
@@ -168,41 +160,48 @@ void lvk_command_buffer::copy_image_to_image(VkImage source, VkImage destination
 }
 
 void lvk_command_buffer::blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size) {
-	VkImageBlit2 blitRegion = {
+	VkImageBlit2 blit_region = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+		
+		.srcSubresource = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.mipLevel = 0,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		},
+
+		.srcOffsets = {
+			{}, { static_cast<int32_t>(src_size.width), static_cast<int32_t>(src_size.height), 1 }
+		},
+		
+		.dstSubresource = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.mipLevel = 0,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		},
+
+		.dstOffsets = {
+			{}, { static_cast<int32_t>(dst_size.width), static_cast<int32_t>(dst_size.height), 1 }
+		},
 	};
 
-	blitRegion.srcOffsets[1].x = src_size.width;
-	blitRegion.srcOffsets[1].y = src_size.height;
-	blitRegion.srcOffsets[1].z = 1;
-
-	blitRegion.dstOffsets[1].x = dst_size.width;
-	blitRegion.dstOffsets[1].y = dst_size.height;
-	blitRegion.dstOffsets[1].z = 1;
-
-	blitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	blitRegion.srcSubresource.baseArrayLayer = 0;
-	blitRegion.srcSubresource.layerCount = 1;
-	blitRegion.srcSubresource.mipLevel = 0;
-
-	blitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	blitRegion.dstSubresource.baseArrayLayer = 0;
-	blitRegion.dstSubresource.layerCount = 1;
-	blitRegion.dstSubresource.mipLevel = 0;
-
-	VkBlitImageInfo2 blitInfo = {
+	VkBlitImageInfo2 blit_info = {
 		.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+		
+		.srcImage = source,
+		.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+
+		.dstImage = destination,
+		.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+
+		.regionCount = 1,
+		.pRegions = &blit_region,
+
+		.filter = VK_FILTER_LINEAR,
 	};
 
-	blitInfo.dstImage = destination;
-	blitInfo.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-	blitInfo.srcImage = source;
-	blitInfo.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-	blitInfo.filter = VK_FILTER_LINEAR;
-	blitInfo.regionCount = 1;
-	blitInfo.pRegions = &blitRegion;
-
-	vkCmdBlitImage2(_command_buffer, &blitInfo);
+	vkCmdBlitImage2(_command_buffer, &blit_info);
 }
 
 void lvk_command_buffer::end() {

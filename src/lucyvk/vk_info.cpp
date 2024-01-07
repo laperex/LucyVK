@@ -1,6 +1,7 @@
 #include "lucyvk/vk_info.h"
 #include "lucyvk/vk_function.h"
 #include "lucyvk/vk_shaders.h"
+#include "lucyvk/vk_command.h"
 #include <fstream>
 
 VkShaderModuleCreateInfo lvk::info::shader_module(const char* filename) {
@@ -171,18 +172,26 @@ VkSemaphoreSubmitInfo lvk::info::semaphore_submit(VkPipelineStageFlags2 stage_ma
 	};
 }
 
-VkSubmitInfo2 lvk::info::submit2(const VkCommandBufferSubmitInfo* command_buffer, const VkSemaphoreSubmitInfo* signal_semaphore_info, const VkSemaphoreSubmitInfo* wait_semaphore_info) {
+VkSubmitInfo2 lvk::info::submit2(const VkCommandBufferSubmitInfo* command_buffer_infos, const uint32_t command_buffer_infos_count, const VkSemaphoreSubmitInfo* signal_semaphore_infos, const uint32_t signal_semaphore_infos_count, const VkSemaphoreSubmitInfo* wait_semaphore_infos, const uint32_t wait_semaphore_infos_count) {
 	return {
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
-		.pNext = nullptr,
 
-		.waitSemaphoreInfoCount = static_cast<uint32_t>(wait_semaphore_info == VK_NULL_HANDLE ? 0 : 1),
-		.pWaitSemaphoreInfos = wait_semaphore_info,
+		.waitSemaphoreInfoCount = wait_semaphore_infos_count,
+		.pWaitSemaphoreInfos = wait_semaphore_infos,
 
-		.commandBufferInfoCount = 1,
-		.pCommandBufferInfos = command_buffer,
+		.commandBufferInfoCount = command_buffer_infos_count,
+		.pCommandBufferInfos = command_buffer_infos,
 
-		.signalSemaphoreInfoCount = static_cast<uint32_t>(signal_semaphore_info == VK_NULL_HANDLE ? 0 : 1),
-		.pSignalSemaphoreInfos = signal_semaphore_info,
+		.signalSemaphoreInfoCount = signal_semaphore_infos_count,
+		.pSignalSemaphoreInfos = signal_semaphore_infos,
+	};
+}
+
+VkCommandBufferSubmitInfo lvk::info::command_buffer_submit(const lvk_command_buffer* command_buffer) {
+	return {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+
+		.commandBuffer = command_buffer->_command_buffer,
+		.deviceMask = 0,
 	};
 }

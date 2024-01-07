@@ -145,19 +145,6 @@ int main(int count, char** args) {
 		.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 	});
 
-	// auto* depth_image_views = new lvk_image_view[swapchain._image_count];
-	// auto* depth_images = new lvk_image[swapchain._image_count];
-	// auto* framebuffers = new lvk_framebuffer[swapchain._image_count];
-
-	// auto render_pass = device.init_default_render_pass(VK_FORMAT_R16G16B16A16_SFLOAT);
-
-	// for (int i = 0; i < swapchain._image_count; i++) {
-	// 	depth_images[i] = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
-	// 	depth_image_views[i] = depth_images[i].init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
-
-	// 	framebuffers[i] = render_pass.init_framebuffer(swapchain._extent, { swapchain._image_views[i], depth_image_views[i]._image_view });
-	// }
-
 	//* ---------------> PIPELINE INIT
 
 	lvk_descriptor_pool descriptor_pool = {};
@@ -399,58 +386,58 @@ int main(int count, char** args) {
 					vkCmdDispatch(cmd._command_buffer, std::ceil(draw.extent.width / 4.0), std::ceil(draw.extent.height / 4.0), 1);
 				}
 
-				cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+				// cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-					VkRenderingAttachmentInfo depth_attachment = {
-						.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-						.imageView = draw.depth_image_view._image_view,
-						.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-						.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-						.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-						.clearValue = {
-							.depthStencil = {
-								.depth = 1.0f
-							}
-						},
-					};
-				{
-					VkRenderingAttachmentInfo color_attachment = {
-						.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-						.imageView = draw.image_view._image_view,
-						.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-						.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-						.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-						.clearValue = {
-							.color = { 0, 0, 0, 0 }
-						}
-					};
+				// 	VkRenderingAttachmentInfo depth_attachment = {
+				// 		.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+				// 		.imageView = draw.depth_image_view._image_view,
+				// 		.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+				// 		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+				// 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+				// 		.clearValue = {
+				// 			.depthStencil = {
+				// 				.depth = 1.0f
+				// 			}
+				// 		},
+				// 	};
+				// {
+				// 	VkRenderingAttachmentInfo color_attachment = {
+				// 		.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+				// 		.imageView = draw.image_view._image_view,
+				// 		.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				// 		.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+				// 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+				// 		.clearValue = {
+				// 			.color = { 0, 0, 0, 0 }
+				// 		}
+				// 	};
 
-					VkRenderingInfoKHR render_info = {
-						.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-						.renderArea = {
-							.offset = { 0, 0 },
-							.extent = swapchain._extent,
-						},
-						.layerCount = 1,
+				// 	VkRenderingInfoKHR render_info = {
+				// 		.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+				// 		.renderArea = {
+				// 			.offset = { 0, 0 },
+				// 			.extent = swapchain._extent,
+				// 		},
+				// 		.layerCount = 1,
 						
-						.colorAttachmentCount = 1,
-						.pColorAttachments = &color_attachment,
+				// 		.colorAttachmentCount = 1,
+				// 		.pColorAttachments = &color_attachment,
 
-						.pDepthAttachment = &depth_attachment,
-					};
+				// 		.pDepthAttachment = &depth_attachment,
+				// 	};
 
-					vkCmdBeginRendering(cmd._command_buffer, &render_info);
+				// 	vkCmdBeginRendering(cmd._command_buffer, &render_info);
 
-					cmd.bind_vertex_buffers({ monkey_mesh.vertex_buffer._buffer }, { 0 });
-					vkCmdBindPipeline(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
-					vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout._pipeline_layout, 0, 1, &draw.graphics_descriptor._descriptor_set, 0, VK_NULL_HANDLE);
+				// 	cmd.bind_vertex_buffers({ monkey_mesh.vertex_buffer._buffer }, { 0 });
+				// 	vkCmdBindPipeline(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
+				// 	vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout._pipeline_layout, 0, 1, &draw.graphics_descriptor._descriptor_set, 0, VK_NULL_HANDLE);
 
-					vkCmdDraw(cmd._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
+				// 	vkCmdDraw(cmd._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
 
-					vkCmdEndRendering(cmd._command_buffer);
-				}
+				// 	vkCmdEndRendering(cmd._command_buffer);
+				// }
 
-				cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+				cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 				cmd.transition_image(swapchain._images[image_index], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 				
@@ -464,12 +451,12 @@ int main(int count, char** args) {
 			if (frame_number > 0) {
 				auto& frame = frame_array[(frame_number - 1) % FRAMES_IN_FLIGHT];
 				
-				VkCommandBufferSubmitInfo cmd_info = frame.command_buffer.submit_info();
+				VkCommandBufferSubmitInfo cmd_info = lvk::info::command_buffer_submit(&frame.command_buffer);
 	
 				VkSemaphoreSubmitInfo wait_info = lvk::info::semaphore_submit(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, frame.present_semaphore._semaphore);
 				VkSemaphoreSubmitInfo signal_info = lvk::info::semaphore_submit(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, frame.render_semaphore._semaphore);
 
-				if (device.submit2({ lvk::info::submit2(&cmd_info, &signal_info, &wait_info) }, &frame.render_fence) != VK_SUCCESS) {
+				if (device.submit2({ lvk::info::submit2({ cmd_info }, { signal_info }, { wait_info }) }, &frame.render_fence) != VK_SUCCESS) {
 					throw std::runtime_error("Submit2 failed!");
 				}
 				

@@ -15,7 +15,7 @@ namespace lvk::config {
 		VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
 		VkPipelineColorBlendStateCreateInfo color_blend_state;
 		VkPipelineDynamicStateCreateInfo dynamic_state;
-		
+
 		VkPipelineRenderingCreateInfo rendering_info;
 	};
 	

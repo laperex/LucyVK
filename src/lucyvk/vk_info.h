@@ -57,5 +57,12 @@ namespace lvk::info {
 	VkImageViewCreateInfo image_view(VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType view_type);
 	
 	VkSemaphoreSubmitInfo semaphore_submit(VkPipelineStageFlags2 stageMask, VkSemaphore semaphore);
-	VkSubmitInfo2 submit2(const VkCommandBufferSubmitInfo* command_buffer, const VkSemaphoreSubmitInfo* signal_semaphore_info, const VkSemaphoreSubmitInfo* wait_semaphore_info);
+	
+	VkCommandBufferSubmitInfo command_buffer_submit(const lvk_command_buffer* command_buffer);
+
+	VkSubmitInfo2 submit2(const VkCommandBufferSubmitInfo* command_buffer_infos, const uint32_t command_buffer_infos_count, const VkSemaphoreSubmitInfo* signal_semaphore_infos, const uint32_t signal_semaphore_infos_count, const VkSemaphoreSubmitInfo* wait_semaphore_infos, const uint32_t wait_semaphore_infos_count);
+	template <std::size_t _cbsi_N, std::size_t _sssi_N, std::size_t _wssi_N>  [[nodiscard, __gnu__::__always_inline__]]
+	constexpr VkSubmitInfo2 submit2(const VkCommandBufferSubmitInfo (&command_buffer_infos)[_cbsi_N], const VkSemaphoreSubmitInfo (&signal_semaphore_infos)[_sssi_N], const VkSemaphoreSubmitInfo (&wait_semaphore_infos)[_wssi_N]) {
+		return submit2(command_buffer_infos, _cbsi_N, signal_semaphore_infos, _sssi_N, wait_semaphore_infos, _wssi_N);
+	}
 }

@@ -41,8 +41,6 @@ struct lvk_command_buffer {
 	void begin(const VkCommandBufferBeginInfo* beginInfo);
 	void begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info = VK_NULL_HANDLE);
 
-	VkCommandBufferSubmitInfo submit_info();
-
 	void transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout);
 	void transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout);
 	
