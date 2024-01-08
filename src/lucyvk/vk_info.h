@@ -16,14 +16,6 @@ namespace lvk::info {
 	constexpr VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription (&bindings)[_b_N], const VkVertexInputAttributeDescription (&attributes)[_a_N]) noexcept {
 		return vertex_input_state(bindings, _b_N, attributes, _a_N);
 	}
-	template <std::size_t _b_N>  [[nodiscard, __gnu__::__always_inline__]]
-	constexpr VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription (&bindings)[_b_N]) noexcept {
-		return vertex_input_state(bindings, _b_N, nullptr, 0);
-	}
-	template <std::size_t _a_N>  [[nodiscard, __gnu__::__always_inline__]]
-	constexpr VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputAttributeDescription (&attributes)[_a_N]) noexcept {
-		return vertex_input_state(nullptr, 0, attributes, _a_N);
-	}
 	
 	VkPipelineInputAssemblyStateCreateInfo input_assembly_state(const VkPrimitiveTopology topology, bool primitive_restart_enable);
 	
@@ -53,16 +45,22 @@ namespace lvk::info {
 		return viewport_state(viewports, _v_N, nullptr, 0);
 	}
 
+	VkPipelineRenderingCreateInfo rendering(const VkFormat depth_attachment_format = VK_FORMAT_UNDEFINED, const VkFormat stencil_attachment_format = VK_FORMAT_UNDEFINED, const VkFormat* color_attachment_formats = nullptr, const uint32_t color_attachment_formats_count = 0);
+	template <std::size_t _f_N>  [[nodiscard, __gnu__::__always_inline__]]
+	constexpr VkPipelineRenderingCreateInfo rendering(const VkFormat (&color_attachment_formats)[_f_N], const VkFormat depth_attachment_format = VK_FORMAT_UNDEFINED, const VkFormat stencil_attachment_format = VK_FORMAT_UNDEFINED) noexcept {
+		return rendering(depth_attachment_format, stencil_attachment_format, color_attachment_formats, _f_N);
+	}
+
 	VkImageViewCreateInfo image_view(VkImage image, VkFormat format, VkImageViewType view_type, VkImageSubresourceRange subresource_range, VkComponentMapping components);
 	VkImageViewCreateInfo image_view(VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType view_type);
 	
-	VkSemaphoreSubmitInfo semaphore_submit(VkPipelineStageFlags2 stageMask, VkSemaphore semaphore);
+	VkSemaphoreSubmitInfo semaphore_submit(VkPipelineStageFlags2 stage_mask, const lvk_semaphore* semaphore);
 	
 	VkCommandBufferSubmitInfo command_buffer_submit(const lvk_command_buffer* command_buffer);
 
 	VkSubmitInfo2 submit2(const VkCommandBufferSubmitInfo* command_buffer_infos, const uint32_t command_buffer_infos_count, const VkSemaphoreSubmitInfo* signal_semaphore_infos, const uint32_t signal_semaphore_infos_count, const VkSemaphoreSubmitInfo* wait_semaphore_infos, const uint32_t wait_semaphore_infos_count);
 	template <std::size_t _cbsi_N, std::size_t _sssi_N, std::size_t _wssi_N>  [[nodiscard, __gnu__::__always_inline__]]
-	constexpr VkSubmitInfo2 submit2(const VkCommandBufferSubmitInfo (&command_buffer_infos)[_cbsi_N], const VkSemaphoreSubmitInfo (&signal_semaphore_infos)[_sssi_N], const VkSemaphoreSubmitInfo (&wait_semaphore_infos)[_wssi_N]) {
+	constexpr VkSubmitInfo2 submit2(const VkCommandBufferSubmitInfo (&command_buffer_infos)[_cbsi_N], const VkSemaphoreSubmitInfo (&signal_semaphore_infos)[_sssi_N], const VkSemaphoreSubmitInfo (&wait_semaphore_infos)[_wssi_N]) noexcept {
 		return submit2(command_buffer_infos, _cbsi_N, signal_semaphore_infos, _sssi_N, wait_semaphore_infos, _wssi_N);
 	}
 }

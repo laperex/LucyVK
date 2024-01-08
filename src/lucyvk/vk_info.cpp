@@ -2,6 +2,7 @@
 #include "lucyvk/vk_function.h"
 #include "lucyvk/vk_shaders.h"
 #include "lucyvk/vk_command.h"
+#include "lucyvk/vk_synchronization.h"
 #include <fstream>
 
 VkShaderModuleCreateInfo lvk::info::shader_module(const char* filename) {
@@ -145,6 +146,19 @@ VkPipelineViewportStateCreateInfo lvk::info::viewport_state(const VkViewport* vi
 	};
 }
 
+VkPipelineRenderingCreateInfo lvk::info::rendering(const VkFormat depth_attachment_format, const VkFormat stencil_attachment_format, const VkFormat* color_attachment_formats, const uint32_t color_attachment_formats_count) {
+	return {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+		
+		.colorAttachmentCount = color_attachment_formats_count,
+		.pColorAttachmentFormats = color_attachment_formats,
+
+		.depthAttachmentFormat = depth_attachment_format,
+		
+		.stencilAttachmentFormat = stencil_attachment_format
+	};
+}
+
 VkImageViewCreateInfo lvk::info::image_view(VkImage image, VkFormat format, VkImageViewType view_type, VkImageSubresourceRange subresource_range, VkComponentMapping components) {
 	return {
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -162,10 +176,10 @@ VkImageViewCreateInfo lvk::info::image_view(VkImage image, VkFormat format, VkIm
 	return image_view(image, format, view_type, { aspect_flag, 0, 1, 0, 1 }, {});
 }
 
-VkSemaphoreSubmitInfo lvk::info::semaphore_submit(VkPipelineStageFlags2 stage_mask, VkSemaphore semaphore) {
+VkSemaphoreSubmitInfo lvk::info::semaphore_submit(VkPipelineStageFlags2 stage_mask, const lvk_semaphore* semaphore) {
 	return {
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-		.semaphore = semaphore,
+		.semaphore = semaphore->_semaphore,
 		.value = 1,
 		.stageMask = stage_mask,
 		.deviceIndex = 0,

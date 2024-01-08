@@ -7,6 +7,8 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
+#include "stb_image.h"
+
 #include "Camera.h"
 #include "Mesh.h"
 
@@ -157,12 +159,12 @@ int main(int count, char** args) {
 		// 	{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 }
 		// };
 
-		VkDescriptorPoolSize descriptor_pool_sizes[] = {
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 }
-		};
 		uint32_t descriptor_set_max_size = 10;
-		
+		VkDescriptorPoolSize descriptor_pool_sizes[] = {
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }
+		};
+
 		// for (int i = 0; i < sizeof(pool_size_ratios); i++) {
 		// 	descriptor_pool_sizes[i] = {
 		// 		.type = pool_size_ratios[i].type,
@@ -182,14 +184,14 @@ int main(int count, char** args) {
 		compute_descriptor_set_layout._descriptor_set_layout
 	});
 
-	lvk_shader_module compute_shader = device.init_shader_module(VK_SHADER_STAGE_COMPUTE_BIT, "./shaders/gradient.comp.spv");
+	lvk_shader_module compute_shader = device.init_shader_module(VK_SHADER_STAGE_COMPUTE_BIT, "./shaders/raymarch.comp.spv");
 	
 	lvk_pipeline compute_pipeline = compute_pipeline_layout.init_compute_pipeline(lvk::info::shader_stage(&compute_shader));
 
 	lvk_shader_module vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "./shaders/mesh.vert.spv");
 	lvk_shader_module fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "./shaders/colored_triangle.frag.spv");
 	
-	auto vertex_layout = lucy::Vertex::get_vertex_description();
+	// auto vertex_layout = lucy::Vertex::get_vertex_description();
 	
 	lvk_descriptor_set_layout graphics_descriptor_set_layout = device.init_descriptor_set_layout({
 		lvk::descriptor_set_layout_binding(1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
@@ -199,83 +201,47 @@ int main(int count, char** args) {
 		graphics_descriptor_set_layout._descriptor_set_layout
 	});
 
-	lvk_pipeline graphics_pipeline = {};
-	{
-		lvk::config::graphics_pipeline config = {
-			.shader_stage_array = {
-				lvk::info::shader_stage(&vertex_shader),
-				lvk::info::shader_stage(&fragment_shader),
+	lvk::config::graphics_pipeline config = {
+		.shader_stage_array = {
+			lvk::info::shader_stage(&vertex_shader),
+			lvk::info::shader_stage(&fragment_shader),
+		},
+
+		.vertex_input_state = lucy::Vertex::get_vertex_description(),
+
+		.input_assembly_state = lvk::info::input_assembly_state(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false),
+		
+		.viewport_state = lvk::info::viewport_state({
+			{
+				.x = 0.0f,
+				.y = 0.0f,
+				.width = window.size.x,
+				.height = window.size.y,
+				.minDepth = 0.0f,
+				.maxDepth = 1.0f
 			},
-
-			.vertex_input_state = lvk::info::vertex_input_state({
-				{
-					.binding = 0,
-					.stride = sizeof(lucy::Vertex),
-					.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-				}
-			},{
-				{
-					.location = 0,
-					.binding = 0,
-					.format = VK_FORMAT_R32G32B32_SFLOAT,
-					.offset = offsetof(lucy::Vertex, position),
-				},
-				{
-					.location = 1,
-					.binding = 0,
-					.format = VK_FORMAT_R32G32B32_SFLOAT,
-					.offset = offsetof(lucy::Vertex, normal),
-				},
-				{
-					.location = 2,
-					.binding = 0,
-					.format = VK_FORMAT_R32G32B32_SFLOAT,
-					.offset = offsetof(lucy::Vertex, color),
-				}
-			}),
-
-			.input_assembly_state = lvk::info::input_assembly_state(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false),
-			
-			.viewport_state = lvk::info::viewport_state({
-				{
-					.x = 0.0f,
-					.y = 0.0f,
-					.width = (float)window.size.x,
-					.height = (float)window.size.y,
-					.minDepth = 0.0f,
-					.maxDepth = 1.0f
-				},
-			},{
-				{
-					.offset = { 0, 0 },
-					.extent = { static_cast<uint32_t>(window.size.x), static_cast<uint32_t>(window.size.y) }
-				}
-			}),
-			
-			.rasterization_state = lvk::info::rasterization_state(VK_POLYGON_MODE_FILL),
-			.multisample_state = lvk::info::multisample_state(),
-			.depth_stencil_state = lvk::info::depth_stencil_state(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
-			
-			.color_blend_state = lvk::info::color_blend_state({
-				{
-					.blendEnable = VK_FALSE,
-					.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
-				}
-			}),
-			
-			.rendering_info = {
-				.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-
-				.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT,
+		},{
+			{
+				.offset = { 0, 0 },
+				.extent = { static_cast<uint32_t>(window.size.x), static_cast<uint32_t>(window.size.y) }
 			}
-		};
-
-		graphics_pipeline = graphics_pipeline_layout.init_graphics_pipeline(&config);
+		}),
+		
+		.rasterization_state = lvk::info::rasterization_state(VK_POLYGON_MODE_FILL),
+		.multisample_state = lvk::info::multisample_state(),
+		.depth_stencil_state = lvk::info::depth_stencil_state(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
+		
+		.color_blend_state = lvk::info::color_blend_state({
+			{
+				.blendEnable = VK_FALSE,
+				.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+			}
+		}),
+		
+		.dynamic_rendering = lvk::info::rendering(VK_FORMAT_D32_SFLOAT)
 	};
 
-	lucy::Mesh monkey_mesh;
-	monkey_mesh.load_obj("/home/laperex/Programming/C++/LucyVK/src/assets/monkey.obj");
-	monkey_mesh.vertex_buffer = allocator.init_vertex_buffer(monkey_mesh._vertices.data(), monkey_mesh._vertices.size() * sizeof(monkey_mesh._vertices[0]));
+	lvk_pipeline graphics_pipeline = graphics_pipeline_layout.init_graphics_pipeline(&config);
 
 	VkImageUsageFlags draw_image_usages = 
 		VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
@@ -312,10 +278,6 @@ int main(int count, char** args) {
 	draw.depth_image = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
 	draw.depth_image_view = draw.depth_image.init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
 
-	lucy::Camera camera = {};
-	camera.width = window.size.x;
-	camera.height = window.size.y;
-
 	VkClearValue clear_value[] = {
 		{
 			.color = { { 0.0f, 0.0f, 0, 0.0f } }
@@ -326,6 +288,14 @@ int main(int count, char** args) {
 			}
 		},
 	};
+
+	lucy::Mesh monkey_mesh;
+	monkey_mesh.load_obj("/home/laperex/Programming/C++/LucyVK/src/assets/monkey.obj");
+	monkey_mesh.vertex_buffer = allocator.init_vertex_buffer(monkey_mesh._vertices.data(), monkey_mesh._vertices.size() * sizeof(monkey_mesh._vertices[0]));
+
+	lucy::Camera camera = {};
+	camera.width = window.size.x;
+	camera.height = window.size.y;
 
 	double dt = 0;
 	uint32_t frame_number = 0;
@@ -344,7 +314,7 @@ int main(int count, char** args) {
 		// TODO: Add delta time Macros
 		// TODO: multi_init feature for initialization of multiple vulkan types
 
-		// TODO! IMPLEMENT COMPUTE SHADERS
+		// // TODO! IMPLEMENT COMPUTE SHADERS
 
 		{
 			{
@@ -383,61 +353,66 @@ int main(int count, char** args) {
 
 					vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, compute_pipeline_layout._pipeline_layout, 0, 1, &draw.compute_descriptor._descriptor_set, 0, VK_NULL_HANDLE);
 
-					vkCmdDispatch(cmd._command_buffer, std::ceil(draw.extent.width / 4.0), std::ceil(draw.extent.height / 4.0), 1);
+					cmd.dispatch(std::ceil(draw.extent.width / 4.0), std::ceil(draw.extent.height / 4.0), 1);
 				}
 
-				// cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+				cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-				// 	VkRenderingAttachmentInfo depth_attachment = {
-				// 		.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-				// 		.imageView = draw.depth_image_view._image_view,
-				// 		.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-				// 		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-				// 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-				// 		.clearValue = {
-				// 			.depthStencil = {
-				// 				.depth = 1.0f
-				// 			}
-				// 		},
-				// 	};
-				// {
-				// 	VkRenderingAttachmentInfo color_attachment = {
-				// 		.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-				// 		.imageView = draw.image_view._image_view,
-				// 		.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				// 		.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-				// 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-				// 		.clearValue = {
-				// 			.color = { 0, 0, 0, 0 }
-				// 		}
-				// 	};
+				{
+					VkRenderingAttachmentInfo depth_attachment = {
+						.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+						.imageView = draw.depth_image_view._image_view,
+						.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+						.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+						.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+						.clearValue = {
+							.depthStencil = {
+								.depth = 1.0f
+							}
+						},
+					};
+					VkRenderingAttachmentInfo color_attachment = {
+						.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
 
-				// 	VkRenderingInfoKHR render_info = {
-				// 		.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-				// 		.renderArea = {
-				// 			.offset = { 0, 0 },
-				// 			.extent = swapchain._extent,
-				// 		},
-				// 		.layerCount = 1,
+						.imageView = draw.image_view._image_view,
+						.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+
+						.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+						.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+
+						.clearValue = {
+							.color = { 0, 0, 0, 0 }
+						}
+					};
+
+					VkRenderingInfoKHR render_info = {
+						.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+
+						.renderArea = {
+							.offset = { 0, 0 },
+							.extent = swapchain._extent,
+						},
+						.layerCount = 1,
 						
-				// 		.colorAttachmentCount = 1,
-				// 		.pColorAttachments = &color_attachment,
+						.colorAttachmentCount = 1,
+						.pColorAttachments = &color_attachment,
 
-				// 		.pDepthAttachment = &depth_attachment,
-				// 	};
+						.pDepthAttachment = &depth_attachment,
+					};
 
-				// 	vkCmdBeginRendering(cmd._command_buffer, &render_info);
+					vkCmdBeginRendering(cmd._command_buffer, &render_info);
 
-				// 	cmd.bind_vertex_buffers({ monkey_mesh.vertex_buffer._buffer }, { 0 });
-				// 	vkCmdBindPipeline(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline._pipeline);
-				// 	vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout._pipeline_layout, 0, 1, &draw.graphics_descriptor._descriptor_set, 0, VK_NULL_HANDLE);
+					cmd.bind_vertex_buffers({ monkey_mesh.vertex_buffer._buffer }, { 0 });
+					cmd.bind_pipeline(&graphics_pipeline);
 
-				// 	vkCmdDraw(cmd._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
+					vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout._pipeline_layout, 0, 1, &draw.graphics_descriptor._descriptor_set, 0, VK_NULL_HANDLE);
 
-				// 	vkCmdEndRendering(cmd._command_buffer);
-				// }
+					vkCmdDraw(cmd._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
 
-				cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+					vkCmdEndRendering(cmd._command_buffer);
+				}
+
+				cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
 				cmd.transition_image(swapchain._images[image_index], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 				
@@ -450,19 +425,22 @@ int main(int count, char** args) {
 
 			if (frame_number > 0) {
 				auto& frame = frame_array[(frame_number - 1) % FRAMES_IN_FLIGHT];
-				
-				VkCommandBufferSubmitInfo cmd_info = lvk::info::command_buffer_submit(&frame.command_buffer);
-	
-				VkSemaphoreSubmitInfo wait_info = lvk::info::semaphore_submit(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, frame.present_semaphore._semaphore);
-				VkSemaphoreSubmitInfo signal_info = lvk::info::semaphore_submit(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, frame.render_semaphore._semaphore);
 
-				if (device.submit2({ lvk::info::submit2({ cmd_info }, { signal_info }, { wait_info }) }, &frame.render_fence) != VK_SUCCESS) {
+				if (device.submit2({
+					lvk::info::submit2({
+						lvk::info::command_buffer_submit(&frame.command_buffer)
+					}, {
+						lvk::info::semaphore_submit(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, &frame.render_semaphore)
+					}, {
+						lvk::info::semaphore_submit(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, &frame.present_semaphore)
+					})
+				}, &frame.render_fence) != VK_SUCCESS) {
 					throw std::runtime_error("Submit2 failed!");
 				}
-				
+
 				frame.render_fence.wait();
 				frame.render_fence.reset();
-				
+
 				VkPresentInfoKHR presentInfo = {
 					.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 					
@@ -479,9 +457,9 @@ int main(int count, char** args) {
 			}
 		}
 
+		frame_number += 1;
 		const auto& end_time = std::chrono::high_resolution_clock::now();
 		dt = std::chrono::duration<double, std::ratio<1, 60>>(end_time - start_time).count();
-		frame_number += 1;
 	}
 	
 	device.wait_idle();

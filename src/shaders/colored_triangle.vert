@@ -3,11 +3,13 @@
 //output variable to the fragment shader
 layout (location = 0) out vec3 outColor;
 
-layout( push_constant ) uniform constants
-{
-	vec4 offset;
-	mat4 render_matrix;
-} PushConstants;
+
+layout(set = 0, binding = 1) uniform CameraBuffer {
+	mat4 projection;
+	mat4 view;
+	mat4 model;
+	vec4 color;
+} camera_data;
 
 void main()
 {
@@ -33,6 +35,6 @@ void main()
 		vec3(0.0f, 1.0f, 0.0f) //green
 	);
 
-	gl_Position = PushConstants.render_matrix * vec4(positions[gl_VertexIndex % 6] + PushConstants.offset.xyz, 1.0f);
+	gl_Position = camera_data.projection * camera_data.view * camera_data.model * vec4(positions[gl_VertexIndex % 6], 1.0f);
 	outColor = colors[gl_VertexIndex % 6];
 }

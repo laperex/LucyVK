@@ -14,16 +14,11 @@
 
 lvk_device lvk_physical_device::init_device(std::vector<const char*> extensions, std::vector<const char*> layers) {
 	lvk_device device = {
-		// VK_NULL_HANDLE,
-		// VK_NULL_HANDLE,
-		// VK_NULL_HANDLE,
-		// VK_NULL_HANDLE,
-		// VK_NULL_HANDLE,
 		.extensions = extensions,
 		.layers = layers,
+		
 		.physical_device = this,
 		.instance = this->instance,
-		// {}
 	};
 	
 	std::set<uint32_t> unique_queue_indices = {
@@ -45,8 +40,6 @@ lvk_device lvk_physical_device::init_device(std::vector<const char*> extensions,
 			.pQueuePriorities = &priority
 		};
     }
-	
-	const void* additional_features;
 	
 	VkPhysicalDeviceDynamicRenderingFeatures dynamic_features = {
 		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
@@ -113,12 +106,7 @@ void lvk_device::wait_idle() const {
 }
 
 VkResult lvk_device::submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const lvk_fence* fence, uint64_t timeout) const {
-	auto result = vkQueueSubmit(_graphics_queue, 1, submit_info, fence->_fence);
-
-	fence->wait(timeout);
-	fence->reset();
-
-	return result;
+	return vkQueueSubmit(_graphics_queue, 1, submit_info, fence->_fence);
 }
 
 VkResult lvk_device::submit2(const VkSubmitInfo2* submit_info2, const uint32_t submit_info2_count, const lvk_fence* fence) const {

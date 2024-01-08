@@ -48,12 +48,10 @@ struct lvk_command_buffer {
 	
 	void bind_pipeline(const lvk_pipeline* pipeline);
 	
-	void bind_vertex_buffer(const lvk_buffer* vertex_buffer, const VkDeviceSize offset);
-
 	void bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding = 0);
-	template <std::size_t _Nm> [[__gnu__::__always_inline__]]
-    constexpr void bind_vertex_buffers(const VkBuffer (&vertex_buffers)[_Nm], const VkDeviceSize (&offset_array)[_Nm], const uint32_t first_binding = 0) noexcept {
-		bind_vertex_buffers(vertex_buffers, offset_array, _Nm, first_binding);
+	template <std::size_t _b_m> [[__gnu__::__always_inline__]]
+    constexpr void bind_vertex_buffers(const VkBuffer (&vertex_buffers)[_b_m], const VkDeviceSize (&offset_array)[_b_m], const uint32_t first_binding = 0) noexcept {
+		bind_vertex_buffers(vertex_buffers, offset_array, _b_m, first_binding);
 	}
 	
 	template <std::size_t _cv_N> [[__gnu__::__always_inline__]]
@@ -63,10 +61,10 @@ struct lvk_command_buffer {
 	void begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count);
 	void begin_render_pass(const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents);
 	
-	void bind(lvk_pipeline);
-
 	void end();
 	void end_render_pass();
 
 	void copy_image_to_image(VkImage source, VkImage destination, VkImageLayout source_layout, VkImageLayout destination_layout, VkExtent2D src_size, VkExtent2D dst_size);
+	
+	void dispatch(uint32_t group_count_x, uint32_t group_count_y, uint32_t group_count_z);
 };

@@ -2,6 +2,7 @@
 
 // #include "lucyvk/lucyvk.h"
 #include "lucyvk/vk_alloc.h"
+#include "lucyvk/vk_info.h"
 #include <vector>
 #include <glm/glm.hpp>
 // #include <math/math.hpp>
@@ -17,38 +18,37 @@ namespace lucy {
 		glm::vec3 normal;
 		glm::vec3 color;
 
-		static auto get_vertex_description() -> lvk::vertex_input_description<1, 3> {
-			return lvk::vertex_input_description {
+		static VkPipelineVertexInputStateCreateInfo get_vertex_description() {
+			return lvk::info::vertex_input_state({
 				{
-					{
-						.binding = 0,
-						.stride = sizeof(Vertex),
-						.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-					}
+					.binding = 0,
+					.stride = sizeof(lucy::Vertex),
+					.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+				}
+			},{
+				{
+					.location = 0,
+					.binding = 0,
+					.format = VK_FORMAT_R32G32B32_SFLOAT,
+					.offset = offsetof(lucy::Vertex, position),
 				},
 				{
-					{
-						.location = 0,
-						.binding = 0,
-						.format = VK_FORMAT_R32G32B32_SFLOAT,
-						.offset = offsetof(lucy::Vertex, position),
-					},
-					{
-						.location = 1,
-						.binding = 0,
-						.format = VK_FORMAT_R32G32B32_SFLOAT,
-						.offset = offsetof(lucy::Vertex, normal),
-					},
-					{
-						.location = 2,
-						.binding = 0,
-						.format = VK_FORMAT_R32G32B32_SFLOAT,
-						.offset = offsetof(lucy::Vertex, color),
-					}
+					.location = 1,
+					.binding = 0,
+					.format = VK_FORMAT_R32G32B32_SFLOAT,
+					.offset = offsetof(lucy::Vertex, normal),
+				},
+				{
+					.location = 2,
+					.binding = 0,
+					.format = VK_FORMAT_R32G32B32_SFLOAT,
+					.offset = offsetof(lucy::Vertex, color),
 				}
-			};
+			});
 		}
 	};
+	
+	
 
 	struct Mesh {
 		std::vector<Vertex> _vertices;

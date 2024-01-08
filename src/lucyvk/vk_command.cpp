@@ -101,10 +101,6 @@ void lvk_command_buffer::bind_pipeline(const lvk_pipeline* pipeline) {
 	vkCmdBindPipeline(_command_buffer, pipeline->type, pipeline->_pipeline);
 }
 
-void lvk_command_buffer::bind_vertex_buffer(const lvk_buffer* vertex_buffer, const VkDeviceSize offset) {
-	vkCmdBindVertexBuffers(_command_buffer, 0, 1, &vertex_buffer->_buffer, &offset);
-}
-
 void lvk_command_buffer::bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding) {
 	vkCmdBindVertexBuffers(_command_buffer, first_binding, vertex_buffers_count, vertex_buffers, offset_array);
 }
@@ -117,11 +113,15 @@ void lvk_command_buffer::transition_image(VkImage image, VkImageLayout current_l
 
 		.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
 		.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+		
 		.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
 		.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT,
+		
 		.oldLayout = current_layout,
 		.newLayout = new_layout,
+		
 		.image = image,
+		
 		.subresourceRange = lvk::image_subresource_range(aspect_mask),
 	};
 
@@ -157,6 +157,10 @@ void lvk_command_buffer::copy_image_to_image(VkImage source, VkImage destination
 	};
 	
 	vkCmdCopyImage2(_command_buffer, &copy_info);
+}
+
+void lvk_command_buffer::dispatch(uint32_t group_count_x, uint32_t group_count_y, uint32_t group_count_z) {
+	vkCmdDispatch(_command_buffer, group_count_x, group_count_y, group_count_z);
 }
 
 void lvk_command_buffer::blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size) {

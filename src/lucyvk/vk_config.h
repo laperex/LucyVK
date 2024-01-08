@@ -16,7 +16,7 @@ namespace lvk::config {
 		VkPipelineColorBlendStateCreateInfo color_blend_state;
 		VkPipelineDynamicStateCreateInfo dynamic_state;
 
-		VkPipelineRenderingCreateInfo rendering_info;
+		VkPipelineRenderingCreateInfo dynamic_rendering;
 	};
 	
 	struct instance {
