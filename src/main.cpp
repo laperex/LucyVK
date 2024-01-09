@@ -207,7 +207,32 @@ int main(int count, char** args) {
 			lvk::info::shader_stage(&fragment_shader),
 		},
 
-		.vertex_input_state = lucy::Vertex::get_vertex_description(),
+		.vertex_input_state = lvk::info::vertex_input_state({
+			{
+				.binding = 0,
+				.stride = sizeof(lucy::Vertex),
+				.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+			}
+		},{
+			{
+				.location = 0,
+				.binding = 0,
+				.format = VK_FORMAT_R32G32B32_SFLOAT,
+				.offset = offsetof(lucy::Vertex, position),
+			},
+			{
+				.location = 1,
+				.binding = 0,
+				.format = VK_FORMAT_R32G32B32_SFLOAT,
+				.offset = offsetof(lucy::Vertex, normal),
+			},
+			{
+				.location = 2,
+				.binding = 0,
+				.format = VK_FORMAT_R32G32B32_SFLOAT,
+				.offset = offsetof(lucy::Vertex, color),
+			}
+		}),
 
 		.input_assembly_state = lvk::info::input_assembly_state(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false),
 		
