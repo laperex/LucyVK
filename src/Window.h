@@ -9,7 +9,7 @@ namespace lucy {
 		glm::vec2 pos = { 100, 100 };
 		glm::vec2 size = { 1366, 768 };
 
-		uint32_t flags = SDL_WINDOW_VULKAN | SDL_WINDOW_SHOWN;
+		uint32_t flags = SDL_WINDOW_VULKAN;
 
 		std::string title = "Lucy-Framework";
 		SDL_Window* sdl_window = nullptr;

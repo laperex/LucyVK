@@ -101,6 +101,10 @@ void lvk_command_buffer::bind_pipeline(const lvk_pipeline* pipeline) {
 	vkCmdBindPipeline(_command_buffer, pipeline->type, pipeline->_pipeline);
 }
 
+void lvk_command_buffer::bind_descriptor_set(const lvk_pipeline* pipeline, const lvk_descriptor_set* descriptor_set, const uint32_t descriptor_set_count) {
+	vkCmdBindDescriptorSets(_command_buffer, pipeline->type, pipeline->pipeline_layout->_pipeline_layout, 0, descriptor_set_count, &descriptor_set->_descriptor_set, 0, VK_NULL_HANDLE);
+}
+
 void lvk_command_buffer::bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding) {
 	vkCmdBindVertexBuffers(_command_buffer, first_binding, vertex_buffers_count, vertex_buffers, offset_array);
 }

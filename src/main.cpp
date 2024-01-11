@@ -286,9 +286,12 @@ int main(int count, char** args) {
 
 		lvk_image depth_image;
 		lvk_image_view depth_image_view;
-	} draw;
+	} draw = {
+		.image = allocator.init_image(VK_FORMAT_R16G16B16A16_SFLOAT, draw_image_usages, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D),
+		.graphics_descriptor = descriptor_pool.init_descriptor_set(&graphics_descriptor_set_layout),
+		.compute_descriptor = descriptor_pool.init_descriptor_set(&compute_descriptor_set_layout),
+	};
 	
-	draw.image = allocator.init_image(VK_FORMAT_R16G16B16A16_SFLOAT, draw_image_usages, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
  	draw.image_view = draw.image.init_image_view(VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
 	draw.graphics_descriptor = descriptor_pool.init_descriptor_set(&graphics_descriptor_set_layout);
 	draw.compute_descriptor = descriptor_pool.init_descriptor_set(&compute_descriptor_set_layout);
@@ -376,7 +379,8 @@ int main(int count, char** args) {
 					// vkCmdClearColorImage(cmd._command_buffer, draw.image._image, VK_IMAGE_LAYOUT_GENERAL, &clear_color_value, 1, &clear_range);
 					cmd.bind_pipeline(&compute_pipeline);
 
-					vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, compute_pipeline_layout._pipeline_layout, 0, 1, &draw.compute_descriptor._descriptor_set, 0, VK_NULL_HANDLE);
+					// vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, compute_pipeline_layout._pipeline_layout, 0, 1, &draw.compute_descriptor._descriptor_set, 0, VK_NULL_HANDLE);
+					cmd.bind_descriptor_set(&compute_pipeline, { draw.compute_descriptor });
 
 					cmd.dispatch(std::ceil(draw.extent.width / 4.0), std::ceil(draw.extent.height / 4.0), 1);
 				}

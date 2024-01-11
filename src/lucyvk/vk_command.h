@@ -47,6 +47,13 @@ struct lvk_command_buffer {
 	void blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size);
 	
 	void bind_pipeline(const lvk_pipeline* pipeline);
+
+	void bind_descriptor_set(const lvk_pipeline* pipeline, const lvk_descriptor_set* descriptor_set, const uint32_t descript_set_count);
+
+	template <std::size_t _ds_N> [[__gnu__::__always_inline__]]
+	constexpr void bind_descriptor_set(const lvk_pipeline* pipeline, const lvk_descriptor_set (&descriptor_set)[_ds_N]) noexcept {
+		return bind_descriptor_set(pipeline, descriptor_set, _ds_N);
+	}
 	
 	void bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding = 0);
 	template <std::size_t _b_m> [[__gnu__::__always_inline__]]
