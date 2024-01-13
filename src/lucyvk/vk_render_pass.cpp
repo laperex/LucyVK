@@ -137,15 +137,16 @@ lvk_framebuffer lvk_render_pass::init_framebuffer(const VkExtent2D extent, const
 		device
 	};
 
-	VkFramebufferCreateInfo createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	createInfo.flags = 0;
-	createInfo.renderPass = _render_pass;
-	createInfo.width = extent.width;
-	createInfo.height = extent.height;
-	createInfo.attachmentCount = image_views_count;
-	createInfo.pAttachments = image_views;
-	createInfo.layers = 1;
+	VkFramebufferCreateInfo createInfo = {
+		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+		.flags = 0,
+		.renderPass = _render_pass,
+		.attachmentCount = image_views_count,
+		.pAttachments = image_views,
+		.width = extent.width,
+		.height = extent.height,
+		.layers = 1,
+	};
 
 	if (vkCreateFramebuffer(device->_device, &createInfo, VK_NULL_HANDLE, &framebuffer._framebuffer) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create framebuffer");

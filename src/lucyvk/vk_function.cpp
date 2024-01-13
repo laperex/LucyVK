@@ -116,8 +116,8 @@ VkPhysicalDevice lvk::default_physical_device(const std::vector<VkPhysicalDevice
 		bool isRequiredDeviceExtensionsAvailable = false;
 		bool isIndicesComplete = false;
 		bool isSwapchainAdequate = false;
-		
-		return physicalDeviceArray.back();
+
+		// return physicalDeviceArray.back();
 
 		{
 			uint32_t availableExtensionCount;

@@ -4,6 +4,7 @@
 #include "lucyvk/vk_function.h"
 #include "lucyvk/vk_info.h"
 #include "lucyvk/vk_instance.h"
+#include "lucyvk/vk_render_pass.h"
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
@@ -32,57 +33,7 @@
 
 #include "lucyvk/lucyvk.h"
 
-typedef uint32_t lve_vertex;
-
-#define LVE_CHUNK_SIZE (32)
-
-#define LVE_VERTEX(x, y, z, n, u, v) ((x * LVE_CHUNK_SIZE * LVE_CHUNK_SIZE) + y * LVE_CHUNK_SIZE + z) & 0x7fff
-
-// static lvk::vertex_input_description lve_vertex_description() {
-// 	lvk::vertex_input_description description;
-
-// 	//we will have just 1 vertex buffer binding, with a per-vertex rate
-// 	VkVertexInputBindingDescription mainBinding = {};
-// 	mainBinding.binding = 0;
-// 	mainBinding.stride = sizeof(lve_vertex);
-// 	mainBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-// 	description.bindings.push_back(mainBinding);
-
-// 	//Position will be stored at Location 0
-// 	VkVertexInputAttributeDescription positionAttribute = {};
-// 	positionAttribute.binding = 0;
-// 	positionAttribute.location = 0;
-// 	positionAttribute.format = VK_FORMAT_R32_UINT;
-// 	positionAttribute.offset = 0;
-
-// 	description.attributes.push_back(positionAttribute);
-
-// 	return description;
-// }
-
-std::vector<lve_vertex> lve_vertex_triangle = {
-	LVE_VERTEX(0, 0, 0, 1, 0, 0),
-	LVE_VERTEX(0, 0, 0, 1, 1, 1),
-};
-
-lucy::Mesh load_triangle_mesh() {
-	lucy::Mesh triangle_mesh;
-	
-	triangle_mesh._vertices.resize(3);
-
-	//vertex positions
-	triangle_mesh._vertices[0].position = { 1.f, 1.f, 0.0f };
-	triangle_mesh._vertices[1].position = {-1.f, 1.f, 0.0f };
-	triangle_mesh._vertices[2].position = { 0.f,-1.f, 0.0f };
-
-	//vertex colors, all green
-	triangle_mesh._vertices[0].color = { 0.f, 1.f, 0.0f }; //pure green
-	triangle_mesh._vertices[1].color = { 0.f, 1.f, 0.0f }; //pure green
-	triangle_mesh._vertices[2].color = { 0.f, 1.f, 0.0f }; //pure green
-	
-	return triangle_mesh;
-}
+#include <glm/gtc/noise.hpp>
 
 struct mvp_matrix {
 	glm::mat4 projection;
@@ -149,31 +100,13 @@ int main(int count, char** args) {
 
 	//* ---------------> PIPELINE INIT
 
-	lvk_descriptor_pool descriptor_pool = {};
-	{
-		// struct {
-		// 	VkDescriptorType type;
-		// 	float ratio;
-		// } pool_size_ratios[] = {
-		// 	{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 },
-		// 	{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 }
-		// };
+	uint32_t descriptor_set_max_size = 10;
+	VkDescriptorPoolSize descriptor_pool_sizes[] = {
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }
+	};
 
-		uint32_t descriptor_set_max_size = 10;
-		VkDescriptorPoolSize descriptor_pool_sizes[] = {
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }
-		};
-
-		// for (int i = 0; i < sizeof(pool_size_ratios); i++) {
-		// 	descriptor_pool_sizes[i] = {
-		// 		.type = pool_size_ratios[i].type,
-		// 		.descriptorCount = static_cast<uint32_t>(pool_size_ratios[i].ratio * descriptor_set_max_size)
-		// 	};
-		// }
-
-		descriptor_pool = device.init_descriptor_pool(descriptor_set_max_size, descriptor_pool_sizes);
-	}
+	lvk_descriptor_pool descriptor_pool = device.init_descriptor_pool(descriptor_set_max_size, descriptor_pool_sizes);
 	
 	lvk_descriptor_set_layout compute_descriptor_set_layout = device.init_descriptor_set_layout({
 		lvk::descriptor_set_layout_binding(0, VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1),
@@ -188,8 +121,8 @@ int main(int count, char** args) {
 	
 	lvk_pipeline compute_pipeline = compute_pipeline_layout.init_compute_pipeline(lvk::info::shader_stage(&compute_shader));
 
-	lvk_shader_module vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "./shaders/mesh.vert.spv");
-	lvk_shader_module fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "./shaders/colored_triangle.frag.spv");
+	lvk_shader_module vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "./shaders/terrain.vert.spv");
+	lvk_shader_module fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "./shaders/terrain.frag.spv");
 	
 	// auto vertex_layout = lucy::Vertex::get_vertex_description();
 	
@@ -197,9 +130,21 @@ int main(int count, char** args) {
 		lvk::descriptor_set_layout_binding(1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
 	});
 	
-	lvk_pipeline_layout graphics_pipeline_layout = device.init_pipeline_layout({
-		graphics_descriptor_set_layout._descriptor_set_layout
-	});
+	VkViewport viewport[] = {{
+		.x = 0.0f,
+		.y = 0.0f,
+		.width = window.size.x,
+		.height = window.size.y,
+		.minDepth = 0.0f,
+		.maxDepth = 1.0f
+	}};
+	
+	VkRect2D scissor[] = {
+		{
+			.offset = { 0, 0 },
+			.extent = { static_cast<uint32_t>(window.size.x), static_cast<uint32_t>(window.size.y) }
+		}
+	};
 
 	lvk::config::graphics_pipeline config = {
 		.shader_stage_array = {
@@ -210,7 +155,7 @@ int main(int count, char** args) {
 		.vertex_input_state = lvk::info::vertex_input_state({
 			{
 				.binding = 0,
-				.stride = sizeof(lucy::Vertex),
+				.stride = sizeof(glm::vec3),
 				.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
 			}
 		},{
@@ -218,19 +163,7 @@ int main(int count, char** args) {
 				.location = 0,
 				.binding = 0,
 				.format = VK_FORMAT_R32G32B32_SFLOAT,
-				.offset = offsetof(lucy::Vertex, position),
-			},
-			{
-				.location = 1,
-				.binding = 0,
-				.format = VK_FORMAT_R32G32B32_SFLOAT,
-				.offset = offsetof(lucy::Vertex, normal),
-			},
-			{
-				.location = 2,
-				.binding = 0,
-				.format = VK_FORMAT_R32G32B32_SFLOAT,
-				.offset = offsetof(lucy::Vertex, color),
+				.offset = 0,
 			}
 		}),
 
@@ -252,63 +185,41 @@ int main(int count, char** args) {
 			}
 		}),
 		
-		.rasterization_state = lvk::info::rasterization_state(VK_POLYGON_MODE_FILL),
+		.rasterization_state = lvk::info::rasterization_state(VK_POLYGON_MODE_LINE),
 		.multisample_state = lvk::info::multisample_state(),
 		.depth_stencil_state = lvk::info::depth_stencil_state(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
 		
 		.color_blend_state = lvk::info::color_blend_state({
 			{
 				.blendEnable = VK_FALSE,
-				.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+				.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
 			}
 		}),
 		
-		.dynamic_rendering = lvk::info::rendering(VK_FORMAT_D32_SFLOAT)
+		// .dynamic_rendering = lvk::info::rendering(VK_FORMAT_D32_SFLOAT)
 	};
-
-	lvk_pipeline graphics_pipeline = graphics_pipeline_layout.init_graphics_pipeline(&config);
-
-	VkImageUsageFlags draw_image_usages = 
-		VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-		VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-		VK_IMAGE_USAGE_STORAGE_BIT |
-		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-	struct {
-		lvk_image image;
-		lvk_image_view image_view;
-		VkExtent2D extent;
-
-		lvk_descriptor_set graphics_descriptor;
-		lvk_descriptor_set compute_descriptor;
-
-		lvk_buffer uniform_buffer;
-
-		lvk_image depth_image;
-		lvk_image_view depth_image_view;
-	} draw = {
-		.image = allocator.init_image(VK_FORMAT_R16G16B16A16_SFLOAT, draw_image_usages, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D),
-		.graphics_descriptor = descriptor_pool.init_descriptor_set(&graphics_descriptor_set_layout),
-		.compute_descriptor = descriptor_pool.init_descriptor_set(&compute_descriptor_set_layout),
+	// VkPipelineViewportStateCreateInfo viewport_info = ;
+	
+	config.viewport_state = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+		
+		.viewportCount = 1,
+		.pViewports = viewport,
+		
+		.scissorCount = 1,
+		.pScissors = scissor
 	};
 	
- 	draw.image_view = draw.image.init_image_view(VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
-	draw.graphics_descriptor = descriptor_pool.init_descriptor_set(&graphics_descriptor_set_layout);
-	draw.compute_descriptor = descriptor_pool.init_descriptor_set(&compute_descriptor_set_layout);
-	
-	draw.uniform_buffer = allocator.init_uniform_buffer<mvp_matrix>();
+	lvk_descriptor_set graphics_descriptor = descriptor_pool.init_descriptor_set(&graphics_descriptor_set_layout);
 
-	draw.compute_descriptor.update(0, &draw.image_view, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-	draw.compute_descriptor.update(1, &draw.uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-	
-	draw.graphics_descriptor.update(1, &draw.uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-	
-	draw.depth_image = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
-	draw.depth_image_view = draw.depth_image.init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+	lvk_image depth_image = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
+	lvk_image_view depth_image_view = depth_image.init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
 
 	VkClearValue clear_value[] = {
 		{
-			.color = { { 0.0f, 0.0f, 0, 0.0f } }
+			.color = {
+				{ 0.0f, 0.0f, 0, 0.0f }
+			}
 		},
 		{
 			.depthStencil = {
@@ -317,14 +228,65 @@ int main(int count, char** args) {
 		},
 	};
 
-	lucy::Mesh monkey_mesh;
-	monkey_mesh.load_obj("/home/laperex/Programming/C++/LucyVK/src/assets/monkey.obj");
-	monkey_mesh.vertex_buffer = allocator.init_vertex_buffer(monkey_mesh._vertices.data(), monkey_mesh._vertices.size() * sizeof(monkey_mesh._vertices[0]));
+	lvk_buffer uniform_buffer = allocator.init_uniform_buffer<mvp_matrix>();
+	lvk_render_pass render_pass = device.init_default_render_pass(swapchain._surface_format.format);
+	lvk_framebuffer* framebuffer_array = new lvk_framebuffer[swapchain._image_count];
+	
+	graphics_descriptor.update(1, &uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+
+	for (int i = 0; i < swapchain._image_count; i++) {
+		framebuffer_array[i] = render_pass.init_framebuffer(swapchain._extent, { swapchain._image_views[i], depth_image_view._image_view });
+	}
+
+	lvk_pipeline_layout graphics_pipeline_layout = device.init_pipeline_layout({
+		graphics_descriptor_set_layout._descriptor_set_layout
+	});
+	
+	lvk_pipeline graphics_pipeline = graphics_pipeline_layout.init_graphics_pipeline(&config, &render_pass);
+
+	struct {
+		std::vector<glm::vec3> vertices;
+		lvk_buffer vertex_buffer;
+	} terrain;
+
+	for (int x = 0; x < 100; x++) {
+		for (int z = 0; z < 100; z++) {
+			terrain.vertices.push_back({ 1 + x, (((glm::perlin(glm::vec2{(1 + x) / 160.0, (1 + z) / 160.0})) + 1) / 2)*(32) - 16,  1 + z});
+			terrain.vertices.push_back({ 0 + x, (((glm::perlin(glm::vec2{(0 + x) / 160.0, (1 + z) / 160.0})) + 1) / 2)*(32) - 16,  1 + z});
+			terrain.vertices.push_back({ 0 + x, (((glm::perlin(glm::vec2{(0 + x) / 160.0, (0 + z) / 160.0})) + 1) / 2)*(32) - 16,  0 + z});
+
+			terrain.vertices.push_back({ 1 + x, (((glm::perlin(glm::vec2{(1 + x) / 160.0, (1 + z) / 160.0})) + 1) / 2)*(32) - 16,  1 + z});
+			terrain.vertices.push_back({ 0 + x, (((glm::perlin(glm::vec2{(0 + x) / 160.0, (0 + z) / 160.0})) + 1) / 2)*(32) - 16,  0 + z});
+			terrain.vertices.push_back({ 1 + x, (((glm::perlin(glm::vec2{(1 + x) / 160.0, (0 + z) / 160.0})) + 1) / 2)*(32) - 16,  0 + z});
+		}
+	}
+
+	terrain.vertices.push_back({ 1, 0,  1 });
+	terrain.vertices.push_back({ 0, 0,  1 });
+	terrain.vertices.push_back({ 0, 0,  0 });
+
+	terrain.vertices.push_back({ 1, 0,  1 });
+	terrain.vertices.push_back({ 0, 0,  0 });
+	terrain.vertices.push_back({ 1, 0,  0 });
+	
+	dloggln((((glm::perlin(glm::vec2{(0) / 160.0, (0) / 160.0})) + 1) / 2)*(32));
+	dloggln((((glm::perlin(glm::vec2{(0) / 160.0, (1) / 160.0})) + 1) / 2)*(32));
+	dloggln((((glm::perlin(glm::vec2{(0) / 160.0, (0) / 160.0})) + 1) / 2)*(32));
+	dloggln((((glm::perlin(glm::vec2{(1) / 160.0, (1) / 160.0})) + 1) / 2)*(32));
+	dloggln((((glm::perlin(glm::vec2{(0) / 160.0, (0) / 160.0})) + 1) / 2)*(32));
+	// float value = ;
+	// value = ((glm::perlin(glm::vec2{(0) / 160.0, (0) / 160.0})) + 1);
+	// value *= 128 + 128;
+
+	terrain.vertex_buffer = allocator.init_vertex_buffer(terrain.vertices.data(), terrain.vertices.size() * sizeof(terrain.vertices[0]));
+	dloggln(terrain.vertices.size() * sizeof(terrain.vertices[0]));
+	
+	// terrain.vertex_buffer
 
 	lucy::Camera camera = {};
 	camera.width = window.size.x;
 	camera.height = window.size.y;
-
+	
 	double dt = 0;
 	uint32_t frame_number = 0;
 	while (!lucy::Events::IsQuittable()) {
@@ -353,101 +315,43 @@ int main(int count, char** args) {
 				swapchain.acquire_next_image(&image_index, current_frame.present_semaphore._semaphore, VK_NULL_HANDLE);
 				current_frame.image_index = image_index;
 
-				draw.extent = { draw.image._extent.width, draw.image._extent.height };				
-				
+				// draw.extent = *(const VkExtent2D*)&draw.image._extent;
+
 				mvp_matrix mvp = {
 					.projection = camera.projection,
 					.view = camera.view,
-					.model = glm::rotate(glm::mat4(1.0f), glm::radians(frame_number * 0.4f), glm::vec3(0, 1, 0)),
+					.model = glm::mat4(1.0f),	//glm::rotate(glm::mat4(1.0f), glm::radians(frame_number * 0.4f), glm::vec3(0, 1, 0)),
 					.color = { 0, 1, 0, 1},
 				};
 
-				draw.uniform_buffer.upload(mvp);
+				uniform_buffer.upload(mvp);
 
 				cmd.reset();
 
 				cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 				
-				cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-				{
-					VkClearColorValue clear_color_value;
-					float flash = abs(sin(frame_number / 120.f));
-					clear_color_value = { { 0.0f, 0.0f, flash, 1.0f } };
-
-					VkImageSubresourceRange clear_range = lvk::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
-
-					// vkCmdClearColorImage(cmd._command_buffer, draw.image._image, VK_IMAGE_LAYOUT_GENERAL, &clear_color_value, 1, &clear_range);
-					cmd.bind_pipeline(&compute_pipeline);
-
-					// vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, compute_pipeline_layout._pipeline_layout, 0, 1, &draw.compute_descriptor._descriptor_set, 0, VK_NULL_HANDLE);
-					cmd.bind_descriptor_set(&compute_pipeline, { draw.compute_descriptor });
-
-					cmd.dispatch(std::ceil(draw.extent.width / 4.0), std::ceil(draw.extent.height / 4.0), 1);
-				}
-
-				cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-				{
-					VkRenderingAttachmentInfo depth_attachment = {
-						.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-						.imageView = draw.depth_image_view._image_view,
-						.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-						.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-						.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-						.clearValue = {
-							.depthStencil = {
-								.depth = 1.0f
-							}
-						},
-					};
-					VkRenderingAttachmentInfo color_attachment = {
-						.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-
-						.imageView = draw.image_view._image_view,
-						.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-
-						.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-						.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-
-						.clearValue = {
-							.color = { 0, 0, 0, 0 }
-						}
-					};
-
-					VkRenderingInfoKHR render_info = {
-						.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-
-						.renderArea = {
-							.offset = { 0, 0 },
-							.extent = swapchain._extent,
-						},
-						.layerCount = 1,
-						
-						.colorAttachmentCount = 1,
-						.pColorAttachments = &color_attachment,
-
-						.pDepthAttachment = &depth_attachment,
-					};
-
-					vkCmdBeginRendering(cmd._command_buffer, &render_info);
-
-					cmd.bind_vertex_buffers({ monkey_mesh.vertex_buffer._buffer }, { 0 });
-					cmd.bind_pipeline(&graphics_pipeline);
-
-					vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout._pipeline_layout, 0, 1, &draw.graphics_descriptor._descriptor_set, 0, VK_NULL_HANDLE);
-
-					vkCmdDraw(cmd._command_buffer, monkey_mesh._vertices.size(), 1, 0, 0);
-
-					vkCmdEndRendering(cmd._command_buffer);
-				}
-
-				cmd.transition_image(draw.image._image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-
-				cmd.transition_image(swapchain._images[image_index], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+				VkRenderPassBeginInfo render_pass_begin_info = {
+					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+					.renderPass = render_pass._render_pass,
+					.framebuffer = framebuffer_array[image_index]._framebuffer,
+					.renderArea = {
+						.offset = { 0, 0 },
+						.extent = swapchain._extent,
+					},
+					.clearValueCount = std::size(clear_value),
+					.pClearValues = clear_value
+				};
 				
-				cmd.blit_image_to_image(draw.image._image, swapchain._images[image_index], draw.extent, swapchain._extent);
+				cmd.begin_render_pass(&render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 				
-				cmd.transition_image(swapchain._images[image_index], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+				cmd.bind_vertex_buffers({ terrain.vertex_buffer._buffer }, { 0 });
+				cmd.bind_pipeline(&graphics_pipeline);
+
+				vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout._pipeline_layout, 0, 1, &graphics_descriptor._descriptor_set, 0, VK_NULL_HANDLE);
+
+				vkCmdDraw(cmd._command_buffer, terrain.vertices.size(), 1, 0, 0);
+			
+				cmd.end_render_pass();
 
 				cmd.end();
 			}
@@ -455,17 +359,24 @@ int main(int count, char** args) {
 			if (frame_number > 0) {
 				auto& frame = frame_array[(frame_number - 1) % FRAMES_IN_FLIGHT];
 
-				if (device.submit2({
-					lvk::info::submit2({
-						lvk::info::command_buffer_submit(&frame.command_buffer)
-					}, {
-						lvk::info::semaphore_submit(VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, &frame.render_semaphore)
-					}, {
-						lvk::info::semaphore_submit(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, &frame.present_semaphore)
-					})
-				}, &frame.render_fence) != VK_SUCCESS) {
-					throw std::runtime_error("Submit2 failed!");
-				}
+				VkPipelineStageFlags wait_dest = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+				VkSubmitInfo submit_info = {
+					.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+					
+					.waitSemaphoreCount = 1,
+					.pWaitSemaphores = &frame.present_semaphore._semaphore,
+					
+					.pWaitDstStageMask = &wait_dest,
+					
+					.commandBufferCount = 1,
+					.pCommandBuffers = &frame.command_buffer._command_buffer,
+					
+					.signalSemaphoreCount = 1,
+					.pSignalSemaphores = &frame.render_semaphore._semaphore,
+				};
+
+				device.submit(&submit_info, 1, &frame.render_fence);
 
 				frame.render_fence.wait();
 				frame.render_fence.reset();
