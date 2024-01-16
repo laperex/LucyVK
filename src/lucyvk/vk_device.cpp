@@ -118,8 +118,7 @@ VkResult lvk_device::present(const VkPresentInfoKHR* present_info) const {
 }
 
 
-lvk_device::~lvk_device()
-{
+void lvk_device::destroy() {
 	deletion_queue.flush();
 
 	vkDestroyDevice(_device, VK_NULL_HANDLE);

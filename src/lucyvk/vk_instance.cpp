@@ -157,7 +157,7 @@ lvk_instance lvk_init_instance(const lvk::config::instance* config, SDL_Window* 
 	return instance;
 }
 
-lvk_instance::~lvk_instance()
+void lvk_instance::destroy()
 {
 	if (_debug_messenger != VK_NULL_HANDLE) {
         DestroyDebugUtilsMessengerEXT(_instance, _debug_messenger, VK_NULL_HANDLE);

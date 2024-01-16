@@ -84,7 +84,7 @@ lvk_pipeline lvk_pipeline_layout::init_graphics_pipeline(const lvk::config::grap
 	VkGraphicsPipelineCreateInfo pipeline_info = {
 		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 
-		.pNext = (config->dynamic_rendering.sType == VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO) ? &config->dynamic_rendering: VK_NULL_HANDLE,
+		.pNext = (config->rendering_info.sType == VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO) ? &config->rendering_info: VK_NULL_HANDLE,
 
 		.stageCount = static_cast<uint32_t>(config->shader_stage_array.size()),
 		.pStages = config->shader_stage_array.data(),

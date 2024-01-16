@@ -18,9 +18,9 @@ struct lvk_instance {
 
 	std::vector<const char*> layers = {};
 	
-	~lvk_instance();
-
 	bool is_debug_enable();
 
 	lvk_physical_device init_physical_device(lvk::SelectPhysicalDeviceFunction function = nullptr);
+
+	void destroy();
 };

@@ -22,7 +22,7 @@ struct lvk_device {
 	std::vector<const char*> extensions = {};
 	std::vector<const char*> layers = {};
 	
-	~lvk_device();
+	void destroy();
 
 	const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
