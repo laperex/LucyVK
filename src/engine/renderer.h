@@ -1,7 +1,7 @@
 #pragma once
 
+#include "engine/window.h"
 #include "lucyvk/vk_render_pass.h"
-#include "sdl_window.h"
 #include <lucyvk/lucyvk.h>
 
 #define FRAMES_IN_FLIGHT 2
@@ -11,7 +11,7 @@ namespace lucy {
 		
 	};
 	
-	class vk_renderer {
+	class renderer {
 		struct {
 			lvk_fence render_fence;
 			lvk_semaphore present_semaphore;
@@ -68,9 +68,12 @@ namespace lucy {
 		void init_pipeline();
 
 	public:
-		void initialization(sdl_window* window);
+		void initialization(window* window);
+		
 		void record(uint32_t frame_number);
 		void submit(uint32_t frame_number);
+		
+		void update();
 		
 		void destruction();
 	};

@@ -4,21 +4,27 @@
 #include <chrono>
 
 void lucy::engine::initialize() {
-	window.initialize("lucy", { 50, 50 }, { 1920, 1080 });
-	
-	renderer.initialization(&window);
+	_window.initialize("lucy", { 50, 50 }, { 1920, 1080 });
+
+	_renderer.initialization(&_window);
 }
 
 void lucy::engine::mainloop() {
 	double dt = 0;
-	uint32_t frame_number = 0;
-	while (!lucy::Events::IsQuittable()) {
+	while (!_events.quit()) {
 		const auto& start_time = std::chrono::high_resolution_clock::now();
 
-		lucy::Events::Update();
+		_events.update();
 
-		frame_number += 1;
+		_renderer.update();
+		
+		// if (events.)
+
 		const auto& end_time = std::chrono::high_resolution_clock::now();
 		dt = std::chrono::duration<double, std::ratio<1, 60>>(end_time - start_time).count();
 	}
+}
+
+void lucy::engine::destroy() {
+	
 }

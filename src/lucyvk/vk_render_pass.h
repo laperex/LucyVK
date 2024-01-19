@@ -41,3 +41,9 @@ struct lvk_render_pass {
 		return init_framebuffer(extent, image_views, _iv_N);
 	}
 };
+
+struct lvk_render_pass_config {
+	
+
+	void add(VkAttachmentDescription attachment);
+};

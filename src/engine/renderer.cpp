@@ -1,7 +1,8 @@
-#include "vk_renderer.h"
 #include "lucyvk/vk_function.h"
 #include "lucyvk/vk_info.h"
 #include "util/logger.h"
+
+#include "engine/renderer.h"
 
 struct mvp_matrix {
 	glm::mat4 projection;
@@ -10,7 +11,7 @@ struct mvp_matrix {
 	glm::vec4 color;
 };
 
-void lucy::vk_renderer::init_frame_data() {
+void lucy::renderer::init_frame_data() {
 	for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
 		frame_array[i].command_pool = device.init_command_pool();
 		frame_array[i].command_buffer = frame_array[i].command_pool.init_command_buffer();
@@ -22,14 +23,14 @@ void lucy::vk_renderer::init_frame_data() {
 	}
 }
 
-void lucy::vk_renderer::init_swapchain(glm::ivec2 size) {
+void lucy::renderer::init_swapchain(glm::ivec2 size) {
 	swapchain = device.init_swapchain(size.x, size.y, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
 		.format = VK_FORMAT_B8G8R8A8_UNORM,
 		.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 	});
 }
 
-void lucy::vk_renderer::init_descriptor_pool() {
+void lucy::renderer::init_descriptor_pool() {
 	uint32_t descriptor_set_max_size = 10;
 	VkDescriptorPoolSize descriptor_pool_sizes[] = {
 		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10 },
@@ -47,7 +48,7 @@ void lucy::vk_renderer::init_descriptor_pool() {
 	graphics_descriptor.update(1, &uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 }
 
-void lucy::vk_renderer::init_render_pass() {
+void lucy::renderer::init_render_pass() {
 	depth_image = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
 	depth_image_view = depth_image.init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
 
@@ -60,7 +61,7 @@ void lucy::vk_renderer::init_render_pass() {
 	}
 }
 
-void lucy::vk_renderer::init_pipeline() {
+void lucy::renderer::init_pipeline() {
 	lvk_shader_module vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "./shaders/triangle.vert.spv");
 	lvk_shader_module fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "./shaders/triangle.frag.spv");
 	
@@ -106,11 +107,11 @@ void lucy::vk_renderer::init_pipeline() {
 		.vertex_input_state = {
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
 
-			.vertexBindingDescriptionCount = std::size(bindings),
-			.pVertexBindingDescriptions = bindings,
+			// .vertexBindingDescriptionCount = std::size(bindings),
+			// .pVertexBindingDescriptions = bindings,
 
-			.vertexAttributeDescriptionCount = std::size(attributes),
-			.pVertexAttributeDescriptions = attributes,
+			// .vertexAttributeDescriptionCount = std::size(attributes),
+			// .pVertexAttributeDescriptions = attributes,
 		},
 
 		.input_assembly_state = {
@@ -160,7 +161,7 @@ void lucy::vk_renderer::init_pipeline() {
 	graphics_pipeline = graphics_pipeline_layout.init_graphics_pipeline(&config, &render_pass);
 }
 
-void lucy::vk_renderer::initialization(lucy::sdl_window* window) {
+void lucy::renderer::initialization(lucy::window* window) {
 	lvk::config::instance instance_config = {
 		.name = "Lucy Framework v7",
 		.enable_validation_layers = true
@@ -180,17 +181,13 @@ void lucy::vk_renderer::initialization(lucy::sdl_window* window) {
 
 	init_render_pass();
 	init_pipeline();
-	
 }
 
-void lucy::vk_renderer::record(uint32_t frame_number) {
-	auto& current_frame = frame_array[frame_number % FRAMES_IN_FLIGHT];
+void lucy::renderer::record(uint32_t frame_number) {
+	auto& frame = frame_array[frame_number % FRAMES_IN_FLIGHT];
+	auto& cmd = frame.command_buffer;
 
-	auto& cmd = current_frame.command_buffer;
-
-	uint32_t image_index;
-	swapchain.acquire_next_image(&image_index, current_frame.present_semaphore._semaphore, VK_NULL_HANDLE);
-	current_frame.image_index = image_index;
+	swapchain.acquire_next_image(&frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE);
 
 	// draw.extent = *(const VkExtent2D*)&draw.image._extent;
 
@@ -206,15 +203,17 @@ void lucy::vk_renderer::record(uint32_t frame_number) {
 	cmd.reset();
 
 	cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-	
+
 	VkRenderPassBeginInfo render_pass_begin_info = {
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 		.renderPass = render_pass._render_pass,
-		.framebuffer = framebuffer_array[image_index]._framebuffer,
+		.framebuffer = framebuffer_array[frame.image_index]._framebuffer,
+
 		.renderArea = {
 			.offset = { 0, 0 },
 			.extent = swapchain._extent,
 		},
+
 		.clearValueCount = static_cast<uint32_t>(std::size(clear_value)),
 		.pClearValues = clear_value
 	};
@@ -233,7 +232,7 @@ void lucy::vk_renderer::record(uint32_t frame_number) {
 	cmd.end();
 }
 
-void lucy::vk_renderer::submit(uint32_t frame_number) {
+void lucy::renderer::submit(uint32_t frame_number) {
 	auto& frame = frame_array[frame_number % FRAMES_IN_FLIGHT];
 
 	VkPipelineStageFlags wait_dest = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -273,7 +272,16 @@ void lucy::vk_renderer::submit(uint32_t frame_number) {
 	device.present(&presentInfo);
 }
 
-void lucy::vk_renderer::destruction() {
+void lucy::renderer::update() {
+	static uint32_t frame_number = 0;
+	record(frame_number);
+
+	if (frame_number++ > 0) {
+		submit(frame_number - 1);
+	}
+}
+
+void lucy::renderer::destruction() {
 	instance.destroy();
 
 	device.wait_idle();
