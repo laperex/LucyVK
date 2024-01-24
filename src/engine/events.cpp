@@ -22,28 +22,51 @@ void lucy::events::update() {
 			function(&event);
 		}
 		
-		if (event.type == SDL_QUIT) {
-			is_quit = true;
-		}
-		
-		if (event.type == SDL_KEYUP) {
-			pressed_keys.insert(event.key.keysym.scancode);
+		switch (event.type) {
+			case SDL_QUIT:
+				is_quit = true;
+				break;
 			
-			if (key_chord.size() == 0 || key_chord.back() != event.key.keysym.scancode) {
-				key_chord.push_back(event.key.keysym.scancode);
-			}
-		}
-
-		if (event.type == SDL_KEYDOWN) {
-			if (pressed_keys.count(event.key.keysym.scancode)) {
-				if (!toggled_keys.contains(event.key.keysym.scancode)) {
-						toggled_keys.insert(event.key.keysym.scancode);
-				} else {
-					toggled_keys.erase(event.key.keysym.scancode);
+			case SDL_MOUSEMOTION:
+				mouse_position.x = event.motion.x;
+				mouse_position.y = event.motion.y;
+				
+				mouse_offset_relative.x = event.motion.xrel;
+				mouse_offset_relative.y = event.motion.yrel;
+				
+				mouse_position_relative.x += event.motion.xrel;
+				mouse_position_relative.y += event.motion.yrel;
+				break;
+			
+			case SDL_MOUSEBUTTONDOWN:
+				mouse_pressed.insert(event.button.button);
+				break;
+			case SDL_MOUSEBUTTONUP:
+				mouse_pressed.erase(event.button.button);
+				break;
+			case SDL_MOUSEWHEEL:
+				mouse_wheel_scroll = event.wheel.y;
+				break;
+			
+			case SDL_KEYUP:
+				keyboard_pressed.insert(event.key.keysym.scancode);
+				
+				if (key_chord.size() == 0 || key_chord.back() != event.key.keysym.scancode) {
+					key_chord.push_back(event.key.keysym.scancode);
 				}
-			}
-			key_chord.clear();
-			pressed_keys.erase(event.key.keysym.scancode);
+				break;
+
+			case SDL_KEYDOWN:
+				if (keyboard_pressed.count(event.key.keysym.scancode)) {
+					if (!keyboard_toggled.contains(event.key.keysym.scancode)) {
+							keyboard_toggled.insert(event.key.keysym.scancode);
+					} else {
+						keyboard_toggled.erase(event.key.keysym.scancode);
+					}
+				}
+				key_chord.clear();
+				keyboard_pressed.erase(event.key.keysym.scancode);
+				break;
 		}
 	}
 }
@@ -57,16 +80,16 @@ const bool& lucy::events::resized() {
 }
 
 bool lucy::events::key_pressed(SDL_Scancode scancode) {
-	return pressed_keys.contains(scancode);
+	return keyboard_pressed.contains(scancode);
 }
 
 bool lucy::events::key_toggled(SDL_Scancode scancode) {
-	return toggled_keys.contains(scancode);
+	return keyboard_toggled.contains(scancode);
 }
 
 bool lucy::events::key_toggled(const std::vector<SDL_Scancode> scancode) {
 	for (auto& key: scancode) {
-		if (!toggled_keys.contains(key)) {
+		if (!keyboard_toggled.contains(key)) {
 			return false;
 		}
 	}
@@ -76,7 +99,7 @@ bool lucy::events::key_toggled(const std::vector<SDL_Scancode> scancode) {
 
 bool lucy::events::key_pressed(const std::vector<SDL_Scancode> scancode) {
 	for (auto& key: scancode) {
-		if (!toggled_keys.contains(key)) {
+		if (!keyboard_toggled.contains(key)) {
 			return false;
 		}
 	}

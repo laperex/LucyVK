@@ -4,18 +4,31 @@
 #include <functional>
 #include <set>
 #include <vector>
+#include <math/math.hpp>
 
 namespace lucy {
 	class events {
-		bool is_quit;
-		bool is_init;
-		bool is_resized;
-		bool is_key_pressed;
-		bool is_key_toggled;
+		bool is_quit = false;
+		bool is_init = false;
+		bool is_resized = false;
+		bool is_key_pressed = false;
+		bool is_key_toggled = false;
 		
-		std::set<SDL_Scancode> pressed_keys;
-		std::set<SDL_Scancode> toggled_keys;
-		std::vector<SDL_Scancode> key_chord;
+
+		float mouse_wheel_scroll = 0;
+		
+		glm::ivec2 mouse_position = {};
+		glm::ivec2 mouse_position_relative = {};
+		glm::ivec2 mouse_offset_relative = {};
+
+		std::set<uint32_t> mouse_pressed = {};
+		std::set<uint32_t> mouse_toggled = {};
+
+
+		std::vector<SDL_Scancode> key_chord = {};
+
+		std::set<SDL_Scancode> keyboard_pressed = {};
+		std::set<SDL_Scancode> keyboard_toggled = {};
 
 		std::vector<std::function<void(const SDL_Event*)>> event_function_array = {};
 

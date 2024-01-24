@@ -1,5 +1,7 @@
-#include "lucyvk/vk_function.h"
-#include "lucyvk/vk_info.h"
+#include "lvk/functions.h"
+#include "lvk/create_info.h"
+#include "lvk/shaders.h"
+
 #include "util/logger.h"
 
 #include "engine/renderer.h"
@@ -39,13 +41,17 @@ void lucy::renderer::init_descriptor_pool() {
 
 	lvk_descriptor_pool descriptor_pool = device.init_descriptor_pool(descriptor_set_max_size, descriptor_pool_sizes);
 
-	graphics_descriptor_set_layout = device.init_descriptor_set_layout({
+	// seperate for each shader type
+	descriptor_set_layout = device.init_descriptor_set_layout({
+		lvk::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1),
 		lvk::descriptor_set_layout_binding(1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
 	});
 
-	graphics_descriptor = descriptor_pool.init_descriptor_set(&graphics_descriptor_set_layout);
+	descriptor = descriptor_pool.init_descriptor_set(&descriptor_set_layout);
 
-	graphics_descriptor.update(1, &uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	// binding for uniform buffer
+	descriptor.update(1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	// compute_descriptor.update(0, &compute_image_view, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 }
 
 void lucy::renderer::init_render_pass() {
@@ -54,7 +60,6 @@ void lucy::renderer::init_render_pass() {
 
 	render_pass = device.init_default_render_pass(swapchain._surface_format.format);
 	framebuffer_array = new lvk_framebuffer[swapchain._image_count];
-	
 
 	for (int i = 0; i < swapchain._image_count; i++) {
 		framebuffer_array[i] = render_pass.init_framebuffer(swapchain._extent, { swapchain._image_views[i], depth_image_view._image_view });
@@ -62,17 +67,19 @@ void lucy::renderer::init_render_pass() {
 }
 
 void lucy::renderer::init_pipeline() {
-	lvk_shader_module vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "./shaders/triangle.vert.spv");
-	lvk_shader_module fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "./shaders/triangle.frag.spv");
+	lvk_shader_module vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "./shaders/colored_triangle.vert.spv");
+	lvk_shader_module fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "./shaders/colored_triangle.frag.spv");
 	
-	VkViewport viewport[] = {{
-		.x = 0.0f,
-		.y = 0.0f,
-		.width = static_cast<float>(swapchain._extent.width),
-		.height = static_cast<float>(swapchain._extent.height),
-		.minDepth = 0.0f,
-		.maxDepth = 1.0f
-	}};
+	VkViewport viewport[] = {
+		{
+			.x = 0.0f,
+			.y = 0.0f,
+			.width = static_cast<float>(swapchain._extent.width),
+			.height = static_cast<float>(swapchain._extent.height),
+			.minDepth = 0.0f,
+			.maxDepth = 1.0f
+		}
+	};
 	
 	VkRect2D scissor[] = {
 		{
@@ -155,10 +162,16 @@ void lucy::renderer::init_pipeline() {
 	};
 
 	graphics_pipeline_layout = device.init_pipeline_layout({
-		graphics_descriptor_set_layout._descriptor_set_layout
+		descriptor_set_layout._descriptor_set_layout
 	});
-	
 	graphics_pipeline = graphics_pipeline_layout.init_graphics_pipeline(&config, &render_pass);
+	
+	lvk_shader_module compute_shader = device.init_shader_module(VK_SHADER_STAGE_COMPUTE_BIT, "./shaders/gradient.comp.spv");
+	
+	compute_pipeline_layout = device.init_pipeline_layout({
+		descriptor_set_layout._descriptor_set_layout
+	});
+	compute_pipeline = compute_pipeline_layout.init_compute_pipeline(lvk::info::shader_stage(&compute_shader));
 }
 
 void lucy::renderer::initialization(lucy::window* window) {
@@ -172,12 +185,17 @@ void lucy::renderer::initialization(lucy::window* window) {
 	device = physical_device.init_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME });
 	
 	allocator = device.init_allocator();
-	uniform_buffer = allocator.init_uniform_buffer<mvp_matrix>();
+	
+	mvp_uniform_buffer = allocator.init_uniform_buffer<mvp_matrix>();
 
 	init_frame_data();
-	init_descriptor_pool();
-
+	
 	init_swapchain(window->size());
+
+	compute_image = allocator.init_image(VK_FORMAT_R16G16B16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
+	compute_image_view = compute_image.init_image_view(VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+
+	init_descriptor_pool();
 
 	init_render_pass();
 	init_pipeline();
@@ -191,14 +209,18 @@ void lucy::renderer::record(uint32_t frame_number) {
 
 	// draw.extent = *(const VkExtent2D*)&draw.image._extent;
 
+	glm::vec3 camPos = { 0.f,0.f, -10 };
+
 	mvp_matrix mvp = {
-		// .projection = camera.projection,
-		// .view = camera.view,
-		.model = glm::mat4(1.0f),	//glm::rotate(glm::mat4(1.0f), glm::radians(frame_number * 0.4f), glm::vec3(0, 1, 0)),
+		.projection = glm::perspective(glm::radians(70.f), float(swapchain._extent.width) / float(swapchain._extent.height), 0.1f, 200.0f),
+		.view = glm::translate(glm::mat4(1.f), camPos),
+		.model = glm::rotate(glm::mat4(1.0f), glm::radians(frame_number * 0.4f), glm::vec3(0, 1, 0)),
 		.color = { 0, 1, 0, 1},
 	};
+	
+	mvp.projection[1][1] *= -1;
 
-	uniform_buffer.upload(mvp);
+	mvp_uniform_buffer.upload(mvp);
 
 	cmd.reset();
 
@@ -223,11 +245,14 @@ void lucy::renderer::record(uint32_t frame_number) {
 	// cmd.bind_vertex_buffers({ terrain.vertex_buffer._buffer }, { 0 });
 	cmd.bind_pipeline(&graphics_pipeline);
 
-	vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout._pipeline_layout, 0, 1, &graphics_descriptor._descriptor_set, 0, VK_NULL_HANDLE);
+	vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout._pipeline_layout, 0, 1, &descriptor._descriptor_set, 0, VK_NULL_HANDLE);
 
-	vkCmdDraw(cmd._command_buffer, 3, 1, 0, 0);
+	vkCmdDraw(cmd._command_buffer, 6, 1, 0, 0);
 
 	cmd.end_render_pass();
+// 	projection = glm::perspective(glm::radians(fov), float(width) / float(height), c_near, c_far);
+// }
+
 
 	cmd.end();
 }
@@ -288,8 +313,9 @@ void lucy::renderer::update() {
 	// 	exit(0);
 }
 
-void lucy::renderer::destruction() {
-	instance.destroy();
-
+void lucy::renderer::destroy() {
 	device.wait_idle();
+
+	device.destroy();
+	instance.destroy();
 }

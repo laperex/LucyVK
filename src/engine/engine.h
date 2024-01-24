@@ -5,14 +5,13 @@
 #include "engine/window.h"
 
 namespace lucy {
-	class engine {
+	struct engine {
 		lucy::window _window;
 		lucy::renderer _renderer; 
 		lucy::events _events;
-	
-	public:
-		void initialize();
-		void mainloop();
+
+		void initialize(std::function<void()>);
+		void mainloop(std::function<void(double)>);
 
 		void destroy();
 	};

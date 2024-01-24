@@ -1,16 +1,19 @@
 #pragma once
 
 #include "engine/window.h"
-#include "lucyvk/vk_render_pass.h"
-#include <lucyvk/lucyvk.h>
+
+#include "lvk/command.h"
+#include "lvk/logical_device.h"
+#include "lvk/instance.h"
+#include "lvk/memory.h"
+#include "lvk/synchronization.h"
+#include "lvk/types.h"
+#include "lvk/render_pass.h"
+#include "lvk/swapchain.h"
 
 #define FRAMES_IN_FLIGHT 2
 
 namespace lucy {
-	struct pipeline_config {
-		
-	};
-	
 	class renderer {
 		struct {
 			lvk_fence render_fence;
@@ -35,8 +38,13 @@ namespace lucy {
 		
 		lvk_pipeline graphics_pipeline;
 		lvk_pipeline_layout graphics_pipeline_layout;
-		lvk_descriptor_set graphics_descriptor;
-		lvk_descriptor_set_layout graphics_descriptor_set_layout;
+		lvk_descriptor_set descriptor;
+		lvk_descriptor_set_layout descriptor_set_layout;
+		
+		lvk_pipeline compute_pipeline;
+		lvk_pipeline_layout compute_pipeline_layout;
+		// lvk_descriptor_set compute_descriptor;
+		// lvk_descriptor_set_layout compute_descriptor_set_layout;
 		
 		lvk_render_pass render_pass;
 		lvk_framebuffer* framebuffer_array;
@@ -44,7 +52,9 @@ namespace lucy {
 		lvk_image depth_image;
 		lvk_image_view depth_image_view;
 		
-		lvk_buffer uniform_buffer;
+		lvk_buffer mvp_uniform_buffer;
+		lvk_image_view compute_image_view;
+		lvk_image compute_image;
 		
 		
 		VkClearValue clear_value[2] = {
@@ -75,6 +85,6 @@ namespace lucy {
 		
 		void update();
 		
-		void destruction();
+		void destroy();
 	};
 }
