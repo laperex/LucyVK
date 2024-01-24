@@ -18,7 +18,9 @@ void lucy::engine::mainloop() {
 
 		_renderer.update();
 		
-		// if (events.)
+		if (_events.key_pressed(SDL_SCANCODE_ESCAPE)) {
+			_events.quit() = true;
+		}
 
 		const auto& end_time = std::chrono::high_resolution_clock::now();
 		dt = std::chrono::duration<double, std::ratio<1, 60>>(end_time - start_time).count();

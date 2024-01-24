@@ -274,11 +274,18 @@ void lucy::renderer::submit(uint32_t frame_number) {
 
 void lucy::renderer::update() {
 	static uint32_t frame_number = 0;
+
 	record(frame_number);
 
-	if (frame_number++ > 0) {
+	if (frame_number > 0) {
+		// dloggln(frame_number);
 		submit(frame_number - 1);
 	}
+	
+	frame_number++;
+	
+	// if (frame_number == 2)
+	// 	exit(0);
 }
 
 void lucy::renderer::destruction() {
