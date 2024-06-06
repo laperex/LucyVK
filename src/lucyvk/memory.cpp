@@ -3,8 +3,8 @@
 
 #include "lucyvk/memory.h"
 #include "lucyvk/instance.h"
-#include "lucyvk/logical_device.h"
-#include "lucyvk/physical_device.h"
+#include "lucyvk/device.h"
+// #include "lucyvk/physical_device.h"
 #include "lucyvk/functions.h"
 #include "lucyvk/create_info.h"
 
@@ -29,7 +29,7 @@ lvk_allocator lvk_device::init_allocator() {
 	
 	VmaAllocatorCreateInfo allocatorInfo = {};
 
-    allocatorInfo.physicalDevice = physical_device->_physical_device;
+    allocatorInfo.physicalDevice = physical_device._physical_device;
     allocatorInfo.device = _device;
     allocatorInfo.instance = instance->_instance;
 

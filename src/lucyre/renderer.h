@@ -3,7 +3,7 @@
 #include "lucylm/math.hpp"
 
 #include "lucyvk/command.h"
-#include "lucyvk/logical_device.h"
+#include "lucyvk/device.h"
 #include "lucyvk/instance.h"
 #include "lucyvk/memory.h"
 #include "lucyvk/synchronization.h"
@@ -28,8 +28,8 @@ namespace lre {
 		lvk_command_pool command_pool;
 
 		lvk_instance instance;
-		lvk_physical_device physical_device;
-		lvk_device device;
+		// lvk_physical_device physical_device;
+		lvk_device_ptr device = {};
 		lvk_allocator allocator;
 
 		lvk_swapchain swapchain;
@@ -41,10 +41,10 @@ namespace lre {
 		lvk_descriptor_set descriptor;
 		lvk_descriptor_set_layout descriptor_set_layout;
 		
-		lvk_pipeline compute_pipeline;
-		lvk_pipeline_layout compute_pipeline_layout;
-		// lvk_descriptor_set compute_descriptor;
-		// lvk_descriptor_set_layout compute_descriptor_set_layout;
+		// lvk_pipeline compute_pipeline;
+		// lvk_pipeline_layout compute_pipeline_layout;
+		// // lvk_descriptor_set compute_descriptor;
+		// // lvk_descriptor_set_layout compute_descriptor_set_layout;
 		
 		lvk_render_pass render_pass;
 		lvk_framebuffer* framebuffer_array;
@@ -54,7 +54,7 @@ namespace lre {
 		
 		lvk_buffer mvp_uniform_buffer;
 		lvk_image_view compute_image_view;
-		lvk_image compute_image;
+		// lvk_image compute_image;
 		
 		lvk_immediate_command_buffer immediate_command_buffer;
 		

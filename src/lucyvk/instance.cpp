@@ -59,7 +59,13 @@ static bool CheckValidationLayerSupport() {
 // |--------------------------------------------------
 
 
-lvk_instance lvk_init_instance(const lvk::config::instance* config, SDL_Window* sdl_window) {
+lvk_instance::~lvk_instance()
+{
+	static int i = 0;
+	dloggln("-- Instance Destructor\n", i++);
+}
+
+lvk_instance lvk_instance::init(const lvk::config::instance* config, SDL_Window* sdl_window) {
 	lvk_instance instance = {};
 	
 	VkApplicationInfo appInfo = {

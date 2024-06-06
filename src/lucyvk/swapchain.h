@@ -24,6 +24,6 @@ struct lvk_swapchain {
 	VkResult acquire_next_image(uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT);
 	
 	const lvk_device* device;
-	const lvk_physical_device* physical_device;
+	// const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
 };

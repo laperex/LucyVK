@@ -24,12 +24,30 @@ struct lvk_device {
 	std::vector<const char*> extensions = {};
 	std::vector<const char*> layers = {};
 	
+	struct {
+		VkPhysicalDevice _physical_device;
+
+		VkPhysicalDeviceFeatures _features;
+		VkPhysicalDeviceProperties _properties;
+
+		lvk::queue_family_indices _queue_family_indices;
+		lvk::swapchain_support_details _swapchain_support_details;
+
+		const VkFormat find_supported_format(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
+		const uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags property_flags) const;
+	} physical_device;
+	
 	void destroy();
 
-	const lvk_physical_device* physical_device;
+	// const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
 	
 	lvk::deletion_queue deletion_queue;
+	
+	
+	~lvk_device();
+
+
 
 	lvk_swapchain init_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format);
 	

@@ -1,6 +1,5 @@
 #include "lucyvk/swapchain.h"
-#include "lucyvk/logical_device.h"
-#include "lucyvk/physical_device.h"
+#include "lucyvk/device.h"
 #include "lucyvk/instance.h"
 #include "lucyio/logger.h"
 
@@ -12,7 +11,8 @@
 
 
 lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format) {
-	const auto& capabilities = physical_device->_swapchain_support_details.capabilities;
+	const auto& capabilities = physical_device._swapchain_support_details.capabilities;
+	// physical_device._swapchain_support_details.capabilities;
 
 	lvk_swapchain swapchain = {
 		._swapchain = VK_NULL_HANDLE,
@@ -21,7 +21,7 @@ lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height, VkImag
 		._present_mode = VK_PRESENT_MODE_FIFO_KHR,
 		._image_usage = image_usage_flags,
 		.device = this,
-		.physical_device = physical_device,
+		// .physical_device = physical_device,
 		.instance = instance
 	};
 
@@ -33,7 +33,7 @@ lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height, VkImag
 	// * VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR
 	// * VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR
 
-	for (const auto& availablePresentMode: physical_device->_swapchain_support_details.present_modes) {
+	for (const auto& availablePresentMode: physical_device._swapchain_support_details.present_modes) {
 		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
 			swapchain._present_mode = availablePresentMode;
 			break;
@@ -78,8 +78,8 @@ bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
 	this->_extent.width = width;
 	this->_extent.height = height;
 
-	const auto& present_modes = physical_device->_swapchain_support_details.present_modes;
-	const auto& capabilities = physical_device->_swapchain_support_details.capabilities;
+	const auto& present_modes = device->physical_device._swapchain_support_details.present_modes;
+	const auto& capabilities = device->physical_device._swapchain_support_details.capabilities;
 
 	VkSwapchainCreateInfoKHR createInfo = {};
 	{
@@ -104,12 +104,12 @@ bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
 
 		// TODO: better approach
 		uint32_t queueFamilyIndices[] = {
-			physical_device->_queue_family_indices.graphics.value(),
-			physical_device->_queue_family_indices.present.value()
+			device->physical_device._queue_family_indices.graphics.value(),
+			device->physical_device._queue_family_indices.present.value()
 		};
 
 		// TODO: Sharing Mode is always exclusive in lvk_buffer. Therefore only one queue is possible
-		if (physical_device->_queue_family_indices.present == physical_device->_queue_family_indices.graphics) {
+		if (device->physical_device._queue_family_indices.present == device->physical_device._queue_family_indices.graphics) {
 			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			createInfo.queueFamilyIndexCount = 0;
 			createInfo.pQueueFamilyIndices = nullptr;

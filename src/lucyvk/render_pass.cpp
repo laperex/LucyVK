@@ -1,5 +1,5 @@
 #include "lucyvk/render_pass.h"
-#include "lucyvk/logical_device.h"
+#include "lucyvk/device.h"
 #include "lucyio/logger.h"
 
 
@@ -94,7 +94,7 @@ lvk_render_pass lvk_device::init_render_pass(const VkAttachmentDescription* atta
 	lvk_render_pass render_pass = {
 		VK_NULL_HANDLE,
 		this,
-		physical_device,
+		// physical_device,
 		instance,
 		&deletion_queue
 	};

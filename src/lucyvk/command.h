@@ -16,7 +16,7 @@ struct lvk_command_pool {
 	// ~lvk_command_pool();
 
 	const lvk_instance* instance;
-	const lvk_physical_device* physical_device;
+	// const lvk_physical_device* physical_device;
 	const lvk_device* device;
 	
 	lvk::deletion_queue* deletion_queue;

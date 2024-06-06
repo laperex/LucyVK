@@ -2,8 +2,8 @@
 #include "lucyvk/create_info.h"
 #include "lucyvk/functions.h"
 
-#include "lucyvk/physical_device.h"
-#include "lucyvk/logical_device.h"
+// #include "lucyvk/physical_device.h"
+#include "lucyvk/device.h"
 #include "lucyvk/render_pass.h"
 #include "lucyvk/memory.h"
 
@@ -17,13 +17,13 @@
 
 
 lvk_command_pool lvk_device::init_command_pool() {
-	return init_command_pool(physical_device->_queue_family_indices.graphics.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+	return init_command_pool(physical_device._queue_family_indices.graphics.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 }
 
 lvk_command_pool lvk_device::init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags) {
 	lvk_command_pool command_pool = {
 		.instance = instance,
-		.physical_device = physical_device,
+		// .physical_device = physical_device,
 		.device = this,
 		.deletion_queue = &deletion_queue,
 	};
@@ -319,14 +319,6 @@ void lvk_immediate_command_buffer::transition_image(VkImage image, VkImageLayout
 	vkBeginCommandBuffer(_command_buffer, &begin_info);
 	
 	{
-		// VkImageSubresourceRange range = {
-		// 	.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-		// 	.baseMipLevel = 0,
-		// 	.levelCount = 1,
-		// 	.baseArrayLayer = 0,
-		// 	.layerCount = 1,
-		// };
-
 		VkImageMemoryBarrier transfer_image_barrier = {
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 

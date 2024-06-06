@@ -1,5 +1,7 @@
-#include "lucyvk/logical_device.h"
-#include "lucyvk/physical_device.h"
+#include "lucyvk/device.h"
+#include "lucyvk/instance.h"
+#include "lucyvk/functions.h"
+// #include "lucyvk/physical_device->h"
 
 #include "lucyio/logger.h"
 #include <set>
@@ -12,20 +14,44 @@
 // |--------------------------------------------------
 
 
-lvk_device lvk_physical_device::init_device(std::vector<const char*> extensions, std::vector<const char*> layers) {
-	lvk_device device = {
-		.extensions = extensions,
-		.layers = layers,
+lvk_device_ptr lvk_instance::init_device(std::vector<const char*> extensions, std::vector<const char*> layers, lvk::SelectPhysicalDeviceFunction function) {
+	lvk_device_ptr device = std::make_unique<lvk_device>();
+
+	device->extensions = extensions;
+	device->layers = layers;
+	device->instance = this;
+
+
+	{
+		uint32_t availableDeviceCount = 0;
+
+		vkEnumeratePhysicalDevices(this->_instance, &availableDeviceCount, VK_NULL_HANDLE);
+		std::vector<VkPhysicalDevice> availableDevices(availableDeviceCount);
+		vkEnumeratePhysicalDevices(this->_instance, &availableDeviceCount, availableDevices.data());
+
+		device->physical_device._physical_device = (function == nullptr) ?
+			lvk::default_physical_device(availableDevices, this):
+			function(availableDevices, this);
 		
-		.physical_device = this,
-		.instance = this->instance,
-	};
+		if (device->physical_device._physical_device == nullptr) {
+			throw std::runtime_error("failed to find suitable PhysicalDevice!");
+		}
+
+		device->physical_device._queue_family_indices = lvk::query_queue_family_indices(device->physical_device._physical_device, this->_surface);
+		device->physical_device._swapchain_support_details = lvk::query_swapchain_support_details(device->physical_device._physical_device, this->_surface);
+
+		vkGetPhysicalDeviceFeatures(device->physical_device._physical_device, &device->physical_device._features);
+		vkGetPhysicalDeviceProperties(device->physical_device._physical_device, &device->physical_device._properties);
+		
+		dloggln(device->physical_device._physical_device, " Physical Device - ", device->physical_device._properties.deviceName);
+	}
+	
 	
 	std::set<uint32_t> unique_queue_indices = {
-		_queue_family_indices.graphics.value(),
-		_queue_family_indices.present.value(),
-		_queue_family_indices.compute.value(),
-		_queue_family_indices.transfer.value(),
+		device->physical_device._queue_family_indices.graphics.value(),
+		device->physical_device._queue_family_indices.present.value(),
+		device->physical_device._queue_family_indices.compute.value(),
+		device->physical_device._queue_family_indices.transfer.value(),
 	};
 
 	VkDeviceQueueCreateInfo* queue_create_info_array = new VkDeviceQueueCreateInfo[unique_queue_indices.size()];
@@ -60,38 +86,38 @@ lvk_device lvk_physical_device::init_device(std::vector<const char*> extensions,
 		.queueCreateInfoCount = static_cast<uint32_t>(unique_queue_indices.size()),
 		.pQueueCreateInfos = queue_create_info_array,
 		
-		.enabledLayerCount = static_cast<uint32_t>(std::size(device.layers)),
-		.ppEnabledLayerNames = device.layers.data(),
+		.enabledLayerCount = static_cast<uint32_t>(std::size(device->layers)),
+		.ppEnabledLayerNames = device->layers.data(),
 		
-		.enabledExtensionCount = static_cast<uint32_t>(std::size(device.extensions)),
-		.ppEnabledExtensionNames = device.extensions.data(),
+		.enabledExtensionCount = static_cast<uint32_t>(std::size(device->extensions)),
+		.ppEnabledExtensionNames = device->extensions.data(),
 		
-		.pEnabledFeatures = &_features
+		.pEnabledFeatures = &device->physical_device._features
 	};
 
-    if (vkCreateDevice(_physical_device, &create_info, VK_NULL_HANDLE, &device._device) != VK_SUCCESS) {
+    if (vkCreateDevice(device->physical_device._physical_device, &create_info, VK_NULL_HANDLE, &device->_device) != VK_SUCCESS) {
         throw std::runtime_error("logical device creation failed!");
     }
 	dloggln("Logical Device Created");
 
     for (uint32_t index: unique_queue_indices) {
 		VkQueue queue;
-    	vkGetDeviceQueue(device._device, index, 0, &queue);
+    	vkGetDeviceQueue(device->_device, index, 0, &queue);
 
-		if (index == _queue_family_indices.graphics.value()) {
-			device._graphics_queue = queue;
+		if (index == device->physical_device._queue_family_indices.graphics.value()) {
+			device->_graphics_queue = queue;
 			dloggln("Graphics Queue Created");
 		}
-		if (index == _queue_family_indices.present.value()) {
-			device._present_queue = queue;
+		if (index == device->physical_device._queue_family_indices.present.value()) {
+			device->_present_queue = queue;
 			dloggln("Present Queue Created");
 		}
-		if (index == _queue_family_indices.compute.value()) {
-			device._compute_queue = queue;
+		if (index == device->physical_device._queue_family_indices.compute.value()) {
+			device->_compute_queue = queue;
 			dloggln("Compute Queue Created");
 		}
-		if (index == _queue_family_indices.transfer.value()) {
-			device._transfer_queue = queue;
+		if (index == device->physical_device._queue_family_indices.transfer.value()) {
+			device->_transfer_queue = queue;
 			dloggln("Transfer Queue Created");
 		}
 	}
@@ -145,4 +171,8 @@ void lvk_device::destroy() {
 
 	vkDestroyDevice(_device, VK_NULL_HANDLE);
 	dloggln("Logical Device Destroyed");
+}
+
+lvk_device::~lvk_device() {
+	dloggln("-- Device Destructor");
 }

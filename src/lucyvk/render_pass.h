@@ -29,7 +29,7 @@ struct lvk_render_pass {
 	VkRenderPass _render_pass;
 
 	const lvk_device* device;
-	const lvk_physical_device* physical_device;
+	// const lvk_physical_device* physical_device;
 	const lvk_instance* instance;
 	
 	lvk::deletion_queue* deletion_queue;

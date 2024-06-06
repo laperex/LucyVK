@@ -1,5 +1,5 @@
 #include "lucyvk/descriptor.h"
-#include "lucyvk/logical_device.h"
+#include "lucyvk/device.h"
 #include "lucyvk/memory.h"
 
 #include "lucyio/logger.h"

@@ -5,13 +5,15 @@
 #include <SDL_video.h>
 #include <deque>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <vulkan/vulkan_core.h>
 
 struct lvk_instance;
 
-struct lvk_physical_device;
+// struct lvk_physical_device;
 struct lvk_device;
+using lvk_device_ptr = std::unique_ptr<lvk_device>;
 
 struct lvk_queue;
 

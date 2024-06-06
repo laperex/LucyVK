@@ -1,5 +1,5 @@
 #include "lucyvk/pipeline.h"
-#include "lucyvk/logical_device.h"
+#include "lucyvk/device.h"
 #include "lucyvk/render_pass.h"
 #include "lucyio/logger.h"
 #include <stdexcept>

@@ -19,20 +19,20 @@ lre::renderer::renderer()
 }
 
 void lre::renderer::init_frame_data() {
-	command_pool = device.init_command_pool();
+	command_pool = device->init_command_pool();
 
 	for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
 		frame_array[i].command_buffer = command_pool.init_command_buffer();
 
-		frame_array[i].render_fence = device.init_fence();
+		frame_array[i].render_fence = device->init_fence();
 
-		frame_array[i].render_semaphore = device.init_semaphore();
-		frame_array[i].present_semaphore = device.init_semaphore();
+		frame_array[i].render_semaphore = device->init_semaphore();
+		frame_array[i].present_semaphore = device->init_semaphore();
 	}
 }
 
 void lre::renderer::init_swapchain(glm::ivec2 size) {
-	swapchain = device.init_swapchain(size.x, size.y, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
+	swapchain = device->init_swapchain(size.x, size.y, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
 		.format = VK_FORMAT_B8G8R8A8_UNORM,
 		.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 	});
@@ -45,10 +45,10 @@ void lre::renderer::init_descriptor_pool() {
 		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }
 	};
 
-	lvk_descriptor_pool descriptor_pool = device.init_descriptor_pool(descriptor_set_max_size, descriptor_pool_sizes);
+	lvk_descriptor_pool descriptor_pool = device->init_descriptor_pool(descriptor_set_max_size, descriptor_pool_sizes);
 
 	// seperate for each shader type
-	descriptor_set_layout = device.init_descriptor_set_layout({
+	descriptor_set_layout = device->init_descriptor_set_layout({
 		lvk::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1),
 		lvk::descriptor_set_layout_binding(1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
 	});
@@ -57,14 +57,14 @@ void lre::renderer::init_descriptor_pool() {
 
 	// binding for uniform buffer
 	descriptor.update(1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-	descriptor.update(0, &compute_image_view, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+	// descriptor.update(0, &compute_image_view, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 }
 
 void lre::renderer::init_render_pass() {
 	depth_image = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
 	depth_image_view = depth_image.init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
 
-	render_pass = device.init_default_render_pass(swapchain._surface_format.format);
+	render_pass = device->init_default_render_pass(swapchain._surface_format.format);
 	framebuffer_array = new lvk_framebuffer[swapchain._image_count];
 
 	for (int i = 0; i < swapchain._image_count; i++) {
@@ -73,8 +73,8 @@ void lre::renderer::init_render_pass() {
 }
 
 void lre::renderer::init_pipeline() {
-	lvk_shader_module vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.vert.spv");
-	lvk_shader_module fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
+	lvk_shader_module vertex_shader = device->init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.vert.spv");
+	lvk_shader_module fragment_shader = device->init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
 	
 	VkViewport viewport[] = {
 		{
@@ -167,17 +167,17 @@ void lre::renderer::init_pipeline() {
 		// .dynamic_rendering = lvk::info::rendering(VK_FORMAT_D32_SFLOAT)
 	};
 
-	graphics_pipeline_layout = device.init_pipeline_layout({
+	graphics_pipeline_layout = device->init_pipeline_layout({
 		descriptor_set_layout._descriptor_set_layout
 	});
 	graphics_pipeline = graphics_pipeline_layout.init_graphics_pipeline(&config, &render_pass);
 	
-	lvk_shader_module compute_shader = device.init_shader_module(VK_SHADER_STAGE_COMPUTE_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/gradient.comp.spv");
+	lvk_shader_module compute_shader = device->init_shader_module(VK_SHADER_STAGE_COMPUTE_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/gradient.comp.spv");
 	
-	compute_pipeline_layout = device.init_pipeline_layout({
-		descriptor_set_layout._descriptor_set_layout
-	});
-	compute_pipeline = compute_pipeline_layout.init_compute_pipeline(lvk::info::shader_stage(&compute_shader));
+	// compute_pipeline_layout = device->init_pipeline_layout({
+	// 	descriptor_set_layout._descriptor_set_layout
+	// });
+	// compute_pipeline = compute_pipeline_layout.init_compute_pipeline(lvk::info::shader_stage(&compute_shader));
 }
 
 void lre::renderer::initialization(SDL_Window* window) {
@@ -186,11 +186,11 @@ void lre::renderer::initialization(SDL_Window* window) {
 		.enable_validation_layers = true
 	};
 
-	instance = lvk_init_instance(&instance_config, window);
-	physical_device = instance.init_physical_device();
-	device = physical_device.init_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME });
+	instance = lvk_instance::init(&instance_config, window);
+	// physical_device = instance.init_device();
+	device = instance.init_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME });
 	
-	allocator = device.init_allocator();
+	allocator = device->init_allocator();
 	
 	mvp_uniform_buffer = allocator.init_uniform_buffer<mvp_matrix>();
 
@@ -201,13 +201,14 @@ void lre::renderer::initialization(SDL_Window* window) {
 	SDL_GetWindowSize(sdl_window, &size.x, &size.y);
 	init_swapchain(size);
 
-	compute_image = allocator.init_image(VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
-	compute_image_view = compute_image.init_image_view(VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
-	
-	// cmd.transition_image2(compute_image._image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	// compute_image = allocator.init_image(VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
+	// compute_image_view = compute_image.init_image_view(VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+
 	immediate_command_buffer = command_pool.init_immediate_command_buffer();
 	
-	immediate_command_buffer.transition_image(compute_image._image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	// immediate_command_buffer.transition_image(compute_image._image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	
+	// lvk_init_sampler
 
 	init_descriptor_pool();
 
@@ -237,6 +238,8 @@ void lre::renderer::record(uint32_t frame_number) {
 	mvp_uniform_buffer.upload(mvp);
 
 	cmd.reset();
+	
+	// Allo
 
 	cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
@@ -254,12 +257,12 @@ void lre::renderer::record(uint32_t frame_number) {
 		.pClearValues = clear_value
 	};
 
-	cmd.bind_pipeline(&compute_pipeline);
+	// cmd.bind_pipeline(&compute_pipeline);
 	
 	// cmd.transition_image(&compute_image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-	vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, compute_pipeline_layout._pipeline_layout, 0, 1, &descriptor._descriptor_set, 0, VK_NULL_HANDLE);
-	vkCmdDispatch(cmd._command_buffer, std::ceil(swapchain._extent.width / 16.0), std::ceil(swapchain._extent.height / 16.0), 1);
+	// vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, compute_pipeline_layout._pipeline_layout, 0, 1, &descriptor._descriptor_set, 0, VK_NULL_HANDLE);
+	// vkCmdDispatch(cmd._command_buffer, std::ceil(swapchain._extent.width / 16.0), std::ceil(swapchain._extent.height / 16.0), 1);
 
 	cmd.begin_render_pass(&render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 	
@@ -298,7 +301,7 @@ void lre::renderer::submit(uint32_t frame_number) {
 		.pSignalSemaphores = &frame.render_semaphore._semaphore,
 	};
 
-	device.submit(&submit_info, 1, &frame.render_fence);
+	device->submit(&submit_info, 1, &frame.render_fence);
 
 	frame.render_fence.wait();
 	frame.render_fence.reset();
@@ -315,7 +318,7 @@ void lre::renderer::submit(uint32_t frame_number) {
 		.pImageIndices = &frame.image_index,
 	};
 
-	device.present(&presentInfo);
+	device->present(&presentInfo);
 }
 
 void lre::renderer::update() {
@@ -335,8 +338,8 @@ void lre::renderer::update() {
 }
 
 void lre::renderer::destroy() {
-	device.wait_idle();
+	device->wait_idle();
 
-	device.destroy();
+	device->destroy();
 	instance.destroy();
 }

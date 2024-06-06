@@ -17,4 +17,6 @@ namespace lvk {
 	
 	VkDescriptorSetLayoutBinding descriptor_set_layout_binding(uint32_t binding, VkShaderStageFlags shader_stage_flags, VkDescriptorType descriptor_type, uint32_t descriptor_count);
 	VkImageSubresourceRange image_subresource_range(VkImageAspectFlags aspect_mask);
+	
+	
 }

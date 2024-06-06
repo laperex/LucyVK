@@ -1,5 +1,5 @@
 #include "lucyvk/synchronization.h"
-#include "lucyvk/logical_device.h"
+#include "lucyvk/device.h"
 #include "lucyio/logger.h"
 
 

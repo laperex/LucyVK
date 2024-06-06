@@ -1,5 +1,5 @@
 #include "lucyvk/shaders.h"
-#include "lucyvk/logical_device.h"
+#include "lucyvk/device.h"
 #include "lucyvk/create_info.h"-
 #include "lucyio/logger.h"
 #include <cassert>

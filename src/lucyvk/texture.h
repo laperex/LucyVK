@@ -6,5 +6,7 @@
 struct lvk_sampler {
 	VkSampler _sampler;
 	
-	const lvk_device* device;
+	// static lvk_sampler init() {
+		
+	// }
 };
