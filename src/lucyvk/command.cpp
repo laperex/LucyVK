@@ -110,8 +110,10 @@ void lvk_command_buffer::bind_vertex_buffers(const VkBuffer* vertex_buffers, con
 	vkCmdBindVertexBuffers(_command_buffer, first_binding, vertex_buffers_count, vertex_buffers, offset_array);
 }
 
-void lvk_command_buffer::transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) {
-    VkImageAspectFlags aspect_mask = (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+
+void lvk_transition_image(const VkCommandBuffer command_buffer, VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) {
+	VkImageAspectFlags aspect_mask = (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
     VkImageMemoryBarrier2 image_barrier {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
@@ -137,8 +139,38 @@ void lvk_command_buffer::transition_image(VkImage image, VkImageLayout current_l
 		.pImageMemoryBarriers = &image_barrier
 	};
 
-    vkCmdPipelineBarrier2(_command_buffer, &dependency_info);
+    vkCmdPipelineBarrier2(command_buffer, &dependency_info);
 }
+
+// void lvk_command_buffer::transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) {
+//     VkImageAspectFlags aspect_mask = (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+
+//     VkImageMemoryBarrier2 image_barrier {
+// 		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+
+// 		.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+// 		.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+		
+// 		.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+// 		.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT,
+		
+// 		.oldLayout = current_layout,
+// 		.newLayout = new_layout,
+		
+// 		.image = image,
+		
+// 		.subresourceRange = lvk::image_subresource_range(aspect_mask),
+// 	};
+
+//     VkDependencyInfo dependency_info {
+// 		.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+
+// 		.imageMemoryBarrierCount = 1,
+// 		.pImageMemoryBarriers = &image_barrier
+// 	};
+
+//     vkCmdPipelineBarrier2(_command_buffer, &dependency_info);
+// }
 
 // void lvk_command_buffer::transition_image_imme(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) {
 //     // VkImageAspectFlags aspect_mask = (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -168,9 +200,9 @@ void lvk_command_buffer::transition_image(VkImage image, VkImageLayout current_l
 //     // vkCmdPipelineBarrier2(_command_buffer, &dependency_info);
 // }
 
-void lvk_command_buffer::transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout) {
-	return transition_image(image->_image, current_layout, new_layout);
-}
+// void lvk_command_buffer::transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout) {
+// 	return transition_image(image->_image, current_layout, new_layout);
+// }
 
 void lvk_command_buffer::copy_image_to_image(VkImage source, VkImage destination, VkImageLayout source_layout, VkImageLayout destination_layout, VkExtent2D src_size, VkExtent2D dst_size) {
 	VkImageCopy2 copy_region = {

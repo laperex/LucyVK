@@ -16,14 +16,17 @@
 namespace lre {
 	class renderer {
 		struct {
-			lvk_fence render_fence;
-			lvk_semaphore present_semaphore;
-			lvk_semaphore render_semaphore;
+			VkFence render_fence;
+
+			VkSemaphore present_semaphore;
+			VkSemaphore render_semaphore;
 
 			lvk_command_buffer command_buffer;
 
 			uint32_t image_index;
 		} frame_array[FRAMES_IN_FLIGHT];
+		
+		lvk::deletion_queue deletion_queue;
 
 		lvk_command_pool command_pool;
 

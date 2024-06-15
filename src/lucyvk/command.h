@@ -42,8 +42,8 @@ struct lvk_command_buffer {
 	void begin(const VkCommandBufferBeginInfo* beginInfo);
 	void begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info = VK_NULL_HANDLE);
 
-	void transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout);
-	void transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout);
+	// void transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout);
+	// void transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout);
 	
 	void blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size);
 	

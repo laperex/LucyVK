@@ -23,6 +23,9 @@ struct lvk_device {
 
 	std::vector<const char*> extensions = {};
 	std::vector<const char*> layers = {};
+
+	lvk_device() {}
+	lvk_device(lvk_instance* _instance, std::vector<const char*> extensions, std::vector<const char*> layers, lvk::SelectPhysicalDeviceFunction function);
 	
 	struct {
 		VkPhysicalDevice _physical_device;
@@ -61,8 +64,8 @@ struct lvk_device {
 	lvk_render_pass init_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform = false);
 	lvk_render_pass init_default_render_pass(VkFormat format);
 
-	lvk_semaphore init_semaphore();
-	lvk_fence init_fence(VkFenceCreateFlags flags = 0);
+	// lvk_semaphore init_semaphore();
+	// lvk_fence init_fence(VkFenceCreateFlags flags = 0);
 
 	lvk_shader_module init_shader_module(VkShaderStageFlagBits stage, const char* filename);
 	
@@ -105,9 +108,9 @@ struct lvk_device {
 	void wait_idle() const;
 
 	VkResult submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const VkFence fence, uint64_t timeout = LVK_TIMEOUT) const;
-	VkResult submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const lvk_fence* fence, uint64_t timeout = LVK_TIMEOUT) const;
+	// VkResult submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const VkFence fence, uint64_t timeout = LVK_TIMEOUT) const;
 
-	VkResult submit2(const VkSubmitInfo2* submit_info2, const uint32_t submit_info2_count, const lvk_fence* fence) const;
+	VkResult submit2(const VkSubmitInfo2* submit_info2, const uint32_t submit_info2_count, const VkFence fence) const;
 	
 	template <std::size_t _si2_N> [[nodiscard, __gnu__::__always_inline__]]
 	constexpr VkResult submit2(const VkSubmitInfo2 (&submit_info2)[_si2_N], const lvk_fence* fence) noexcept {
@@ -115,4 +118,6 @@ struct lvk_device {
 	}
 
 	VkResult present(const VkPresentInfoKHR* present_info) const;
+
+	VkSemaphore* create_semaphore();
 };

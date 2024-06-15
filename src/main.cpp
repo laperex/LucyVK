@@ -7,10 +7,17 @@
 #include <stb_image.h>
 
 
+template <typename T>
+T& static_store() {
+	static T v = { };
+	return v;
+}
+
+
 int main(int count, char** args) {
 	lucy::events _events;
 	lucy::window _window;
-	lre::renderer _renderer;
+	auto& _renderer = static_store<lre::renderer>();
 	
 	_window.initialize("lucy", { 50, 50 }, { 1920, 1080 });
 

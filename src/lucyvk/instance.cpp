@@ -1,4 +1,5 @@
 #include "lucyvk/instance.h"
+#include "lucyvk/device.h"
 
 #include "lucyio/logger.h"
 
@@ -182,3 +183,4 @@ void lvk_instance::destroy()
 bool lvk_instance::is_debug_enable() {
 	return (_debug_messenger != VK_NULL_HANDLE);
 }
+

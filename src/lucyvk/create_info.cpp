@@ -32,30 +32,30 @@ VkShaderModuleCreateInfo lvk::info::shader_module(const char* filename) {
 
 VkPipelineDepthStencilStateCreateInfo lvk::info::depth_stencil_state(bool depth_test, bool depth_write, VkCompareOp compare_op) {
 	return {
-		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-		VK_NULL_HANDLE,
-		0,
-		depth_test ? VK_TRUE : VK_FALSE,
-		depth_write ? VK_TRUE: VK_FALSE,
-		depth_test ? compare_op: VK_COMPARE_OP_ALWAYS,
-		VK_FALSE,
-		VK_FALSE,
-		{},
-		{},
-		0,
-		1
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.depthTestEnable = depth_test ? VK_TRUE : VK_FALSE,
+		.depthWriteEnable = depth_write ? VK_TRUE: VK_FALSE,
+		.depthCompareOp = depth_test ? compare_op: VK_COMPARE_OP_ALWAYS,
+		.depthBoundsTestEnable = VK_FALSE,
+		.stencilTestEnable = VK_FALSE,
+		.front = {},
+		.back = {},
+		.minDepthBounds = 0,
+		.maxDepthBounds = 1
 	};
 }
 
 VkPipelineShaderStageCreateInfo lvk::info::shader_stage(VkShaderStageFlagBits flag_bits, VkShaderModule shader_module, const VkSpecializationInfo* specialization) {
 	return {
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		VK_NULL_HANDLE,
-		0,
-		flag_bits,
-		shader_module,
-		"main",
-		specialization
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.stage = flag_bits,
+		.module = shader_module,
+		.pName = "main",
+		.pSpecializationInfo = specialization
 	};
 }
 
@@ -77,29 +77,29 @@ VkPipelineVertexInputStateCreateInfo lvk::info::vertex_input_state(const VkVerte
 
 VkPipelineInputAssemblyStateCreateInfo lvk::info::input_assembly_state(const VkPrimitiveTopology topology, bool primitive_restart_enable) {
 	return {
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-		VK_NULL_HANDLE,
-		0,
-		topology,
-		static_cast<VkBool32>(primitive_restart_enable)
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.topology = topology,
+		.primitiveRestartEnable = static_cast<VkBool32>(primitive_restart_enable)
 	};
 }
 
 VkPipelineRasterizationStateCreateInfo lvk::info::rasterization_state_create_info(const VkPolygonMode polygon_mode, const VkCullModeFlags cull_mode, const VkFrontFace front_face, float line_width, const bool depth_clamp_enable, const bool discard_rasterizer, const bool depth_bias_enable, const float depth_bias_constant_factor, float depth_bias_clamp, float depth_bias_slope_factor) {
 	return {
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-		VK_NULL_HANDLE,
-		0,
-		static_cast<VkBool32>(depth_clamp_enable),
-		static_cast<VkBool32>(discard_rasterizer),
-		polygon_mode,
-		cull_mode,
-		front_face,
-		static_cast<VkBool32>(depth_bias_enable),
-		depth_bias_constant_factor,
-		depth_bias_clamp,
-		depth_bias_slope_factor,
-		line_width
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.depthClampEnable = static_cast<VkBool32>(depth_clamp_enable),
+		.rasterizerDiscardEnable = static_cast<VkBool32>(discard_rasterizer),
+		.polygonMode = polygon_mode,
+		.cullMode = cull_mode,
+		.frontFace = front_face,
+		.depthBiasEnable = static_cast<VkBool32>(depth_bias_enable),
+		.depthBiasConstantFactor = depth_bias_constant_factor,
+		.depthBiasClamp = depth_bias_clamp,
+		.depthBiasSlopeFactor = depth_bias_slope_factor,
+		.lineWidth = line_width
 	};
 }
 
@@ -109,15 +109,15 @@ VkPipelineRasterizationStateCreateInfo lvk::info::rasterization_state(const VkPo
 
 VkPipelineMultisampleStateCreateInfo lvk::info::multisample_state_create_info(VkSampleCountFlagBits rasterization_sample, bool sample_shading, float min_sample_shading, const VkSampleMask* sample_mask, bool alpha_to_coverage, bool alpha_to_one) {
 	return {
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-		VK_NULL_HANDLE,
-		0,
-		rasterization_sample,
-		static_cast<VkBool32>(sample_shading),
-		min_sample_shading,
-		sample_mask,
-		static_cast<VkBool32>(alpha_to_coverage),
-		static_cast<VkBool32>(alpha_to_one)
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.rasterizationSamples = rasterization_sample,
+		.sampleShadingEnable = static_cast<VkBool32>(sample_shading),
+		.minSampleShading = min_sample_shading,
+		.pSampleMask = sample_mask,
+		.alphaToCoverageEnable = static_cast<VkBool32>(alpha_to_coverage),
+		.alphaToOneEnable = static_cast<VkBool32>(alpha_to_one)
 	};
 }
 
@@ -179,10 +179,10 @@ VkImageViewCreateInfo lvk::info::image_view(VkImage image, VkFormat format, VkIm
 	return image_view(image, format, view_type, { aspect_flag, 0, 1, 0, 1 }, {});
 }
 
-VkSemaphoreSubmitInfo lvk::info::semaphore_submit(VkPipelineStageFlags2 stage_mask, const lvk_semaphore* semaphore) {
+VkSemaphoreSubmitInfo lvk::info::semaphore_submit(VkPipelineStageFlags2 stage_mask, const VkSemaphore semaphore) {
 	return {
 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-		.semaphore = semaphore->_semaphore,
+		.semaphore = semaphore,
 		.value = 1,
 		.stageMask = stage_mask,
 		.deviceIndex = 0,

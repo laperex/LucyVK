@@ -48,6 +48,8 @@ lvk_descriptor_pool lvk_device::init_descriptor_pool(const uint32_t max_descript
 		._descriptor_pool = VK_NULL_HANDLE,
 		.device = this
 	};
+	
+	// descriptor_pool.device = 
 
 	VkDescriptorPoolCreateInfo pool_info = {
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,

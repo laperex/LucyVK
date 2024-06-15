@@ -9,11 +9,11 @@
 // |--------------------------------------------------
 
 
-struct lvk_semaphore {
-	VkSemaphore _semaphore;
+// struct lvk_semaphore {
+// 	VkSemaphore _semaphore;
 
-	const lvk_device* device;
-};
+// 	const lvk_device* device;
+// };
 
 
 // |--------------------------------------------------
@@ -21,11 +21,16 @@ struct lvk_semaphore {
 // |--------------------------------------------------
 
 
-struct lvk_fence {
-	VkFence _fence;
+// struct lvk_fence {
+// 	VkFence _fence;
 
-	const lvk_device* device;
+// 	const lvk_device* device;
 
-	VkResult wait(uint64_t timeout = LVK_TIMEOUT) const;
-	VkResult reset() const;
-};
+// 	VkResult wait(uint64_t timeout = LVK_TIMEOUT) const;
+// 	VkResult reset() const;
+// };
+
+
+
+void lvk_create_semaphore(VkDevice device, VkSemaphore* semaphore);
+void lvk_create_fence(VkDevice device, VkFence* fence, VkFenceCreateFlags flags = 0);

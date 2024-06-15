@@ -14,6 +14,12 @@ struct lvk_instance;
 // struct lvk_physical_device;
 struct lvk_device;
 using lvk_device_ptr = std::unique_ptr<lvk_device>;
+struct lvk_device_inherit {
+	const lvk_device* device = VK_NULL_HANDLE;
+};
+// using lvk_device_make = std::make_unique;
+
+// typedef lvk_device_make std::make_unique;
 
 struct lvk_queue;
 

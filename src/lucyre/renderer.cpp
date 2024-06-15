@@ -24,10 +24,10 @@ void lre::renderer::init_frame_data() {
 	for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
 		frame_array[i].command_buffer = command_pool.init_command_buffer();
 
-		frame_array[i].render_fence = device->init_fence();
+		lvk_create_fence(device->_device, &frame_array[i].render_fence);
 
-		frame_array[i].render_semaphore = device->init_semaphore();
-		frame_array[i].present_semaphore = device->init_semaphore();
+		lvk_create_semaphore(device->_device, &frame_array[i].render_semaphore);
+		lvk_create_semaphore(device->_device, &frame_array[i].present_semaphore);
 	}
 }
 
@@ -220,7 +220,7 @@ void lre::renderer::record(uint32_t frame_number) {
 	auto& frame = frame_array[frame_number % FRAMES_IN_FLIGHT];
 	auto& cmd = frame.command_buffer;
 
-	swapchain.acquire_next_image(&frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE);
+	swapchain.acquire_next_image(&frame.image_index, frame.present_semaphore, VK_NULL_HANDLE);
 
 	// draw.extent = *(const VkExtent2D*)&draw.image._extent;
 
@@ -290,7 +290,7 @@ void lre::renderer::submit(uint32_t frame_number) {
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		
 		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &frame.present_semaphore._semaphore,
+		.pWaitSemaphores = &frame.present_semaphore,
 		
 		.pWaitDstStageMask = &wait_dest,
 		
@@ -298,19 +298,19 @@ void lre::renderer::submit(uint32_t frame_number) {
 		.pCommandBuffers = &frame.command_buffer._command_buffer,
 		
 		.signalSemaphoreCount = 1,
-		.pSignalSemaphores = &frame.render_semaphore._semaphore,
+		.pSignalSemaphores = &frame.render_semaphore,
 	};
 
-	device->submit(&submit_info, 1, &frame.render_fence);
-
-	frame.render_fence.wait();
-	frame.render_fence.reset();
+	device->submit(&submit_info, 1, frame.render_fence);
+	
+	vkWaitForFences(device->_device, 1, &frame.render_fence, false, LVK_TIMEOUT);
+	vkResetFences(device->_device, 1, &frame.render_fence);
 
 	VkPresentInfoKHR presentInfo = {
 		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		
 		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &frame.render_semaphore._semaphore,
+		.pWaitSemaphores = &frame.render_semaphore,
 		
 		.swapchainCount = 1,
 		.pSwapchains = &swapchain._swapchain,
@@ -339,6 +339,8 @@ void lre::renderer::update() {
 
 void lre::renderer::destroy() {
 	device->wait_idle();
+	
+	// vkDestroySemaphore(device->_device, sema)
 
 	device->destroy();
 	instance.destroy();

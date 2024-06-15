@@ -14,7 +14,7 @@ lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height, VkImag
 	const auto& capabilities = physical_device._swapchain_support_details.capabilities;
 	// physical_device._swapchain_support_details.capabilities;
 
-	lvk_swapchain swapchain = {
+	lvk_swapchain* swapchain = new lvk_swapchain {
 		._swapchain = VK_NULL_HANDLE,
 		._extent = VkExtent2D { width, height },
 		._surface_format = surface_format,
@@ -35,31 +35,33 @@ lvk_swapchain lvk_device::init_swapchain(uint32_t width, uint32_t height, VkImag
 
 	for (const auto& availablePresentMode: physical_device._swapchain_support_details.present_modes) {
 		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-			swapchain._present_mode = availablePresentMode;
+			swapchain->_present_mode = availablePresentMode;
 			break;
 		}
 		if (availablePresentMode == VK_PRESENT_MODE_FIFO_RELAXED_KHR) {
-			swapchain._present_mode = availablePresentMode;
+			swapchain->_present_mode = availablePresentMode;
 			break;
 		}
 	}
 	
-	swapchain.recreate(width, height);
+	swapchain->recreate(width, height);
 	
 	deletion_queue.push([=]{
-		vkDestroySwapchainKHR(_device, swapchain._swapchain, VK_NULL_HANDLE);
+		vkDestroySwapchainKHR(_device, swapchain->_swapchain, VK_NULL_HANDLE);
 		dloggln("Swapchain Destroyed");
 
-		for (int i = 0; i < swapchain._image_count; i++) {
-			vkDestroyImageView(_device, swapchain._image_views[i], VK_NULL_HANDLE);
+		for (int i = 0; i < swapchain->_image_count; i++) {
+			vkDestroyImageView(_device, swapchain->_image_views[i], VK_NULL_HANDLE);
 		}
 		dloggln("ImageViews Destroyed");
 		
-		delete [] swapchain._image_views;
-		delete [] swapchain._images;
+		delete [] swapchain->_image_views;
+		delete [] swapchain->_images;
+		
+		delete swapchain;
 	});
 
-	return swapchain;
+	return *swapchain;
 }
 
 bool lvk_swapchain::recreate(const uint32_t width, const uint32_t height) {
