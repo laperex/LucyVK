@@ -26,7 +26,7 @@ namespace lre {
 			uint32_t image_index;
 		} frame_array[FRAMES_IN_FLIGHT];
 		
-		lvk::deletion_queue deletion_queue;
+		lvk_instance_destructor<VkDevice> deletion_queue;
 
 		lvk_command_pool command_pool;
 

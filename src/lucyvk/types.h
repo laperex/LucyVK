@@ -49,6 +49,20 @@ struct lvk_buffer;
 struct lvk_image;
 struct lvk_image_view;
 
+
+template <typename M>
+struct lvk_instance_destructor {
+	std::deque<std::function<void(const M)>> deletion_queue;
+
+	void flush(const M m) const {
+		for (auto function = deletion_queue.rbegin(); function != deletion_queue.rend(); function++) {
+			(*function)(m);
+		}
+	}
+
+	template <typename T> void push(T);
+};
+
 namespace lvk {
 	// template <std::size_t B, std::size_t A>
 	// struct vertex_input_description {

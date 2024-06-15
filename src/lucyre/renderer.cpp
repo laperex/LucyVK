@@ -25,9 +25,13 @@ void lre::renderer::init_frame_data() {
 		frame_array[i].command_buffer = command_pool.init_command_buffer();
 
 		lvk_create_fence(device->_device, &frame_array[i].render_fence);
+		deletion_queue.push(frame_array[i].render_fence);
 
 		lvk_create_semaphore(device->_device, &frame_array[i].render_semaphore);
+		deletion_queue.push(frame_array[i].render_semaphore);
+
 		lvk_create_semaphore(device->_device, &frame_array[i].present_semaphore);
+		deletion_queue.push(frame_array[i].present_semaphore);
 	}
 }
 
@@ -339,6 +343,8 @@ void lre::renderer::update() {
 
 void lre::renderer::destroy() {
 	device->wait_idle();
+	
+	deletion_queue.flush(device->_device);
 	
 	// vkDestroySemaphore(device->_device, sema)
 

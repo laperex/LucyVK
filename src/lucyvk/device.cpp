@@ -175,35 +175,3 @@ void lvk_device::destroy() {
 lvk_device::~lvk_device() {
 	dloggln("-- Device Destructor");
 }
-
-
-
-
-
-// |--------------------------------------------------
-// ----------------> SEMAPHORE
-// |--------------------------------------------------
-
-
-// VkSemaphore lvk_device::create_semaphore() {
-// 	VkSemaphoreCreateInfo create_info = {
-// 		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-// 		.pNext = VK_NULL_HANDLE,
-// 		.flags = 0,
-// 	};
-
-// 	// VkSemaphore semaphore = VK_NULL_HANDLE;
-
-// 	if (vkCreateSemaphore(_device, &create_info, VK_NULL_HANDLE, &semaphore) != VK_SUCCESS) {
-// 		throw std::runtime_error("semaphore creation failed");
-// 	}
-// 	dloggln("Semaphore Created");
-
-// 	deletion_queue.push([=]{
-// 		vkDestroySemaphore(_device, semaphore, VK_NULL_HANDLE);
-// 		dloggln("Semaphore Destroyed");
-// 	});
-	
-// 	return semaphore;
-// }
-

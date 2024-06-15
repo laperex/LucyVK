@@ -32,5 +32,5 @@
 
 
 
-void lvk_create_semaphore(VkDevice device, VkSemaphore* semaphore);
-void lvk_create_fence(VkDevice device, VkFence* fence, VkFenceCreateFlags flags = 0);
+void lvk_create_semaphore(const VkDevice device, VkSemaphore* semaphore);
+void lvk_create_fence(const VkDevice device, VkFence* fence, VkFenceCreateFlags flags = 0);
