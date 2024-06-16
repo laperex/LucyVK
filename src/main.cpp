@@ -23,7 +23,7 @@ int main(int count, char** args) {
 	// d.c
 	// vk::Device d;
 	// d.waitForFences()
-	vk::ArrayProxy<uint32_t> a = { 0, 1, 2 };
+	// vk::ArrayProxy<uint32_t> a = { 0, 1, 2 };
 	// d.createFence()
 	// VkFenceCreateInfo a;
 	// d.createFenceUnique()

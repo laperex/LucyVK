@@ -26,46 +26,52 @@ struct lvk_command_buffer {
 	// const lvk_command_pool* command_pool;
 	// const lvk_device* device;
 
-	void reset(VkCommandBufferResetFlags flags = 0);
+	void reset(VkCommandBufferResetFlags flags = 0) const;
 
-	void begin(const VkCommandBufferBeginInfo* beginInfo);
-	void begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info = VK_NULL_HANDLE);
+	void begin(const VkCommandBufferBeginInfo* beginInfo) const;
+	void begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info = VK_NULL_HANDLE) const;
 
-	// void transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout);
-	// void transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout);
+	// void transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const;
+	// void transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout) const;
 	
-	void blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size);
+	void blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size) const;
 	
-	void bind_pipeline(const lvk_pipeline* pipeline);
+	void bind_pipeline(const lvk_pipeline* pipeline) const;
 
-	void bind_descriptor_set(const lvk_pipeline* pipeline, const lvk_descriptor_set* descriptor_set, const uint32_t descript_set_count);
+	void bind_descriptor_set(const lvk_pipeline* pipeline, const lvk_descriptor_set* descriptor_set, const uint32_t descript_set_count) const;
 
 	template <std::size_t _ds_N> [[__gnu__::__always_inline__]]
-	constexpr void bind_descriptor_set(const lvk_pipeline* pipeline, const lvk_descriptor_set (&descriptor_set)[_ds_N]) noexcept {
+	constexpr void bind_descriptor_set(const lvk_pipeline* pipeline, const lvk_descriptor_set (&descriptor_set)[_ds_N]) const noexcept {
 		return bind_descriptor_set(pipeline, descriptor_set, _ds_N);
 	}
 	
-	void bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding = 0);
+	void bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding = 0) const;
 	template <std::size_t _b_m> [[__gnu__::__always_inline__]]
-    constexpr void bind_vertex_buffers(const VkBuffer (&vertex_buffers)[_b_m], const VkDeviceSize (&offset_array)[_b_m], const uint32_t first_binding = 0) noexcept {
+    constexpr void bind_vertex_buffers(const VkBuffer (&vertex_buffers)[_b_m], const VkDeviceSize (&offset_array)[_b_m], const uint32_t first_binding = 0) const noexcept {
 		bind_vertex_buffers(vertex_buffers, offset_array, _b_m, first_binding);
 	}
 	
 	template <std::size_t _cv_N> [[__gnu__::__always_inline__]]
-	constexpr void begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue (&clear_values)[_cv_N]) noexcept {
+	constexpr void begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue (&clear_values)[_cv_N]) const noexcept {
 		begin_render_pass(framebuffer, subpass_contents, clear_values, _cv_N);
 	}
-	void begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count);
-	void begin_render_pass(const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents);
+	void begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count) const;
+	void begin_render_pass(const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents) const;
 	
-	void end();
-	void end_render_pass();
+	void end() const;
+	void end_render_pass() const;
 
-	void copy_image_to_image(VkImage source, VkImage destination, VkImageLayout source_layout, VkImageLayout destination_layout, VkExtent2D src_size, VkExtent2D dst_size);
+	void copy_image_to_image(VkImage source, VkImage destination, VkImageLayout source_layout, VkImageLayout destination_layout, VkExtent2D src_size, VkExtent2D dst_size) const;
 	
-	void dispatch(uint32_t group_count_x, uint32_t group_count_y, uint32_t group_count_z);
+	void dispatch(uint32_t group_count_x, uint32_t group_count_y, uint32_t group_count_z) const;
 
-	void transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout);
+	void transition_image2(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const;
+	VkSubmitInfo immediate_transition_image2(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const;
+	
+	void transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const;
+	VkSubmitInfo immediate_transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const;
+
+	VkSubmitInfo immediate(std::function<void()> function) const;
 };
 
 
@@ -74,9 +80,8 @@ struct lvk_command_buffer {
 // |--------------------------------------------------
 
 
-struct lvk_immediate_command_buffer {
-	VkCommandBuffer _command_buffer;
-	VkFence _fence;
-
-	void transition_image(VkImage image, VkImageLayout old_layout, VkImageLayout new_layout) const;
+struct lvk_immediate_command {
+	lvk_command_pool command_pool;
+	lvk_command_buffer command_buffer;
+	lvk_fence fence;
 };

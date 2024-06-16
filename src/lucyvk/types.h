@@ -25,7 +25,7 @@ struct lvk_queue;
 
 struct lvk_command_pool;
 struct lvk_command_buffer;
-struct lvk_immediate_command_buffer;
+struct lvk_immediate_command;
 
 struct lvk_swapchain;
 struct lvk_render_pass;

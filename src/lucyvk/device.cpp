@@ -256,19 +256,19 @@ lvk_fence lvk_device::create_fence(VkFenceCreateFlags flags) {
 	return fence;
 }
 
-void lvk_device::wait_for_fence(const lvk_fence& fence, uint64_t timeout) {
+void lvk_device::wait_for_fence(const lvk_fence& fence, uint64_t timeout) const {
 	wait_for_fences(&fence, 1, timeout);
 }
 
-void lvk_device::wait_for_fences(const lvk_fence* fence, uint32_t fence_count, uint64_t timeout) {
+void lvk_device::wait_for_fences(const lvk_fence* fence, uint32_t fence_count, uint64_t timeout) const {
 	vkWaitForFences(this->_device, fence_count, &fence->_fence, true, timeout);
 }
 
-void lvk_device::reset_fence(const lvk_fence& fence) {
+void lvk_device::reset_fence(const lvk_fence& fence) const {
 	reset_fences(&fence, 1);
 }
 
-void lvk_device::reset_fences(const lvk_fence* fence, uint32_t fence_count) {
+void lvk_device::reset_fences(const lvk_fence* fence, uint32_t fence_count) const {
 	vkResetFences(this->_device, fence_count, &fence->_fence);
 }
 
@@ -282,6 +282,16 @@ void lvk_device::reset_fences(const lvk_fence* fence, uint32_t fence_count) {
 lvk_command_pool lvk_device::create_graphics_command_pool() {
 	return create_command_pool(physical_device._queue_family_indices.graphics.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 }
+
+// lvk_immediate_command lvk_device::create_immediate_command() {
+// 	lvk_command_pool pool = create_graphics_command_pool();
+
+// 	return {
+// 		.command_pool = pool,
+// 		.command_buffer = allocate_command_buffer_unique(pool),
+// 		.fence = create_fence()
+// 	};
+// }
 
 
 lvk_command_pool lvk_device::create_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags) {
@@ -357,3 +367,10 @@ std::vector<lvk_command_buffer> lvk_device::allocate_command_buffers(const lvk_c
 	
 	return command_buffer_array;
 }
+
+// VkResult lvk_device::immediate_submit(const VkSubmitInfo submit_info, const lvk_fence& fence) const {
+// 	vkQueueSubmit(_graphics_queue, 1, &submit_info, fence._fence);
+	
+// 	wait_for_fence(fence);
+// 	reset_fence(fence);
+// }

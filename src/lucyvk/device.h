@@ -58,8 +58,8 @@ struct lvk_device {
 	lvk_fence create_fence(VkFenceCreateFlags flags = 0);
 
 
-	void wait_for_fence(const lvk_fence& fence, uint64_t timeout = LVK_TIMEOUT);
-	void wait_for_fences(const lvk_fence* fence, uint32_t fence_count, uint64_t timeout = LVK_TIMEOUT);
+	void wait_for_fence(const lvk_fence& fence, uint64_t timeout = LVK_TIMEOUT) const;
+	void wait_for_fences(const lvk_fence* fence, uint32_t fence_count, uint64_t timeout = LVK_TIMEOUT) const;
 
 	template <std::size_t _f_N>
 	void wait_for_fences(const lvk_fence (&fence)[_f_N], uint64_t timeout = LVK_TIMEOUT) {
@@ -67,8 +67,8 @@ struct lvk_device {
 	}
 
 
-	void reset_fence(const lvk_fence& fence);
-	void reset_fences(const lvk_fence* fence, uint32_t fence_count);
+	void reset_fence(const lvk_fence& fence) const;
+	void reset_fences(const lvk_fence* fence, uint32_t fence_count) const;
 
 	template <std::size_t _f_N>
 	void reset_fences(const lvk_fence (&fence)[_f_N]) {
@@ -143,6 +143,7 @@ struct lvk_device {
 	}
 
 	void wait_idle() const;
+
 
 	VkResult submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const VkFence fence, uint64_t timeout = LVK_TIMEOUT) const;
 	// VkResult submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const VkFence fence, uint64_t timeout = LVK_TIMEOUT) const;

@@ -16,15 +16,15 @@
 // |--------------------------------------------------
 
 
-void lvk_command_buffer::reset(VkCommandBufferResetFlags flags) {
+void lvk_command_buffer::reset(VkCommandBufferResetFlags flags) const {
 	vkResetCommandBuffer(_command_buffer, flags);
 }
 
-void lvk_command_buffer::begin(const VkCommandBufferBeginInfo* beginInfo) {
+void lvk_command_buffer::begin(const VkCommandBufferBeginInfo* beginInfo) const {
 	vkBeginCommandBuffer(_command_buffer, beginInfo);
 }
 
-void lvk_command_buffer::begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info) {
+void lvk_command_buffer::begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info) const {
 	VkCommandBufferBeginInfo cmdBeginInfo = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		.flags = flags,
@@ -34,19 +34,56 @@ void lvk_command_buffer::begin(const VkCommandBufferUsageFlags flags, const VkCo
 	vkBeginCommandBuffer(_command_buffer, &cmdBeginInfo);
 }
 
-void lvk_command_buffer::bind_pipeline(const lvk_pipeline* pipeline) {
+void lvk_command_buffer::bind_pipeline(const lvk_pipeline* pipeline) const {
 	vkCmdBindPipeline(_command_buffer, pipeline->type, pipeline->_pipeline);
 }
 
-void lvk_command_buffer::bind_descriptor_set(const lvk_pipeline* pipeline, const lvk_descriptor_set* descriptor_set, const uint32_t descriptor_set_count) {
+void lvk_command_buffer::bind_descriptor_set(const lvk_pipeline* pipeline, const lvk_descriptor_set* descriptor_set, const uint32_t descriptor_set_count) const {
 	vkCmdBindDescriptorSets(_command_buffer, pipeline->type, pipeline->pipeline_layout->_pipeline_layout, 0, descriptor_set_count, &descriptor_set->_descriptor_set, 0, VK_NULL_HANDLE);
 }
 
-void lvk_command_buffer::bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding) {
+void lvk_command_buffer::bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding) const {
 	vkCmdBindVertexBuffers(_command_buffer, first_binding, vertex_buffers_count, vertex_buffers, offset_array);
 }
 
-void lvk_command_buffer::transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) {
+
+void lvk_command_buffer::transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const {
+	VkImageMemoryBarrier transfer_image_barrier = {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+
+		.srcAccessMask = 0,
+		.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+
+		.oldLayout = current_layout,
+		.newLayout = new_layout,
+
+		.image = image,
+		.subresourceRange = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		},
+	};
+
+	vkCmdPipelineBarrier(_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &transfer_image_barrier);
+}
+
+VkSubmitInfo lvk_command_buffer::immediate_transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const {
+	return immediate([=]{
+		transition_image(image, current_layout, new_layout);
+	});
+}
+
+
+VkSubmitInfo lvk_command_buffer::immediate_transition_image2(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const {
+	return immediate([=]{
+		transition_image2(image, current_layout, new_layout);
+	});
+}
+
+void lvk_command_buffer::transition_image2(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const {
     VkImageAspectFlags aspect_mask = (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
     VkImageMemoryBarrier2 image_barrier {
@@ -76,39 +113,23 @@ void lvk_command_buffer::transition_image(VkImage image, VkImageLayout current_l
     vkCmdPipelineBarrier2(_command_buffer, &dependency_info);
 }
 
-// void lvk_command_buffer::transition_image_imme(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) {
-//     // VkImageAspectFlags aspect_mask = (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
-//     // VkImageMemoryBarrier image_barrier {
-// 	// 	.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+VkSubmitInfo lvk_command_buffer::immediate(std::function<void()> function) const {
+	begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	{
+		function();
+	}
+	end();
 
-// 	// 	.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+	return {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		
-// 	// 	.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT,
-		
-// 	// 	.oldLayout = current_layout,
-// 	// 	.newLayout = new_layout,
-		
-// 	// 	.image = image,
-		
-// 	// 	.subresourceRange = lvk::image_subresource_range(aspect_mask),
-// 	// };
+		.commandBufferCount = 1,
+		.pCommandBuffers = &_command_buffer,
+	};
+}
 
-//     // VkDependencyInfo dependency_info {
-// 	// 	.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-
-// 	// 	.imageMemoryBarrierCount = 1,
-// 	// 	.pImageMemoryBarriers = &image_barrier
-// 	// };
-
-//     // vkCmdPipelineBarrier2(_command_buffer, &dependency_info);
-// }
-
-// void lvk_command_buffer::transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout) {
-// 	return transition_image(image->_image, current_layout, new_layout);
-// }
-
-void lvk_command_buffer::copy_image_to_image(VkImage source, VkImage destination, VkImageLayout source_layout, VkImageLayout destination_layout, VkExtent2D src_size, VkExtent2D dst_size) {
+void lvk_command_buffer::copy_image_to_image(VkImage source, VkImage destination, VkImageLayout source_layout, VkImageLayout destination_layout, VkExtent2D src_size, VkExtent2D dst_size) const {
 	VkImageCopy2 copy_region = {
 		
 	};
@@ -128,11 +149,11 @@ void lvk_command_buffer::copy_image_to_image(VkImage source, VkImage destination
 	vkCmdCopyImage2(_command_buffer, &copy_info);
 }
 
-void lvk_command_buffer::dispatch(uint32_t group_count_x, uint32_t group_count_y, uint32_t group_count_z) {
+void lvk_command_buffer::dispatch(uint32_t group_count_x, uint32_t group_count_y, uint32_t group_count_z) const {
 	vkCmdDispatch(_command_buffer, group_count_x, group_count_y, group_count_z);
 }
 
-void lvk_command_buffer::blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size) {
+void lvk_command_buffer::blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size) const {
 	VkImageBlit2 blit_region = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
 		
@@ -177,15 +198,15 @@ void lvk_command_buffer::blit_image_to_image(VkImage source, VkImage destination
 	vkCmdBlitImage2(_command_buffer, &blit_info);
 }
 
-void lvk_command_buffer::end() {
+void lvk_command_buffer::end() const {
 	vkEndCommandBuffer(_command_buffer);
 }
 
-void lvk_command_buffer::begin_render_pass(const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents) {
+void lvk_command_buffer::begin_render_pass(const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents) const {
 	vkCmdBeginRenderPass(_command_buffer, beginInfo, subpass_contents);
 }
 
-void lvk_command_buffer::begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count) {
+void lvk_command_buffer::begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count) const {
 	VkRenderPassBeginInfo beginInfo = {
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 		VK_NULL_HANDLE,
@@ -199,7 +220,7 @@ void lvk_command_buffer::begin_render_pass(const lvk_framebuffer* framebuffer, c
 	begin_render_pass(&beginInfo, subpass_contents);
 }
 
-void lvk_command_buffer::end_render_pass() {
+void lvk_command_buffer::end_render_pass() const {
 	vkCmdEndRenderPass(_command_buffer);
 }
 
@@ -245,56 +266,56 @@ void lvk_command_buffer::end_render_pass() {
 // 	return immediate_command_buffer;
 // }
 
-void lvk_immediate_command_buffer::transition_image(VkImage image, VkImageLayout old_layout, VkImageLayout new_layout) const {
-	VkCommandBufferBeginInfo begin_info = {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-		.pInheritanceInfo = VK_NULL_HANDLE
-	};
+// void lvk_immediate_command_buffer::transition_image(VkImage image, VkImageLayout old_layout, VkImageLayout new_layout) const {
+// 	VkCommandBufferBeginInfo begin_info = {
+// 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+// 		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+// 		.pInheritanceInfo = VK_NULL_HANDLE
+// 	};
 
-	vkBeginCommandBuffer(_command_buffer, &begin_info);
+// 	vkBeginCommandBuffer(_command_buffer, &begin_info);
 	
-	{
-		VkImageMemoryBarrier transfer_image_barrier = {
-			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+// 	{
+// 		VkImageMemoryBarrier transfer_image_barrier = {
+// 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 
-			.srcAccessMask = 0,
-			.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+// 			.srcAccessMask = 0,
+// 			.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
 
-			.oldLayout = old_layout,
-			.newLayout = new_layout,
+// 			.oldLayout = old_layout,
+// 			.newLayout = new_layout,
 
-			.image = image,
-			.subresourceRange = {
-				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-				.baseMipLevel = 0,
-				.levelCount = 1,
-				.baseArrayLayer = 0,
-				.layerCount = 1,
-			},
-		};
+// 			.image = image,
+// 			.subresourceRange = {
+// 				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+// 				.baseMipLevel = 0,
+// 				.levelCount = 1,
+// 				.baseArrayLayer = 0,
+// 				.layerCount = 1,
+// 			},
+// 		};
 
-		//barrier the image into the transfer-receive layout
-		vkCmdPipelineBarrier(_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &transfer_image_barrier);
-	}
+// 		//barrier the image into the transfer-receive layout
+// 		vkCmdPipelineBarrier(_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &transfer_image_barrier);
+// 	}
 
-	vkEndCommandBuffer(_command_buffer);
+// 	vkEndCommandBuffer(_command_buffer);
 
-	VkCommandBufferSubmitInfo cmdinfo = {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-		.commandBuffer = _command_buffer,
-	};
+// 	VkCommandBufferSubmitInfo cmdinfo = {
+// 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+// 		.commandBuffer = _command_buffer,
+// 	};
 	
-	VkSubmitInfo submit_info = {
-		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+// 	VkSubmitInfo submit_info = {
+// 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		
-		.commandBufferCount = 1,
-		.pCommandBuffers = &_command_buffer,
-	};
+// 		.commandBufferCount = 1,
+// 		.pCommandBuffers = &_command_buffer,
+// 	};
 
-	// device->submit(&submit_info, 1, _fence, LVK_TIMEOUT);
+// 	// device->submit(&submit_info, 1, _fence, LVK_TIMEOUT);
 
-	// vkWaitForFences(device->_device, 1, &_fence, true, LVK_TIMEOUT);
-	// vkResetFences(device->_device, 1, &_fence);
-	// vkResetCommandBuffer(_command_buffer, 0);
-}
+// 	// vkWaitForFences(device->_device, 1, &_fence, true, LVK_TIMEOUT);
+// 	// vkResetFences(device->_device, 1, &_fence);
+// 	// vkResetCommandBuffer(_command_buffer, 0);
+// }

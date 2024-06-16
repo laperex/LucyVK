@@ -59,7 +59,7 @@ namespace lre {
 		lvk_image_view compute_image_view;
 		// lvk_image compute_image;
 		
-		lvk_immediate_command_buffer immediate_command_buffer;
+		lvk_immediate_command immediate_command_buffer;
 		
 		
 		VkClearValue clear_value[2] = {
