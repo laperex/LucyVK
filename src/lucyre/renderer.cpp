@@ -60,8 +60,8 @@ void lre::renderer::init_descriptor_pool() {
 }
 
 void lre::renderer::init_render_pass() {
-	depth_image = allocator.init_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
-	depth_image_view = depth_image.init_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+	depth_image = allocator.create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
+	depth_image_view = device->create_image_view(depth_image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
 
 	render_pass = device->init_default_render_pass(swapchain._surface_format.format);
 	framebuffer_array = new lvk_framebuffer[swapchain._image_count];
@@ -189,9 +189,9 @@ void lre::renderer::initialization(SDL_Window* window) {
 	// physical_device = instance.init_device();
 	device = instance.init_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME });
 	
-	allocator = device->init_allocator();
+	allocator = device->create_allocator();
 	
-	mvp_uniform_buffer = allocator.init_uniform_buffer<mvp_matrix>();
+	mvp_uniform_buffer = allocator.create_uniform_buffer<mvp_matrix>();
 
 	init_frame_data();
 	
@@ -235,7 +235,8 @@ void lre::renderer::record(uint32_t frame_number) {
 	
 	mvp.projection[1][1] *= -1;
 
-	mvp_uniform_buffer.upload(mvp);
+	// mvp_uniform_buffer.upload(mvp);
+	allocator.upload(mvp_uniform_buffer, mvp);
 
 	cmd.reset();
 	

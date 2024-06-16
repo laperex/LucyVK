@@ -1,4 +1,5 @@
 #include "lucyvk/device.h"
+#include "lucyvk/create_info.h"
 #include "lucyvk/instance.h"
 #include "lucyvk/swapchain.h"
 #include "lucyvk/functions.h"
@@ -643,9 +644,60 @@ lvk_pipeline lvk_device::create_compute_pipeline(const lvk_pipeline_layout& pipe
 	return pipeline;
 }
 
-// VkResult lvk_device::immediate_submit(const VkSubmitInfo submit_info, const lvk_fence& fence) const {
-// 	vkQueueSubmit(_graphics_queue, 1, &submit_info, fence._fence);
+
+
+
+// |--------------------------------------------------
+// ----------------> ALLOCATOR
+// |--------------------------------------------------
+
+
+lvk_allocator lvk_device::create_allocator() {
+	lvk_allocator allocator = {
+		._allocator = VK_NULL_HANDLE,
+		.deletion_queue = &deletion_queue
+	};
 	
-// 	wait_for_fence(fence);
-// 	reset_fence(fence);
-// }
+	VmaAllocatorCreateInfo allocatorInfo = {};
+
+    allocatorInfo.physicalDevice = physical_device._physical_device;
+    allocatorInfo.device = _device;
+    allocatorInfo.instance = instance->_instance;
+
+    vmaCreateAllocator(&allocatorInfo, &allocator._allocator);
+	dloggln("Allocator Created");
+	
+	deletion_queue.push([=]{
+		vmaDestroyAllocator(allocator._allocator);
+		dloggln("Allocator Destroyed");
+	});
+
+	return allocator;
+}
+
+
+// // |--------------------------------------------------
+// // ----------------> IMAGE VIEW
+// // |--------------------------------------------------
+
+
+lvk_image_view lvk_device::create_image_view(const lvk_image& image, VkImageAspectFlags aspect_flag, VkImageViewType image_view_type) {
+	lvk_image_view image_view = {
+		._image_view = VK_NULL_HANDLE,
+	};
+
+	VkImageViewCreateInfo createInfo = lvk::info::image_view(image._image, image._format, aspect_flag, image_view_type);
+
+	if (vkCreateImageView(this->_device, &createInfo, VK_NULL_HANDLE, &image_view._image_view) != VK_SUCCESS) {
+		throw std::runtime_error("image_view creation failed!");
+	}
+	dloggln("ImageView Created");
+
+	deletion_queue.push([=]{
+		vkDestroyImageView(this->_device, image_view._image_view, VK_NULL_HANDLE);
+		dloggln("ImageView Destroyed");
+	});
+
+	return image_view;
+}
+

@@ -164,14 +164,14 @@ VkPipelineRenderingCreateInfo lvk::info::rendering(const VkFormat depth_attachme
 
 VkImageViewCreateInfo lvk::info::image_view(VkImage image, VkFormat format, VkImageViewType view_type, VkImageSubresourceRange subresource_range, VkComponentMapping components) {
 	return {
-		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-		VK_NULL_HANDLE,
-		0,
-		image,
-		view_type,
-		format,
-		components,
-		subresource_range
+		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+		.image = image,
+		.viewType = view_type,
+		.format = format,
+		.components = components,
+		.subresourceRange = subresource_range
 	};
 }
 

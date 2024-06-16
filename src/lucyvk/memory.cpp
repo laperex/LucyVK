@@ -15,48 +15,19 @@
 
 
 
-// |--------------------------------------------------
-// ----------------> ALLOCATOR
-// |--------------------------------------------------
-
-
-lvk_allocator lvk_device::init_allocator() {
-	lvk_allocator allocator = {
-		VK_NULL_HANDLE,
-		this,
-		&deletion_queue
-	};
-	
-	VmaAllocatorCreateInfo allocatorInfo = {};
-
-    allocatorInfo.physicalDevice = physical_device._physical_device;
-    allocatorInfo.device = _device;
-    allocatorInfo.instance = instance->_instance;
-
-    vmaCreateAllocator(&allocatorInfo, &allocator._allocator);
-	dloggln("Allocator Created");
-	
-	deletion_queue.push([=]{
-		vmaDestroyAllocator(allocator._allocator);
-		dloggln("Allocator Destroyed");
-	});
-
-	return allocator;
-}
-
 
 // |--------------------------------------------------
 // ----------------> BUFFER
 // |--------------------------------------------------
 
 
-lvk_buffer lvk_allocator::init_buffer(VkBufferUsageFlagBits buffer_usage, VmaMemoryUsage memory_usage, const void* data, const std::size_t size) {
+lvk_buffer lvk_allocator::create_buffer(VkBufferUsageFlagBits buffer_usage, VmaMemoryUsage memory_usage, const void* data, const std::size_t size) {
 	lvk_buffer buffer = {
 		._buffer = VK_NULL_HANDLE,
 		._allocation = VK_NULL_HANDLE,
 		._allocated_size = size,
 		._usage = buffer_usage,
-		.allocator = this
+		// .allocator = this
 	};
 	
 	VkBufferCreateInfo bufferInfo = {
@@ -83,7 +54,7 @@ lvk_buffer lvk_allocator::init_buffer(VkBufferUsageFlagBits buffer_usage, VmaMem
 	dloggln("Buffer Created: ", lvk::to_string(buffer_usage));
 	
 	if (data != nullptr) {
-		buffer.upload(data, size);
+		upload(buffer, data, size);
 	}
 
 	deletion_queue->push([=]{
@@ -94,25 +65,25 @@ lvk_buffer lvk_allocator::init_buffer(VkBufferUsageFlagBits buffer_usage, VmaMem
 	return buffer;
 }
 
-lvk_buffer lvk_allocator::init_vertex_buffer(const void* data, const std::size_t size) {
-	return init_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, data, size);
+lvk_buffer lvk_allocator::create_vertex_buffer(const void* data, const std::size_t size) {
+	return create_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, data, size);
 }
 
-lvk_buffer lvk_allocator::init_uniform_buffer(const void* data, const std::size_t size) {
-	return init_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, data, size);
+lvk_buffer lvk_allocator::create_uniform_buffer(const void* data, const std::size_t size) {
+	return create_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, data, size);
 }
 
-void lvk_buffer::upload(const void* data, const std::size_t size) const {
-	if (size > _allocated_size) {
+void lvk_allocator::upload(const lvk_buffer& buffer, const void* data, const std::size_t size) const {
+	if (size > buffer._allocated_size) {
 		throw std::runtime_error("required size is greater than allocated size!");
 	}
 
 	void* _data;
-	vmaMapMemory(allocator->_allocator, _allocation, &_data);
+	vmaMapMemory(this->_allocator, buffer._allocation, &_data);
 
 	memcpy(_data, data, size);
 
-	vmaUnmapMemory(allocator->_allocator, _allocation);
+	vmaUnmapMemory(this->_allocator, buffer._allocation);
 }
 
 
@@ -121,19 +92,16 @@ void lvk_buffer::upload(const void* data, const std::size_t size) const {
 // |--------------------------------------------------
 
 
-lvk_image lvk_allocator::init_image(VkFormat format, VkImageUsageFlags usage, VkExtent3D extent, VkImageType image_type) {
+lvk_image lvk_allocator::create_image(VkFormat format, VkImageUsageFlags usage, VkExtent3D extent, VkImageType image_type) {
 	lvk_image image = {
-		VK_NULL_HANDLE,
-		VK_NULL_HANDLE,
-		format,
-		image_type,
-		extent,
-		usage,
-		this,
-		device,
-		deletion_queue
+		._image = VK_NULL_HANDLE,
+		._allocation = VK_NULL_HANDLE,
+		._format = format,
+		._image_type = image_type,
+		._extent = extent,
+		._usage = usage,
 	};
-	
+
 	VkImageCreateInfo createInfo = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 		.imageType = image_type,
@@ -175,29 +143,3 @@ lvk_image lvk_allocator::init_image(VkFormat format, VkImageUsageFlags usage, Vk
 	return image;
 }
 
-
-// |--------------------------------------------------
-// ----------------> IMAGE VIEW
-// |--------------------------------------------------
-
-
-lvk_image_view lvk_image::init_image_view(VkImageAspectFlags aspect_flag, VkImageViewType image_view_type) {
-	lvk_image_view image_view = {
-		._image_view = VK_NULL_HANDLE,
-		.image = this
-	};
-
-	VkImageViewCreateInfo createInfo = lvk::info::image_view(_image, _format, aspect_flag, image_view_type);
-
-	if (vkCreateImageView(device->_device, &createInfo, VK_NULL_HANDLE, &image_view._image_view) != VK_SUCCESS) {
-		throw std::runtime_error("image_view creation failed!");
-	}
-	dloggln("ImageView Created");
-
-	deletion_queue->push([=]{
-		vkDestroyImageView(device->_device, image_view._image_view, VK_NULL_HANDLE);
-		dloggln("ImageView Destroyed");
-	});
-
-	return image_view;
-}

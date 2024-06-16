@@ -119,6 +119,14 @@ struct lvk_device {
 		return create_pipeline_layout(VK_NULL_HANDLE, 0, descriptor_set_layouts, _dsl_N);
 	}
 	
+	// ALLOCATOR	---------- ---------- ---------- ----------
+	
+	lvk_allocator create_allocator();
+	
+	// IMAGE_VIEW	---------- ---------- ---------- ----------
+	
+	lvk_image_view create_image_view(const lvk_image& image, VkImageAspectFlags aspect_flag, VkImageViewType image_view_type);
+	
 
 	// lvk_command_pool init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
 	
@@ -136,7 +144,7 @@ struct lvk_device {
 	lvk_shader_module init_shader_module(VkShaderStageFlagBits stage, const char* filename);
 	
 	
-	lvk_allocator init_allocator();
+	// lvk_allocator init_allocator();
 	
 	lvk_descriptor_set_layout init_descriptor_set_layout(const VkDescriptorSetLayoutBinding* bindings, const uint32_t binding_count);
 	lvk_descriptor_pool init_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count);
