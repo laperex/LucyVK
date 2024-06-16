@@ -12,8 +12,6 @@
 
 struct lvk_descriptor_set_layout {
 	VkDescriptorSetLayout _descriptor_set_layout;
-	
-	const lvk_device* device;
 };
 
 
@@ -25,12 +23,12 @@ struct lvk_descriptor_set_layout {
 struct lvk_descriptor_pool {
 	VkDescriptorPool _descriptor_pool;
 	
-	const lvk_device* device;
+	// const lvk_device* device;
 	
-	lvk_descriptor_set init_descriptor_set(const lvk_descriptor_set_layout* descriptor_set_layout);
-	void clear() const;
+	// lvk_descriptor_set init_descriptor_set(const lvk_descriptor_set_layout* descriptor_set_layout);
+	// void clear() const;
 
-	void destroy() const;
+	// void destroy() const;
 };
 
 
@@ -42,9 +40,9 @@ struct lvk_descriptor_pool {
 struct lvk_descriptor_set {
 	VkDescriptorSet _descriptor_set;
 	
-	const lvk_descriptor_pool* descriptor_pool;
-	const lvk_device* device;
+	// const lvk_descriptor_pool* descriptor_pool;
+	// const lvk_device* device;
 	
-	void update(uint32_t binding, const lvk_buffer* buffer, VkDescriptorType type, const std::size_t offset = 0) const;
-	void update(uint32_t binding, const lvk_image_view* image_view, VkDescriptorType type, const std::size_t offset = 0) const;
+	// void update(uint32_t binding, const lvk_buffer* buffer, VkDescriptorType type, const std::size_t offset = 0) const;
+	// void update(uint32_t binding, const lvk_image_view* image_view, VkDescriptorType type, const std::size_t offset = 0) const;
 };

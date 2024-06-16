@@ -701,3 +701,136 @@ lvk_image_view lvk_device::create_image_view(const lvk_image& image, VkImageAspe
 	return image_view;
 }
 
+
+// |--------------------------------------------------
+// ----------------> DESCRIPTOR SET LAYOUT
+// |--------------------------------------------------
+
+
+lvk_descriptor_set_layout lvk_device::create_descriptor_set_layout(const VkDescriptorSetLayoutBinding* bindings, const uint32_t binding_count) {
+	lvk_descriptor_set_layout descriptor_set_layout = {
+		._descriptor_set_layout = VK_NULL_HANDLE,
+		// .device = this
+	};
+
+	VkDescriptorSetLayoutCreateInfo set_info = {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+		.bindingCount = binding_count,
+		.pBindings = bindings,
+	};
+
+	if (vkCreateDescriptorSetLayout(_device, &set_info, VK_NULL_HANDLE, &descriptor_set_layout._descriptor_set_layout) != VK_SUCCESS) {
+		throw std::runtime_error("descriptor_set_layout creation failed!");
+	}
+	dloggln("DescriptorSetLayout Created");
+
+	deletion_queue.push([=]() {
+		vkDestroyDescriptorSetLayout(_device, descriptor_set_layout._descriptor_set_layout, VK_NULL_HANDLE);
+		dloggln("DescriptorSetLayout Destroyed");
+	});
+
+	return descriptor_set_layout;
+}
+
+
+// |--------------------------------------------------
+// ----------------> DESCRIPTOR SET
+// |--------------------------------------------------
+
+
+lvk_descriptor_set lvk_device::create_descriptor_set(const lvk_descriptor_pool& descriptor_pool, const lvk_descriptor_set_layout& descriptor_set_layout) {
+	lvk_descriptor_set descriptor_set = {
+		._descriptor_set = VK_NULL_HANDLE,
+	};
+
+	VkDescriptorSetAllocateInfo allocate_info ={
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+		.descriptorPool = descriptor_pool._descriptor_pool,
+		.descriptorSetCount = 1,
+		.pSetLayouts = &descriptor_set_layout._descriptor_set_layout,
+	};
+
+	if (vkAllocateDescriptorSets(this->_device, &allocate_info, &descriptor_set._descriptor_set) != VK_SUCCESS) {
+		throw std::runtime_error("descriptor_set allocation failed!");
+	}
+	dloggln("Description Set Allocated");
+
+	return descriptor_set;
+}
+
+void lvk_device::update_descriptor_set(const lvk_descriptor_set& descriptor_set, uint32_t binding, const lvk_buffer* buffer, VkDescriptorType type, const std::size_t offset) const {
+	VkDescriptorBufferInfo buffer_info = {
+		.buffer = buffer->_buffer,
+		.offset = offset,
+		.range = buffer->_allocated_size
+	};
+	
+	VkWriteDescriptorSet write_set = {
+		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		.dstSet = descriptor_set._descriptor_set,
+		.dstBinding = binding,
+		.descriptorCount = 1,
+		.descriptorType = type,
+		.pBufferInfo = &buffer_info,
+	};
+
+	vkUpdateDescriptorSets(this->_device, 1, &write_set, 0, VK_NULL_HANDLE);
+}
+
+void lvk_device::update_descriptor_set(const lvk_descriptor_set& descriptor_set, uint32_t binding, const lvk_image_view* image_view, VkDescriptorType type, const std::size_t offset) const {
+	VkDescriptorImageInfo image_info = {
+		.imageView = image_view->_image_view,
+		.imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+	};
+	
+	VkWriteDescriptorSet write_set = {
+		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+		.dstSet = descriptor_set._descriptor_set,
+		.dstBinding = binding,
+		.descriptorCount = 1,
+		.descriptorType = type,
+		.pImageInfo = &image_info,
+	};
+
+	vkUpdateDescriptorSets(this->_device, 1, &write_set, 0, VK_NULL_HANDLE);
+}
+
+
+
+// |--------------------------------------------------
+// ----------------> DESCRIPTOR POOL
+// |--------------------------------------------------
+
+
+lvk_descriptor_pool lvk_device::create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count) {
+	lvk_descriptor_pool descriptor_pool = {
+		._descriptor_pool = VK_NULL_HANDLE,
+	};
+
+	VkDescriptorPoolCreateInfo pool_info = {
+		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+		.maxSets = max_descriptor_sets,
+		.poolSizeCount = descriptor_pool_sizes_count,
+		.pPoolSizes = descriptor_pool_sizes
+	};
+
+	if (vkCreateDescriptorPool(_device, &pool_info, VK_NULL_HANDLE, &descriptor_pool._descriptor_pool) != VK_SUCCESS) {
+		throw std::runtime_error("descriptor_pool creation failed");
+	}
+	dloggln("DescriptorPool Created");
+
+	deletion_queue.push([=](){
+		vkDestroyDescriptorPool(_device, descriptor_pool._descriptor_pool, VK_NULL_HANDLE);
+		dloggln("DescriptorSetLayout Destroyed");	
+	});
+
+	return descriptor_pool;
+}
+
+void lvk_device::clear_descriptor_pool(const lvk_descriptor_pool& descriptor_pool) const {
+	vkResetDescriptorPool(this->_device, descriptor_pool._descriptor_pool, 0);
+}
+
+void lvk_device::destroy_descriptor_pool(const lvk_descriptor_pool& descriptor_pool) const {
+	vkDestroyDescriptorPool(this->_device, descriptor_pool._descriptor_pool, VK_NULL_HANDLE);
+}

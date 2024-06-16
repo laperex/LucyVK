@@ -44,18 +44,18 @@ void lre::renderer::init_descriptor_pool() {
 		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }
 	};
 
-	lvk_descriptor_pool descriptor_pool = device->init_descriptor_pool(descriptor_set_max_size, descriptor_pool_sizes);
+	lvk_descriptor_pool descriptor_pool = device->create_descriptor_pool(descriptor_set_max_size, descriptor_pool_sizes);
 
 	// seperate for each shader type
-	descriptor_set_layout = device->init_descriptor_set_layout({
+	descriptor_set_layout = device->create_descriptor_set_layout({
 		lvk::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1),
 		lvk::descriptor_set_layout_binding(1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
 	});
 
-	descriptor = descriptor_pool.init_descriptor_set(&descriptor_set_layout);
+	descriptor = device->create_descriptor_set(descriptor_pool, descriptor_set_layout);
 
 	// binding for uniform buffer
-	descriptor.update(1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	device->update_descriptor_set(descriptor, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
 	// descriptor.update(0, &compute_image_view, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 }
 

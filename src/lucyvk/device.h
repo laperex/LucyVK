@@ -119,22 +119,57 @@ struct lvk_device {
 		return create_pipeline_layout(VK_NULL_HANDLE, 0, descriptor_set_layouts, _dsl_N);
 	}
 	
+
 	// ALLOCATOR	---------- ---------- ---------- ----------
 	
 	lvk_allocator create_allocator();
 	
+
 	// IMAGE_VIEW	---------- ---------- ---------- ----------
 	
 	lvk_image_view create_image_view(const lvk_image& image, VkImageAspectFlags aspect_flag, VkImageViewType image_view_type);
+
+
+	// DESCRIPTOR_SET_LAYOUT   ---------- ---------- ----------
+
+
+	lvk_descriptor_set_layout create_descriptor_set_layout(const VkDescriptorSetLayoutBinding* bindings, const uint32_t binding_count);
+
+	template <std::size_t _dsl_N> [[nodiscard, __gnu__::__always_inline__]]
+	constexpr lvk_descriptor_set_layout create_descriptor_set_layout(const VkDescriptorSetLayoutBinding (&bindings)[_dsl_N]) noexcept {
+		return create_descriptor_set_layout(bindings, _dsl_N);
+	}
 	
+	
+	// DESCRIPTOR_SET		   ---------- ---------- ----------
+	
+	lvk_descriptor_set create_descriptor_set(const lvk_descriptor_pool& descriptor_pool, const lvk_descriptor_set_layout& descriptor_set_layout);
+	void update_descriptor_set(const lvk_descriptor_set& descriptor_set, uint32_t binding, const lvk_buffer* buffer, VkDescriptorType type, const std::size_t offset = 0) const;
+	void update_descriptor_set(const lvk_descriptor_set& descriptor_set, uint32_t binding, const lvk_image_view* image_view, VkDescriptorType type, const std::size_t offset = 0) const;
+	// template <std::size_t _ds_N> [[nodiscard, __gnu__::__always_inline__]]
+	// constexpr lvk_descriptor_set create_descriptor_set(const lvk_descriptor_pool& descriptor_pool, const lvk_descriptor_set_layout& descriptor_set_layout)
+
+
+	// DESCRIPTOR_POOL		   ---------- ---------- ----------
+
+	lvk_descriptor_pool create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count);
+
+	template <std::size_t _dps_N> [[nodiscard, __gnu__::__always_inline__]]
+	constexpr lvk_descriptor_pool create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize (&descriptor_pool_sizes)[_dps_N]) noexcept {
+		return create_descriptor_pool(max_descriptor_sets, descriptor_pool_sizes, _dps_N);
+	}
+
+	void clear_descriptor_pool(const lvk_descriptor_pool& descriptor_pool) const;
+	void destroy_descriptor_pool(const lvk_descriptor_pool& descriptor_pool) const;
+
 
 	// lvk_command_pool init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
-	
-	
+
+
 	lvk_sampler init_sampler(VkFilter min_filter, VkFilter mag_filter, VkSamplerAddressMode sampler_addres_mode);
 	
 	lvk_queue init_queue();
-	
+
 	lvk_render_pass init_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform = false);
 	lvk_render_pass init_default_render_pass(VkFormat format);
 
@@ -146,22 +181,11 @@ struct lvk_device {
 	
 	// lvk_allocator init_allocator();
 	
-	lvk_descriptor_set_layout init_descriptor_set_layout(const VkDescriptorSetLayoutBinding* bindings, const uint32_t binding_count);
-	lvk_descriptor_pool init_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count);
+	// lvk_descriptor_set_layout init_descriptor_set_layout(const VkDescriptorSetLayoutBinding* bindings, const uint32_t binding_count);
 
 	// TODO: why ???
 	template <std::size_t _ad_N, std::size_t _sdn_N, std::size_t _sdc_N>
 	lvk_render_pass init_render_pass(const VkAttachmentDescription (&attachment)[_ad_N], const VkSubpassDescription (&subpass)[_sdn_N], const VkSubpassDependency (&dependency)[_sdc_N], bool enable_transform = false);
-	
-	template <std::size_t _dslb_N> [[nodiscard, __gnu__::__always_inline__]]
-	constexpr lvk_descriptor_set_layout init_descriptor_set_layout(const VkDescriptorSetLayoutBinding (&bindings)[_dslb_N]) noexcept {
-		return init_descriptor_set_layout(bindings, _dslb_N);
-	}
-
-	template <std::size_t _dps_N> [[nodiscard, __gnu__::__always_inline__]]
-	constexpr lvk_descriptor_pool init_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize (&descriptor_pool_sizes)[_dps_N]) noexcept {
-		return init_descriptor_pool(max_descriptor_sets, descriptor_pool_sizes, _dps_N);
-	}
 
 	void wait_idle() const;
 
@@ -177,6 +201,8 @@ struct lvk_device {
 	}
 
 	VkResult present(const VkPresentInfoKHR* present_info) const;
+
+
 
 	// VkSemaphore* create_semaphore();
 };
