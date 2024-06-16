@@ -2,6 +2,7 @@
 
 #include "lucyvk/pipeline.h"
 #include "lucyvk/descriptor.h"
+#include "lucyvk/render_pass.h"
 #include "lucyvk/command.h"
 #include "lucyvk/synchronization.h"
 #include "lucyvk/texture.h"
@@ -50,7 +51,7 @@ struct lvk_device {
 	~lvk_device();
 
 
-	// SYNC 		---------- ---------- ---------- ----------
+	// SYNCHRONIZATION 		---------- ---------- ---------- ----------
 
 
 	lvk_semaphore create_semaphore();
@@ -163,15 +164,37 @@ struct lvk_device {
 	void destroy_descriptor_pool(const lvk_descriptor_pool& descriptor_pool) const;
 
 
+	// RENDERPASS	---------- ---------- ---------- ----------
+
+
+	lvk_render_pass create_default_render_pass(VkFormat format);
+	lvk_render_pass create_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform = false);
+	// TODO: why ???
+	template <std::size_t _ad_N, std::size_t _sdn_N, std::size_t _sdc_N> [[nodiscard, __gnu__::__always_inline__]]
+	constexpr lvk_render_pass create_render_pass(const VkAttachmentDescription (&attachment)[_ad_N], const VkSubpassDescription (&subpass)[_sdn_N], const VkSubpassDependency (&dependency)[_sdc_N], bool enable_transform = false) noexcept {
+		return create_render_pass(attachment, _ad_N, subpass, _sdn_N, dependency, _sdc_N);
+	}
+	
+	
+	// FRAMEBUFFER	---------- ---------- ---------- ----------
+	
+	
+	lvk_framebuffer create_framebuffer(const lvk_render_pass& render_pass, const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count);
+	
+	template <std::size_t _iv_N> [[nodiscard, __gnu__::__always_inline__]]
+	constexpr lvk_framebuffer create_framebuffer(const lvk_render_pass& render_pass, const VkExtent2D extent, const VkImageView (&image_views)[_iv_N]) noexcept {
+		return create_framebuffer(render_pass, extent, image_views, _iv_N);
+	}
+	
+	
+	// 	 ---------- ---------- ---------- ---------- ----------
+
 	// lvk_command_pool init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
 
 
 	lvk_sampler init_sampler(VkFilter min_filter, VkFilter mag_filter, VkSamplerAddressMode sampler_addres_mode);
 	
 	lvk_queue init_queue();
-
-	lvk_render_pass init_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform = false);
-	lvk_render_pass init_default_render_pass(VkFormat format);
 
 	// lvk_semaphore init_semaphore();
 	// lvk_fence init_fence(VkFenceCreateFlags flags = 0);
@@ -183,9 +206,8 @@ struct lvk_device {
 	
 	// lvk_descriptor_set_layout init_descriptor_set_layout(const VkDescriptorSetLayoutBinding* bindings, const uint32_t binding_count);
 
-	// TODO: why ???
-	template <std::size_t _ad_N, std::size_t _sdn_N, std::size_t _sdc_N>
-	lvk_render_pass init_render_pass(const VkAttachmentDescription (&attachment)[_ad_N], const VkSubpassDescription (&subpass)[_sdn_N], const VkSubpassDependency (&dependency)[_sdc_N], bool enable_transform = false);
+	// template <std::size_t _ad_N, std::size_t _sdn_N, std::size_t _sdc_N>
+	// lvk_render_pass init_render_pass(const VkAttachmentDescription (&attachment)[_ad_N], const VkSubpassDescription (&subpass)[_sdn_N], const VkSubpassDependency (&dependency)[_sdc_N], bool enable_transform = false);
 
 	void wait_idle() const;
 

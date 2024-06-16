@@ -206,18 +206,18 @@ void lvk_command_buffer::begin_render_pass(const VkRenderPassBeginInfo* beginInf
 	vkCmdBeginRenderPass(_command_buffer, beginInfo, subpass_contents);
 }
 
-void lvk_command_buffer::begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count) const {
-	VkRenderPassBeginInfo beginInfo = {
-		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		VK_NULL_HANDLE,
-		framebuffer->render_pass->_render_pass,
-		framebuffer->_framebuffer,
-		{ { 0, 0 }, framebuffer->_extent },
-		clear_value_count,
-		clear_values,
+void lvk_command_buffer::begin_render_pass(const lvk_render_pass render_pass, const lvk_framebuffer& framebuffer, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count) const {
+	VkRenderPassBeginInfo begin_info = {
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.renderPass = render_pass._render_pass,
+		.framebuffer = framebuffer._framebuffer,
+		.renderArea = { { 0, 0 }, framebuffer._extent },
+		.clearValueCount = clear_value_count,
+		.pClearValues = clear_values,
 	};
 
-	begin_render_pass(&beginInfo, subpass_contents);
+	begin_render_pass(&begin_info, subpass_contents);
 }
 
 void lvk_command_buffer::end_render_pass() const {

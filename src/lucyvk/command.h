@@ -55,7 +55,7 @@ struct lvk_command_buffer {
 	constexpr void begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue (&clear_values)[_cv_N]) const noexcept {
 		begin_render_pass(framebuffer, subpass_contents, clear_values, _cv_N);
 	}
-	void begin_render_pass(const lvk_framebuffer* framebuffer, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count) const;
+	void begin_render_pass(const lvk_render_pass render_pass, const lvk_framebuffer& framebuffer, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count) const;
 	void begin_render_pass(const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents) const;
 	
 	void end() const;

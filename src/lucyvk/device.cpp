@@ -834,3 +834,152 @@ void lvk_device::clear_descriptor_pool(const lvk_descriptor_pool& descriptor_poo
 void lvk_device::destroy_descriptor_pool(const lvk_descriptor_pool& descriptor_pool) const {
 	vkDestroyDescriptorPool(this->_device, descriptor_pool._descriptor_pool, VK_NULL_HANDLE);
 }
+
+
+
+// |--------------------------------------------------
+// ----------------> RENDER PASS
+// |--------------------------------------------------
+
+
+lvk_render_pass lvk_device::create_default_render_pass(VkFormat format) {	
+	VkAttachmentDescription attachments[2] = {
+		{
+			.format = format,
+
+			// TODO: MSAA
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		},
+		{
+			.format = VK_FORMAT_D32_SFLOAT,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		}
+	};
+
+	VkSubpassDependency dependency[2] = {
+		{
+			.srcSubpass = VK_SUBPASS_EXTERNAL,
+			.dstSubpass = 0,
+
+			.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+
+			.srcAccessMask = 0,
+			.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+		},
+		{
+			.srcSubpass = VK_SUBPASS_EXTERNAL,
+			.dstSubpass = 0,
+			
+			.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+			.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+
+			.srcAccessMask = 0,
+			.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+		}
+	};
+
+	VkAttachmentReference attachment_ref[2] = {
+		{
+			.attachment = 0,
+			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		},
+		{
+			.attachment = 1,
+			.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		}
+	};
+
+	VkSubpassDescription subpasses[1] = {
+		{
+			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+			.colorAttachmentCount = 1,
+
+			.pColorAttachments = &attachment_ref[0],
+			.pDepthStencilAttachment = &attachment_ref[1],
+		}
+	};
+
+	return create_render_pass(attachments, subpasses, dependency, false);
+}
+
+lvk_render_pass lvk_device::create_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform) {
+	lvk_render_pass render_pass = {
+		._render_pass = VK_NULL_HANDLE,
+	};
+
+	VkRenderPassCreateInfo createInfo = {
+		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = static_cast<VkRenderPassCreateFlags>((enable_transform == true) ? VK_RENDER_PASS_CREATE_TRANSFORM_BIT_QCOM: 0),
+		.attachmentCount = attachment_count,
+		.pAttachments = attachment,
+		.subpassCount = subpass_count,
+		.pSubpasses = subpass,
+		.dependencyCount = dependency_count,
+		.pDependencies = dependency,
+	};
+
+	if (vkCreateRenderPass(_device, &createInfo, VK_NULL_HANDLE, &render_pass._render_pass) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create renderpass!");
+	}
+	dloggln("RenderPass Created");
+	
+	deletion_queue.push([=]{
+		vkDestroyRenderPass(_device, render_pass._render_pass, VK_NULL_HANDLE);
+		dloggln("RenderPass Destroyed");
+	});
+
+	return render_pass;
+}
+
+
+// |--------------------------------------------------
+// ----------------> FRAMEBUFFER
+// |--------------------------------------------------
+
+
+lvk_framebuffer lvk_device::create_framebuffer(const lvk_render_pass& render_pass, const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count) {
+	lvk_framebuffer framebuffer = {
+		._framebuffer = VK_NULL_HANDLE,
+		._extent = extent
+	};
+	
+	VkFramebufferCreateInfo createInfo = {
+		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+		.flags = 0,
+		.renderPass = render_pass._render_pass,
+		.attachmentCount = image_views_count,
+		.pAttachments = image_views,
+		.width = extent.width,
+		.height = extent.height,
+		.layers = 1,
+	};
+	
+	if (vkCreateFramebuffer(this->_device, &createInfo, VK_NULL_HANDLE, &framebuffer._framebuffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create framebuffer");
+	}
+	dloggln("Framebuffer Created");
+	
+	deletion_queue.push([=]{
+		vkDestroyFramebuffer(this->_device, framebuffer._framebuffer, VK_NULL_HANDLE);
+		dloggln("Framebuffer Destroyed");
+	});
+
+	return framebuffer;
+}
