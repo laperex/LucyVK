@@ -12,10 +12,6 @@ struct lvk_shader_module {
 	VkShaderModule _shader_module;
 
 	const VkShaderStageFlagBits _stage;
-
-	~lvk_shader_module();
-
-	const lvk_device* device;
 };
 
 class lvk_shader_registry {

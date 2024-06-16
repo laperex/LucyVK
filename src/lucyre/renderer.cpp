@@ -24,15 +24,9 @@ void lre::renderer::init_frame_data() {
 	for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
 		frame_array[i].command_buffer = device->allocate_command_buffer_unique(command_pool);
 
-		// lvk_create_fence(device->_device, &frame_array[i].render_fence);
 		frame_array[i].render_fence = device->create_fence();
-		// deletion_queue.push(frame_array[i].render_fence);
-
 		frame_array[i].render_semaphore = device->create_semaphore();
-		// deletion_queue.push(frame_array[i].render_semaphore);
-
 		frame_array[i].present_semaphore = device->create_semaphore();
-		// deletion_queue.push(frame_array[i].present_semaphore);
 	}
 }
 
@@ -78,8 +72,8 @@ void lre::renderer::init_render_pass() {
 }
 
 void lre::renderer::init_pipeline() {
-	lvk_shader_module vertex_shader = device->init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.vert.spv");
-	lvk_shader_module fragment_shader = device->init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
+	lvk_shader_module vertex_shader = device->init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "./shaders/colored_triangle.vert.spv");
+	lvk_shader_module fragment_shader = device->init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "./shaders/colored_triangle.frag.spv");
 	
 	VkViewport viewport[] = {
 		{
