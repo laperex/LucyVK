@@ -175,3 +175,185 @@ void lvk_device::destroy() {
 lvk_device::~lvk_device() {
 	dloggln("-- Device Destructor");
 }
+
+// void lvk_device::allocate_command_buffers(const VkCommandPool command_pool, VkCommandBufferLevel level, lvk_command_buffer* command_buffers, uint32_t command_buffers_count) {
+// 	// lvk_command_buffer command_buffer = {
+// 	// 	._command_buffer = VK_NULL_HANDLE,
+// 	// };
+
+// 	VkCommandBufferAllocateInfo allocate_info = {
+// 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+
+// 		.commandPool = command_pool,
+// 		.level = level,
+// 		.commandBufferCount = 1,
+// 	};
+
+// 	if (vkAllocateCommandBuffers(device->_device, &allocate_info, &command_buffer._command_buffer) != VK_SUCCESS) {
+// 		throw std::runtime_error("command buffer allocation failed!");
+// 	}
+// 	dloggln("Command Buffer Allocated: ", &command_buffer._command_buffer);
+// }
+
+
+
+// |--------------------------------------------------
+// ----------------> SEMAPHORE
+// |--------------------------------------------------
+
+
+lvk_semaphore lvk_device::create_semaphore() {
+	lvk_semaphore semaphore = {
+		._semaphore = VK_NULL_HANDLE
+	};
+	
+	VkSemaphoreCreateInfo create_info = {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+	};
+
+	if (vkCreateSemaphore(this->_device, &create_info, VK_NULL_HANDLE, &semaphore._semaphore) != VK_SUCCESS) {
+		throw std::runtime_error("semaphore creation failed");
+	}
+	dloggln("Semaphore Created");
+	
+	deletion_queue.push([=]{
+		vkDestroySemaphore(this->_device, semaphore._semaphore, VK_NULL_HANDLE);
+		dloggln("Semaphore Destroyed");
+	});
+	
+	return semaphore;
+}
+
+
+// |--------------------------------------------------
+// ----------------> FENCE
+// |--------------------------------------------------
+
+
+lvk_fence lvk_device::create_fence(VkFenceCreateFlags flags) {
+	lvk_fence fence = {
+		._fence = VK_NULL_HANDLE
+	};
+	
+	VkFenceCreateInfo create_info = {
+		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		.pNext = VK_NULL_HANDLE,
+		.flags = flags
+	};
+
+	if (vkCreateFence(this->_device, &create_info, VK_NULL_HANDLE, &fence._fence) != VK_SUCCESS) {
+		throw std::runtime_error("fence creation failed");
+	}
+	dloggln("Fence Created");
+	
+	deletion_queue.push([=]{
+		vkDestroyFence(_device, fence._fence, VK_NULL_HANDLE);
+		dloggln("Fence Destroyed");
+	});
+	
+	return fence;
+}
+
+void lvk_device::wait_for_fence(const lvk_fence& fence, uint64_t timeout) {
+	wait_for_fences(&fence, 1, timeout);
+}
+
+void lvk_device::wait_for_fences(const lvk_fence* fence, uint32_t fence_count, uint64_t timeout) {
+	vkWaitForFences(this->_device, fence_count, &fence->_fence, true, timeout);
+}
+
+void lvk_device::reset_fence(const lvk_fence& fence) {
+	reset_fences(&fence, 1);
+}
+
+void lvk_device::reset_fences(const lvk_fence* fence, uint32_t fence_count) {
+	vkResetFences(this->_device, fence_count, &fence->_fence);
+}
+
+
+
+// |--------------------------------------------------
+// ----------------> COMMAND POOL
+// |--------------------------------------------------
+
+
+lvk_command_pool lvk_device::create_graphics_command_pool() {
+	return create_command_pool(physical_device._queue_family_indices.graphics.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+}
+
+
+lvk_command_pool lvk_device::create_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags) {
+	lvk_command_pool command_pool = {
+		._command_pool = VK_NULL_HANDLE
+	};
+
+	VkCommandPoolCreateInfo create_info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		.flags = flags,
+		.queueFamilyIndex = queue_family_index,
+	};
+
+    if (vkCreateCommandPool(_device, &create_info, VK_NULL_HANDLE, &command_pool._command_pool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create command pool!");
+    }
+	
+	deletion_queue.push([=]{
+		vkDestroyCommandPool(_device, command_pool._command_pool, VK_NULL_HANDLE);
+		dloggln("Command Pool Destroyed");
+	});
+
+	return command_pool;
+}
+
+lvk_command_buffer lvk_device::allocate_command_buffer_unique(const lvk_command_pool& command_pool, VkCommandBufferLevel level) {
+	lvk_command_buffer command_buffer = {
+		._command_buffer = VK_NULL_HANDLE
+	};
+
+	VkCommandBufferAllocateInfo allocate_info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+
+		.commandPool = command_pool._command_pool,
+		.level = level,
+		.commandBufferCount = 1,
+	};
+
+	if (vkAllocateCommandBuffers(this->_device, &allocate_info, &command_buffer._command_buffer) != VK_SUCCESS) {
+		throw std::runtime_error("command buffer allocation failed!");
+	}
+	dloggln("Command Buffer Allocated: ");
+	
+	
+	deletion_queue.push([=]{
+		vkFreeCommandBuffers(this->_device, command_pool._command_pool, 1, &command_buffer._command_buffer);
+		dloggln("Command Buffer Destroyed");
+	});
+	
+	return command_buffer;
+}
+
+std::vector<lvk_command_buffer> lvk_device::allocate_command_buffers(const lvk_command_pool& command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level) {
+	const std::vector<lvk_command_buffer> command_buffer_array(command_buffer_count);
+
+	VkCommandBufferAllocateInfo allocate_info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+
+		.commandPool = command_pool._command_pool,
+		.level = level,
+		.commandBufferCount = command_buffer_count,
+	};
+
+	if (vkAllocateCommandBuffers(this->_device, &allocate_info, (VkCommandBuffer*)command_buffer_array.data()->_command_buffer) != VK_SUCCESS) {
+		throw std::runtime_error("command buffers allocation failed!");
+	}
+	dloggln("Command Buffers Allocated: ");
+	
+	deletion_queue.push([=]{
+		vkFreeCommandBuffers(this->_device, command_pool._command_pool, command_buffer_count, (VkCommandBuffer*)command_buffer_array.data()->_command_buffer);
+		dloggln("Command Buffers Destroyed");
+	});
+	
+	return command_buffer_array;
+}

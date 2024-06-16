@@ -16,10 +16,10 @@
 namespace lre {
 	class renderer {
 		struct {
-			VkFence render_fence;
+			lvk_fence render_fence;
 
-			VkSemaphore present_semaphore;
-			VkSemaphore render_semaphore;
+			lvk_semaphore present_semaphore;
+			lvk_semaphore render_semaphore;
 
 			lvk_command_buffer command_buffer;
 

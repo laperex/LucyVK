@@ -12,17 +12,6 @@
 
 struct lvk_command_pool {
 	VkCommandPool _command_pool;
-
-	// ~lvk_command_pool();
-
-	const lvk_instance* instance;
-	// const lvk_physical_device* physical_device;
-	const lvk_device* device;
-	
-	lvk::deletion_queue* deletion_queue;
-
-	lvk_command_buffer init_command_buffer(VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-	lvk_immediate_command_buffer init_immediate_command_buffer();
 };
 
 
@@ -34,8 +23,8 @@ struct lvk_command_pool {
 struct lvk_command_buffer {
 	VkCommandBuffer _command_buffer;
 
-	const lvk_command_pool* command_pool;
-	const lvk_device* device;
+	// const lvk_command_pool* command_pool;
+	// const lvk_device* device;
 
 	void reset(VkCommandBufferResetFlags flags = 0);
 
@@ -75,6 +64,8 @@ struct lvk_command_buffer {
 	void copy_image_to_image(VkImage source, VkImage destination, VkImageLayout source_layout, VkImageLayout destination_layout, VkExtent2D src_size, VkExtent2D dst_size);
 	
 	void dispatch(uint32_t group_count_x, uint32_t group_count_y, uint32_t group_count_z);
+
+	void transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout);
 };
 
 
@@ -88,7 +79,4 @@ struct lvk_immediate_command_buffer {
 	VkFence _fence;
 
 	void transition_image(VkImage image, VkImageLayout old_layout, VkImageLayout new_layout) const;
-	
-	const lvk_command_pool* command_pool;
-	const lvk_device* device;
 };

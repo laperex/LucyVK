@@ -12,73 +12,9 @@
 
 
 // |--------------------------------------------------
-// ----------------> COMMAND POOL
-// |--------------------------------------------------
-
-
-lvk_command_pool lvk_device::init_command_pool() {
-	return init_command_pool(physical_device._queue_family_indices.graphics.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-}
-
-lvk_command_pool lvk_device::init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags) {
-	lvk_command_pool command_pool = {
-		.instance = instance,
-		// .physical_device = physical_device,
-		.device = this,
-		.deletion_queue = &deletion_queue,
-	};
-
-	VkCommandPoolCreateInfo poolInfo = {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-		.flags = flags,
-		.queueFamilyIndex = queue_family_index,
-	};
-
-    if (vkCreateCommandPool(_device, &poolInfo, VK_NULL_HANDLE, &command_pool._command_pool) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create command pool!");
-    }
-	
-	deletion_queue.push([=]{
-		vkDestroyCommandPool(_device, command_pool._command_pool, VK_NULL_HANDLE);
-		dloggln("Command Pool Destroyed");
-	});
-
-	return command_pool;
-}
-
-
-// |--------------------------------------------------
 // ----------------> COMMAND BUFFER
 // |--------------------------------------------------
 
-
-lvk_command_buffer lvk_command_pool::init_command_buffer(VkCommandBufferLevel level) {
-	lvk_command_buffer command_buffer = {
-		VK_NULL_HANDLE,
-		this,
-		device
-	};
-
-	VkCommandBufferAllocateInfo allocate_info = {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-
-		.commandPool = _command_pool,
-		.level = level,
-		.commandBufferCount = 1,
-	};
-
-	if (vkAllocateCommandBuffers(device->_device, &allocate_info, &command_buffer._command_buffer) != VK_SUCCESS) {
-		throw std::runtime_error("command buffer allocation failed!");
-	}
-	dloggln("Command Buffer Allocated: ", &command_buffer._command_buffer);
-	
-	deletion_queue->push([=]{
-		vkFreeCommandBuffers(device->_device, _command_pool, 1, &command_buffer._command_buffer);
-		dloggln("Command Buffer Destroyed");
-	});
-	
-	return command_buffer;
-}
 
 void lvk_command_buffer::reset(VkCommandBufferResetFlags flags) {
 	vkResetCommandBuffer(_command_buffer, flags);
@@ -110,10 +46,8 @@ void lvk_command_buffer::bind_vertex_buffers(const VkBuffer* vertex_buffers, con
 	vkCmdBindVertexBuffers(_command_buffer, first_binding, vertex_buffers_count, vertex_buffers, offset_array);
 }
 
-
-
-void lvk_transition_image(const VkCommandBuffer command_buffer, VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) {
-	VkImageAspectFlags aspect_mask = (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+void lvk_command_buffer::transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) {
+    VkImageAspectFlags aspect_mask = (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 
     VkImageMemoryBarrier2 image_barrier {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
@@ -139,38 +73,8 @@ void lvk_transition_image(const VkCommandBuffer command_buffer, VkImage image, V
 		.pImageMemoryBarriers = &image_barrier
 	};
 
-    vkCmdPipelineBarrier2(command_buffer, &dependency_info);
+    vkCmdPipelineBarrier2(_command_buffer, &dependency_info);
 }
-
-// void lvk_command_buffer::transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) {
-//     VkImageAspectFlags aspect_mask = (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-
-//     VkImageMemoryBarrier2 image_barrier {
-// 		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-
-// 		.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-// 		.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
-		
-// 		.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-// 		.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT,
-		
-// 		.oldLayout = current_layout,
-// 		.newLayout = new_layout,
-		
-// 		.image = image,
-		
-// 		.subresourceRange = lvk::image_subresource_range(aspect_mask),
-// 	};
-
-//     VkDependencyInfo dependency_info {
-// 		.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-
-// 		.imageMemoryBarrierCount = 1,
-// 		.pImageMemoryBarriers = &image_barrier
-// 	};
-
-//     vkCmdPipelineBarrier2(_command_buffer, &dependency_info);
-// }
 
 // void lvk_command_buffer::transition_image_imme(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) {
 //     // VkImageAspectFlags aspect_mask = (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
@@ -300,46 +204,46 @@ void lvk_command_buffer::end_render_pass() {
 }
 
 
-// |--------------------------------------------------
-// ----------------> IMMEDIATE COMMAND BUFFER
-// |--------------------------------------------------
+// // |--------------------------------------------------
+// // ----------------> IMMEDIATE COMMAND BUFFER
+// // |--------------------------------------------------
 
 
-lvk_immediate_command_buffer lvk_command_pool::init_immediate_command_buffer() {
-	lvk_immediate_command_buffer immediate_command_buffer = {
-		.command_pool = this,
-		.device = this->device
-	};
+// lvk_immediate_command_buffer lvk_command_pool::init_immediate_command_buffer() {
+// 	lvk_immediate_command_buffer immediate_command_buffer = {
+// 		.command_pool = this,
+// 		// .device = this->device
+// 	};
 	
-	VkCommandBufferAllocateInfo allocate_info = {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+// 	VkCommandBufferAllocateInfo allocate_info = {
+// 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 
-		.commandPool = _command_pool,
-		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-		.commandBufferCount = 1,
-	};
+// 		.commandPool = _command_pool,
+// 		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+// 		.commandBufferCount = 1,
+// 	};
 	
-	if (vkAllocateCommandBuffers(device->_device, &allocate_info, &immediate_command_buffer._command_buffer) != VK_SUCCESS) {
-		throw std::runtime_error("immediate command buffer allocation failed!");
-	}
-	dloggln("Immediate Command Buffer Allocated: ", &immediate_command_buffer._command_buffer);
+// 	if (vkAllocateCommandBuffers(device->_device, &allocate_info, &immediate_command_buffer._command_buffer) != VK_SUCCESS) {
+// 		throw std::runtime_error("immediate command buffer allocation failed!");
+// 	}
+// 	dloggln("Immediate Command Buffer Allocated: ", &immediate_command_buffer._command_buffer);
 	
-	VkFenceCreateInfo createInfo = {
-		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-	};
+// 	VkFenceCreateInfo createInfo = {
+// 		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+// 	};
 	
-	if (vkCreateFence(device->_device, &createInfo, VK_NULL_HANDLE, &immediate_command_buffer._fence) != VK_SUCCESS) {
-		throw std::runtime_error("immediate fence creation failed");
-	}
-	dloggln("Immediate Fence Created");
+// 	if (vkCreateFence(device->_device, &createInfo, VK_NULL_HANDLE, &immediate_command_buffer._fence) != VK_SUCCESS) {
+// 		throw std::runtime_error("immediate fence creation failed");
+// 	}
+// 	dloggln("Immediate Fence Created");
 	
-	deletion_queue->push([=]{
-		vkDestroyFence(device->_device, immediate_command_buffer._fence, VK_NULL_HANDLE);
-		dloggln("Fence Destroyed");
-	});
+// 	deletion_queue->push([=]{
+// 		vkDestroyFence(device->_device, immediate_command_buffer._fence, VK_NULL_HANDLE);
+// 		dloggln("Fence Destroyed");
+// 	});
 
-	return immediate_command_buffer;
-}
+// 	return immediate_command_buffer;
+// }
 
 void lvk_immediate_command_buffer::transition_image(VkImage image, VkImageLayout old_layout, VkImageLayout new_layout) const {
 	VkCommandBufferBeginInfo begin_info = {
@@ -388,9 +292,9 @@ void lvk_immediate_command_buffer::transition_image(VkImage image, VkImageLayout
 		.pCommandBuffers = &_command_buffer,
 	};
 
-	device->submit(&submit_info, 1, _fence, LVK_TIMEOUT);
+	// device->submit(&submit_info, 1, _fence, LVK_TIMEOUT);
 
-	vkWaitForFences(device->_device, 1, &_fence, true, LVK_TIMEOUT);
-	vkResetFences(device->_device, 1, &_fence);
-	vkResetCommandBuffer(_command_buffer, 0);
+	// vkWaitForFences(device->_device, 1, &_fence, true, LVK_TIMEOUT);
+	// vkResetFences(device->_device, 1, &_fence);
+	// vkResetCommandBuffer(_command_buffer, 0);
 }

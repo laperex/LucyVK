@@ -47,15 +47,52 @@ struct lvk_device {
 	
 	lvk::deletion_queue deletion_queue;
 	
-	
 	~lvk_device();
 
+
+	// SYNC 		---------- ---------- ---------- ----------
+
+
+	lvk_semaphore create_semaphore();
+
+	lvk_fence create_fence(VkFenceCreateFlags flags = 0);
+
+
+	void wait_for_fence(const lvk_fence& fence, uint64_t timeout = LVK_TIMEOUT);
+	void wait_for_fences(const lvk_fence* fence, uint32_t fence_count, uint64_t timeout = LVK_TIMEOUT);
+
+	template <std::size_t _f_N>
+	void wait_for_fences(const lvk_fence (&fence)[_f_N], uint64_t timeout = LVK_TIMEOUT) {
+		wait_for_fences(fence, _f_N, timeout);
+	}
+
+
+	void reset_fence(const lvk_fence& fence);
+	void reset_fences(const lvk_fence* fence, uint32_t fence_count);
+
+	template <std::size_t _f_N>
+	void reset_fences(const lvk_fence (&fence)[_f_N]) {
+		reset_fences(fence, _f_N);
+	}
+
+
+	// COMMAND 		---------- ---------- ---------- ----------
+
+
+	lvk_command_pool create_graphics_command_pool();
+	lvk_command_pool create_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
+
+	lvk_command_buffer allocate_command_buffer_unique(const lvk_command_pool& command_pool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	std::vector<lvk_command_buffer> allocate_command_buffers(const lvk_command_pool& command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+
+	// SWAPCHAIN 	---------- ---------- ---------- ----------
 
 
 	lvk_swapchain init_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format);
 	
-	lvk_command_pool init_command_pool();
-	lvk_command_pool init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
+	// lvk_command_pool init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
+	
 	
 	lvk_sampler init_sampler(VkFilter min_filter, VkFilter mag_filter, VkSamplerAddressMode sampler_addres_mode);
 	
@@ -119,5 +156,5 @@ struct lvk_device {
 
 	VkResult present(const VkPresentInfoKHR* present_info) const;
 
-	VkSemaphore* create_semaphore();
+	// VkSemaphore* create_semaphore();
 };

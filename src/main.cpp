@@ -6,6 +6,8 @@
 #include "lucy/window.h"
 #include <stb_image.h>
 
+#include <vulkan/vulkan.hpp>
+
 
 template <typename T>
 T& static_store() {
@@ -18,6 +20,13 @@ int main(int count, char** args) {
 	lucy::events _events;
 	lucy::window _window;
 	auto& _renderer = static_store<lre::renderer>();
+	// d.c
+	// vk::Device d;
+	// d.waitForFences()
+	vk::ArrayProxy<uint32_t> a = { 0, 1, 2 };
+	// d.createFence()
+	// VkFenceCreateInfo a;
+	// d.createFenceUnique()
 	
 	_window.initialize("lucy", { 50, 50 }, { 1920, 1080 });
 

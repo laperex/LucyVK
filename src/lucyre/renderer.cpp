@@ -19,19 +19,20 @@ lre::renderer::renderer()
 }
 
 void lre::renderer::init_frame_data() {
-	command_pool = device->init_command_pool();
+	command_pool = device->create_graphics_command_pool();
 
 	for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
-		frame_array[i].command_buffer = command_pool.init_command_buffer();
+		frame_array[i].command_buffer = device->allocate_command_buffer_unique(command_pool);
 
-		lvk_create_fence(device->_device, &frame_array[i].render_fence);
-		deletion_queue.push(frame_array[i].render_fence);
+		// lvk_create_fence(device->_device, &frame_array[i].render_fence);
+		frame_array[i].render_fence = device->create_fence();
+		// deletion_queue.push(frame_array[i].render_fence);
 
-		lvk_create_semaphore(device->_device, &frame_array[i].render_semaphore);
-		deletion_queue.push(frame_array[i].render_semaphore);
+		frame_array[i].render_semaphore = device->create_semaphore();
+		// deletion_queue.push(frame_array[i].render_semaphore);
 
-		lvk_create_semaphore(device->_device, &frame_array[i].present_semaphore);
-		deletion_queue.push(frame_array[i].present_semaphore);
+		frame_array[i].present_semaphore = device->create_semaphore();
+		// deletion_queue.push(frame_array[i].present_semaphore);
 	}
 }
 
@@ -208,7 +209,7 @@ void lre::renderer::initialization(SDL_Window* window) {
 	// compute_image = allocator.init_image(VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
 	// compute_image_view = compute_image.init_image_view(VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
 
-	immediate_command_buffer = command_pool.init_immediate_command_buffer();
+	// immediate_command_buffer = command_pool.init_immediate_command_buffer();
 	
 	// immediate_command_buffer.transition_image(compute_image._image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 	
@@ -224,7 +225,7 @@ void lre::renderer::record(uint32_t frame_number) {
 	auto& frame = frame_array[frame_number % FRAMES_IN_FLIGHT];
 	auto& cmd = frame.command_buffer;
 
-	swapchain.acquire_next_image(&frame.image_index, frame.present_semaphore, VK_NULL_HANDLE);
+	swapchain.acquire_next_image(&frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE);
 
 	// draw.extent = *(const VkExtent2D*)&draw.image._extent;
 
@@ -294,7 +295,7 @@ void lre::renderer::submit(uint32_t frame_number) {
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		
 		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &frame.present_semaphore,
+		.pWaitSemaphores = &frame.present_semaphore._semaphore,
 		
 		.pWaitDstStageMask = &wait_dest,
 		
@@ -302,19 +303,19 @@ void lre::renderer::submit(uint32_t frame_number) {
 		.pCommandBuffers = &frame.command_buffer._command_buffer,
 		
 		.signalSemaphoreCount = 1,
-		.pSignalSemaphores = &frame.render_semaphore,
+		.pSignalSemaphores = &frame.render_semaphore._semaphore,
 	};
 
-	device->submit(&submit_info, 1, frame.render_fence);
+	device->submit(&submit_info, 1, frame.render_fence._fence);
 	
-	vkWaitForFences(device->_device, 1, &frame.render_fence, false, LVK_TIMEOUT);
-	vkResetFences(device->_device, 1, &frame.render_fence);
+	vkWaitForFences(device->_device, 1, &frame.render_fence._fence, false, LVK_TIMEOUT);
+	vkResetFences(device->_device, 1, &frame.render_fence._fence);
 
 	VkPresentInfoKHR presentInfo = {
 		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		
 		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &frame.render_semaphore,
+		.pWaitSemaphores = &frame.render_semaphore._semaphore,
 		
 		.swapchainCount = 1,
 		.pSwapchains = &swapchain._swapchain,
