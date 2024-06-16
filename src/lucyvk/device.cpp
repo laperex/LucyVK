@@ -1,11 +1,11 @@
 #include "lucyvk/device.h"
 #include "lucyvk/create_info.h"
 #include "lucyvk/types.h"
-#include "lucyvk/instance.h"
-// #include "lucyvk/swapchain.h"
+
 #include "lucyvk/functions.h"
-// #include "lucyvk/pipeline.h"
-// #include "lucyvk/render_pass.h"
+
+#include "lucyvk/instance.h"
+
 
 #include "lucyio/logger.h"
 #include <set>
@@ -13,138 +13,39 @@
 
 #include "lucyvk/memory.h"
 
+
 // |--------------------------------------------------
 // ----------------> DEVICE
 // |--------------------------------------------------
 
 
-lvk_device_ptr lvk_instance::init_device(std::vector<const char*> extensions, std::vector<const char*> layers, lvk::SelectPhysicalDeviceFunction function) {
-	return std::make_unique<lvk_device>(this, extensions, layers, function);
-}
+// lvk_device_ptr lvk_instance::init_device(std::vector<const char*> extensions, std::vector<const char*> layers, lvk::SelectPhysicalDevice_F function) {
+// 	return std::make_unique<lvk_device>(this, extensions, layers, function);
+// }
 
 
-lvk_device::lvk_device(lvk_instance* _instance, std::vector<const char*> extensions, std::vector<const char*> layers, lvk::SelectPhysicalDeviceFunction function)
-	: extensions(extensions), layers(layers), instance(_instance)
-{
-	{
-		uint32_t availableDeviceCount = 0;
-
-		vkEnumeratePhysicalDevices(instance->_instance, &availableDeviceCount, VK_NULL_HANDLE);
-		std::vector<VkPhysicalDevice> availableDevices(availableDeviceCount);
-		vkEnumeratePhysicalDevices(instance->_instance, &availableDeviceCount, availableDevices.data());
-
-		this->physical_device._physical_device = (function == nullptr) ?
-			lvk::default_physical_device(availableDevices, _instance):
-			function(availableDevices, _instance);
-		
-		if (this->physical_device._physical_device == nullptr) {
-			throw std::runtime_error("failed to find suitable PhysicalDevice!");
-		}
-
-		this->physical_device._queue_family_indices = lvk::query_queue_family_indices(this->physical_device._physical_device, instance->_surface);
-		this->physical_device._swapchain_support_details = lvk::query_swapchain_support_details(this->physical_device._physical_device, instance->_surface);
-
-		vkGetPhysicalDeviceFeatures(this->physical_device._physical_device, &this->physical_device._features);
-		vkGetPhysicalDeviceProperties(this->physical_device._physical_device, &this->physical_device._properties);
-		
-		dloggln(this->physical_device._physical_device, " Physical Device - ", this->physical_device._properties.deviceName);
-	}
+// lvk_device::lvk_device(lvk_instance* _instance, std::vector<const char*> extensions, std::vector<const char*> layers, lvk::SelectPhysicalDevice_F function)
+// 	: extensions(extensions), layers(layers), instance(_instance)
+// {
 	
 	
-	std::set<uint32_t> unique_queue_indices = {
-		this->physical_device._queue_family_indices.graphics.value(),
-		this->physical_device._queue_family_indices.present.value(),
-		this->physical_device._queue_family_indices.compute.value(),
-		this->physical_device._queue_family_indices.transfer.value(),
-	};
-
-	VkDeviceQueueCreateInfo* queue_create_info_array = new VkDeviceQueueCreateInfo[unique_queue_indices.size()];
-
-    float priority = 1.0f;
-	uint32_t i = 0;
-    for (auto index: unique_queue_indices) {
-		queue_create_info_array[i++] = {
-			.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-			.queueFamilyIndex = index,
-			.queueCount = static_cast<uint32_t>(unique_queue_indices.size()),
-			.pQueuePriorities = &priority
-		};
-    }
-	
-	VkPhysicalDeviceDynamicRenderingFeatures dynamic_features = {
-		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
-		.dynamicRendering = VK_TRUE,
-	};
-	
-	VkPhysicalDeviceSynchronization2Features sync2_features = {
-		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
-		.pNext = &dynamic_features,
-		.synchronization2 = VK_TRUE,
-	};
-	
-	VkDeviceCreateInfo create_info = {
-		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		
-		// .pNext = &sync2_features,
-		
-		.queueCreateInfoCount = static_cast<uint32_t>(unique_queue_indices.size()),
-		.pQueueCreateInfos = queue_create_info_array,
-		
-		.enabledLayerCount = static_cast<uint32_t>(std::size(this->layers)),
-		.ppEnabledLayerNames = this->layers.data(),
-		
-		.enabledExtensionCount = static_cast<uint32_t>(std::size(this->extensions)),
-		.ppEnabledExtensionNames = this->extensions.data(),
-		
-		.pEnabledFeatures = &this->physical_device._features
-	};
-
-    if (vkCreateDevice(this->physical_device._physical_device, &create_info, VK_NULL_HANDLE, &this->_device) != VK_SUCCESS) {
-        throw std::runtime_error("logical device creation failed!");
-    }
-	dloggln("Logical Device Created");
-
-    for (uint32_t index: unique_queue_indices) {
-		VkQueue queue;
-    	vkGetDeviceQueue(this->_device, index, 0, &queue);
-
-		if (index == this->physical_device._queue_family_indices.graphics.value()) {
-			this->_graphics_queue = queue;
-			dloggln("Graphics Queue Created");
-		}
-		if (index == this->physical_device._queue_family_indices.present.value()) {
-			this->_present_queue = queue;
-			dloggln("Present Queue Created");
-		}
-		if (index == this->physical_device._queue_family_indices.compute.value()) {
-			this->_compute_queue = queue;
-			dloggln("Compute Queue Created");
-		}
-		if (index == this->physical_device._queue_family_indices.transfer.value()) {
-			this->_transfer_queue = queue;
-			dloggln("Transfer Queue Created");
-		}
-	}
-	
-	delete [] queue_create_info_array;
-	
-	// return device;
-}
+// 	// return device;
+// }
 
 void lvk_device::wait_idle() const {
 	vkDeviceWaitIdle(_device);
 }
 
-VkResult lvk_device::submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const VkFence fence, uint64_t timeout) const {
-	return vkQueueSubmit(_graphics_queue, 1, submit_info, fence);
+VkResult lvk_device::submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const lvk_fence& fence, uint64_t timeout) const {
+	return vkQueueSubmit(_graphics_queue, 1, submit_info, fence._fence);
 }
 
 // VkResult lvk_device::submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const VkFence fence, uint64_t timeout) const {
 // 	return vkQueueSubmit(_graphics_queue, 1, submit_info, fence);
 // }
 
-VkResult lvk_device::submit2(const VkSubmitInfo2* submit_info2, const uint32_t submit_info2_count, const VkFence fence) const {
-	return vkQueueSubmit2(_graphics_queue, submit_info2_count, submit_info2, fence);
+VkResult lvk_device::submit2(const VkSubmitInfo2* submit_info2, const uint32_t submit_info2_count, const lvk_fence& fence) const {
+	return vkQueueSubmit2(_graphics_queue, submit_info2_count, submit_info2, fence._fence);
 }
 
 VkResult lvk_device::present(const VkPresentInfoKHR* present_info) const {
@@ -177,9 +78,9 @@ void lvk_device::destroy() {
 	dloggln("Logical Device Destroyed");
 }
 
-lvk_device::~lvk_device() {
-	dloggln("-- Device Destructor");
-}
+// lvk_device::~lvk_device() {
+// 	dloggln("-- Device Destructor");
+// }
 
 // void lvk_device::allocate_command_buffers(const VkCommandPool command_pool, VkCommandBufferLevel level, lvk_command_buffer* command_buffers, uint32_t command_buffers_count) {
 // 	// lvk_command_buffer command_buffer = {
@@ -322,6 +223,10 @@ lvk_command_pool lvk_device::create_command_pool(uint32_t queue_family_index, Vk
 	return command_pool;
 }
 
+void lvk_device::reset_command_pool(const lvk_command_pool& command_pool) {
+	vkResetCommandPool(_device, command_pool._command_pool, 0);
+}
+
 lvk_command_buffer lvk_device::allocate_command_buffer_unique(const lvk_command_pool& command_pool, VkCommandBufferLevel level) {
 	lvk_command_buffer command_buffer = {
 		._command_buffer = VK_NULL_HANDLE
@@ -371,6 +276,82 @@ std::vector<lvk_command_buffer> lvk_device::allocate_command_buffers(const lvk_c
 	});
 	
 	return command_buffer_array;
+}
+
+lvk_immediate_command lvk_device::create_immediate_command() {
+	lvk_immediate_command immediate_command = {
+		._command_pool = VK_NULL_HANDLE,
+		._command_buffer = VK_NULL_HANDLE,
+		._fence = VK_NULL_HANDLE
+	};
+	
+	VkCommandPoolCreateInfo create_info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+		.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+		.queueFamilyIndex = physical_device._queue_family_indices.graphics.value(),
+	};
+
+    if (vkCreateCommandPool(_device, &create_info, VK_NULL_HANDLE, &immediate_command._command_pool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create command pool!");
+    }
+	
+	{
+		VkCommandBufferAllocateInfo allocate_info = {
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+
+			.commandPool = immediate_command._command_pool,
+			.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			.commandBufferCount = 1,
+		};
+
+		if (vkAllocateCommandBuffers(this->_device, &allocate_info, &immediate_command._command_buffer) != VK_SUCCESS) {
+			throw std::runtime_error("command buffers allocation failed!");
+		}
+	}
+	
+	{
+		VkFenceCreateInfo create_info = {
+			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+			.pNext = VK_NULL_HANDLE,
+			.flags = 0
+		};
+
+		if (vkCreateFence(this->_device, &create_info, VK_NULL_HANDLE, &immediate_command._fence) != VK_SUCCESS) {
+			throw std::runtime_error("fence creation failed");
+		}
+	}
+
+	return immediate_command;
+}
+
+VkResult lvk_device::immediate_submit(const lvk_immediate_command& immediate_command, std::function<void(const VkCommandBuffer)> function) const {
+	VkCommandBufferBeginInfo begin_info = {
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+		.pInheritanceInfo = VK_NULL_HANDLE
+	};
+
+	vkBeginCommandBuffer(immediate_command._command_buffer, &begin_info);
+	
+	function(immediate_command._command_buffer);
+	
+	vkEndCommandBuffer(immediate_command._command_buffer);
+	
+	VkSubmitInfo submit_info = {
+		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+		
+		.commandBufferCount = 1,
+		.pCommandBuffers = &immediate_command._command_buffer,
+	};
+	
+	VkResult result = vkQueueSubmit(_graphics_queue, 1, &submit_info, immediate_command._fence);
+	
+	vkWaitForFences(_device, 1, &immediate_command._fence, true, LVK_TIMEOUT);
+	vkResetFences(_device, 1, &immediate_command._fence);
+	
+	vkResetCommandPool(_device, immediate_command._command_pool, 0);
+	
+	return result;
 }
 
 
@@ -659,13 +640,13 @@ lvk_allocator lvk_device::create_allocator() {
 		.deletion_queue = &deletion_queue
 	};
 	
-	VmaAllocatorCreateInfo allocatorInfo = {};
+	VmaAllocatorCreateInfo allocator_info = {
+		.physicalDevice = physical_device._physical_device,
+		.device = _device,
+		.instance = instance->_instance,
+	};
 
-    allocatorInfo.physicalDevice = physical_device._physical_device;
-    allocatorInfo.device = _device;
-    allocatorInfo.instance = instance->_instance;
-
-    vmaCreateAllocator(&allocatorInfo, &allocator._allocator);
+    vmaCreateAllocator(&allocator_info, &allocator._allocator);
 	dloggln("Allocator Created");
 	
 	deletion_queue.push([=]{
@@ -677,9 +658,9 @@ lvk_allocator lvk_device::create_allocator() {
 }
 
 
-// // |--------------------------------------------------
-// // ----------------> IMAGE VIEW
-// // |--------------------------------------------------
+// |--------------------------------------------------
+// ----------------> IMAGE VIEW
+// |--------------------------------------------------
 
 
 lvk_image_view lvk_device::create_image_view(const lvk_image& image, VkImageAspectFlags aspect_flag, VkImageViewType image_view_type) {

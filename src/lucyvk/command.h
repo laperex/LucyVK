@@ -15,17 +15,11 @@
 struct lvk_command_buffer {
 	VkCommandBuffer _command_buffer;
 
-	// const lvk_command_pool* command_pool;
-	// const lvk_device* device;
-
 	void reset(VkCommandBufferResetFlags flags = 0) const;
 
 	void begin(const VkCommandBufferBeginInfo* beginInfo) const;
 	void begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info = VK_NULL_HANDLE) const;
 
-	// void transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const;
-	// void transition_image(const lvk_image* image, VkImageLayout current_layout, VkImageLayout new_layout) const;
-	
 	void blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size) const;
 	
 	void bind_pipeline(const lvk_pipeline* pipeline) const;
@@ -58,10 +52,8 @@ struct lvk_command_buffer {
 	void dispatch(uint32_t group_count_x, uint32_t group_count_y, uint32_t group_count_z) const;
 
 	void transition_image2(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const;
-	VkSubmitInfo immediate_transition_image2(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const;
+	// VkSubmitInfo immediate_transition_image2(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const;
 	
 	void transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const;
-	VkSubmitInfo immediate_transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const;
-
-	VkSubmitInfo immediate(std::function<void()> function) const;
+	// VkSubmitInfo immediate_transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const;
 };

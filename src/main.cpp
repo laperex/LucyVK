@@ -20,8 +20,8 @@ int main(int count, char** args) {
 	lucy::events _events;
 	lucy::window _window;
 	auto& _renderer = static_store<lre::renderer>();
-	// d.c
-	// vk::Device d;
+	// d.
+	// a.
 	// d.waitForFences()
 	// vk::ArrayProxy<uint32_t> a = { 0, 1, 2 };
 	// d.createFence()

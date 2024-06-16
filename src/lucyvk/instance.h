@@ -2,6 +2,7 @@
 
 #include "lucyvk/config.h"
 #include "lucyvk/handles.h"
+#include "lucyvk/functions.h"
 
 
 // |--------------------------------------------------
@@ -22,8 +23,7 @@ struct lvk_instance {
 	
 	bool is_debug_enable();
 
-	lvk_device_ptr init_device(std::vector<const char*> extensions, std::vector<const char*> layers = { VK_KHR_SWAPCHAIN_EXTENSION_NAME }, lvk::SelectPhysicalDeviceFunction function = nullptr);
-	// lvk_physical_device init_physical_device();
+	lvk_device create_device(std::vector<const char*> extensions, std::vector<const char*> layers = { VK_KHR_SWAPCHAIN_EXTENSION_NAME }, lvk::SelectPhysicalDevice_F function = nullptr);
 
 	void destroy();
 };

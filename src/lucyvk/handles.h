@@ -1,9 +1,12 @@
 #pragma once
 
+#include "vk_mem_alloc.h"
 #include <memory>
 #include <vulkan/vulkan.h>
 
 struct lvk_device;
+
+struct lvk_instance;
 
 
 struct lvk_queue;
@@ -141,4 +144,56 @@ struct lvk_framebuffer {
 
 struct lvk_render_pass {
 	VkRenderPass _render_pass;
+};
+
+
+// |--------------------------------------------------
+// ----------------> BUFFER
+// |--------------------------------------------------
+
+
+struct lvk_buffer {
+	VkBuffer _buffer;
+	VmaAllocation _allocation;
+	
+	std::size_t _allocated_size;
+	VkBufferUsageFlagBits _usage;
+};
+
+
+// |--------------------------------------------------
+// ----------------> IMAGE
+// |--------------------------------------------------
+
+
+struct lvk_image {
+	VkImage _image;
+	VmaAllocation _allocation;
+	
+	VkFormat _format;
+	VkImageType _image_type;
+	VkExtent3D _extent;
+	VkImageUsageFlags _usage;
+};
+
+
+// |--------------------------------------------------
+// ----------------> IMAGE VIEW
+// |--------------------------------------------------
+
+
+struct lvk_image_view {
+	VkImageView _image_view;
+};
+
+
+// |--------------------------------------------------
+// ----------------> COMMAND BUFFER IMMEDIATE
+// |--------------------------------------------------
+
+
+struct lvk_immediate_command {
+	VkCommandPool _command_pool;
+	VkCommandBuffer _command_buffer;
+	VkFence _fence;
 };

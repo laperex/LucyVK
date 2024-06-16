@@ -2,9 +2,11 @@
 
 #include "lucylm/math.hpp"
 
+#include "lucyre/mesh.h"
 #include "lucyvk/command.h"
 #include "lucyvk/device.h"
 #include "lucyvk/instance.h"
+#include "lucyvk/functions.h"
 #include "lucyvk/memory.h"
 // #include "lucyvk/synchronization.h"
 #include "lucyvk/types.h"
@@ -25,14 +27,15 @@ namespace lre {
 
 			uint32_t image_index;
 		} frame_array[FRAMES_IN_FLIGHT];
-		
-		// lvk_instance_destructor<VkDevice> deletion_queue;
+
 
 		lvk_command_pool command_pool;
+		
+		lvk_immediate_command immediate_command;
 
 		lvk_instance instance;
 		// lvk_physical_device physical_device;
-		lvk_device_ptr device = {};
+		lvk_device device;
 		lvk_allocator allocator;
 
 		lvk_swapchain swapchain;
@@ -59,8 +62,6 @@ namespace lre {
 		lvk_image_view compute_image_view;
 		// lvk_image compute_image;
 		
-		// lvk_immediate_command immediate_command_buffer;
-		
 		
 		VkClearValue clear_value[2] = {
 			{
@@ -78,11 +79,14 @@ namespace lre {
 		SDL_Window* sdl_window = nullptr;
 
 		void init_frame_data();
+		void init_upload_mesh();
 		void init_swapchain(const glm::ivec2 size);
 		void init_descriptor_pool();
 		
 		void init_render_pass();
 		void init_pipeline();
+		
+		void upload_mesh(Mesh& mesh);
 
 	public:
 		renderer();

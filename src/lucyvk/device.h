@@ -21,11 +21,11 @@ struct lvk_device {
 	VkQueue _transfer_queue;
 	VkQueue _graphics_queue;
 
-	std::vector<const char*> extensions = {};
-	std::vector<const char*> layers = {};
+	std::vector<const char*> extensions;
+	std::vector<const char*> layers;
 
-	lvk_device() {}
-	lvk_device(lvk_instance* _instance, std::vector<const char*> extensions, std::vector<const char*> layers, lvk::SelectPhysicalDeviceFunction function);
+	// lvk_device() {}
+	// lvk_device(lvk_instance* _instance, std::vector<const char*> extensions, std::vector<const char*> layers, lvk::SelectPhysicalDevice_F function);
 	
 	struct {
 		VkPhysicalDevice _physical_device;
@@ -43,11 +43,11 @@ struct lvk_device {
 	void destroy();
 
 	// const lvk_physical_device* physical_device;
-	const lvk_instance* instance;
-	
 	lvk::deletion_queue deletion_queue;
 	
-	~lvk_device();
+	const lvk_instance* instance;
+	
+	// ~lvk_device();
 
 
 	// SYNCHRONIZATION 		---------- ---------- ---------- ----------
@@ -81,9 +81,13 @@ struct lvk_device {
 
 	lvk_command_pool create_graphics_command_pool();
 	lvk_command_pool create_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
+	void reset_command_pool(const lvk_command_pool& command_pool);
 
 	lvk_command_buffer allocate_command_buffer_unique(const lvk_command_pool& command_pool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	std::vector<lvk_command_buffer> allocate_command_buffers(const lvk_command_pool& command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	
+	lvk_immediate_command create_immediate_command();
+	VkResult immediate_submit(const lvk_immediate_command& immediate_command, std::function<void(const VkCommandBuffer)> function) const;
 
 
 	// SWAPCHAIN 	---------- ---------- ---------- ----------
@@ -210,10 +214,15 @@ struct lvk_device {
 	void wait_idle() const;
 
 
-	VkResult submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const VkFence fence, uint64_t timeout = LVK_TIMEOUT) const;
+	VkResult submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const lvk_fence& fence, uint64_t timeout = LVK_TIMEOUT) const;
+
+	template <std::size_t _si_N> [[nodiscard, __gnu__::__always_inline__]]
+	constexpr VkResult submit(const VkSubmitInfo (&submit_info)[_si_N], const lvk_fence& fence, uint64_t timeout = LVK_TIMEOUT) const noexcept {
+		return submit(submit_info, _si_N, fence, timeout);
+	}
 	// VkResult submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const VkFence fence, uint64_t timeout = LVK_TIMEOUT) const;
 
-	VkResult submit2(const VkSubmitInfo2* submit_info2, const uint32_t submit_info2_count, const VkFence fence) const;
+	VkResult submit2(const VkSubmitInfo2* submit_info2, const uint32_t submit_info2_count, const lvk_fence& fence) const;
 	
 	template <std::size_t _si2_N> [[nodiscard, __gnu__::__always_inline__]]
 	constexpr VkResult submit2(const VkSubmitInfo2 (&submit_info2)[_si2_N], const lvk_fence* fence) noexcept {
