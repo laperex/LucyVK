@@ -1,10 +1,9 @@
 #pragma once
 
-#include "lucyvk/pipeline.h"
-#include "lucyvk/descriptor.h"
-#include "lucyvk/render_pass.h"
+#include "lucyvk/handles.h"
+#include "lucyvk/types.h"
 #include "lucyvk/command.h"
-#include "lucyvk/synchronization.h"
+#include "lucyvk/config.h"
 #include "lucyvk/texture.h"
 
 
@@ -103,7 +102,6 @@ struct lvk_device {
 	lvk_pipeline create_graphics_pipeline(const lvk_pipeline_layout& pipeline_layout, const lvk::config::graphics_pipeline* config, const lvk_render_pass* render_pass);
 	lvk_pipeline create_compute_pipeline(const lvk_pipeline_layout& pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info);
 
-	// lvk_pipeline_layout init_pipeline_layout(const VkPushConstantRange* push_constant_ranges = VK_NULL_HANDLE, const uint32_t push_constant_range_count = 0, const VkDescriptorSetLayout* descriptor_set_layouts = VK_NULL_HANDLE, const uint32_t descriptor_set_layout_count = 0);
 
 	template <std::size_t _pcr_N, std::size_t _dsl_N> [[nodiscard, __gnu__::__always_inline__]]
     constexpr lvk_pipeline_layout create_pipeline_layout(const VkPushConstantRange (&push_constant_ranges)[_pcr_N], const VkDescriptorSetLayout (&descriptor_set_layouts)[_dsl_N]) noexcept {
@@ -194,7 +192,7 @@ struct lvk_device {
 
 	lvk_sampler init_sampler(VkFilter min_filter, VkFilter mag_filter, VkSamplerAddressMode sampler_addres_mode);
 	
-	lvk_queue init_queue();
+	// lvk_queue init_queue();
 
 	// lvk_semaphore init_semaphore();
 	// lvk_fence init_fence(VkFenceCreateFlags flags = 0);

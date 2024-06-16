@@ -2,8 +2,8 @@
 #define VMA_IMPLEMENTATION
 
 #include "lucyvk/memory.h"
-#include "lucyvk/instance.h"
-#include "lucyvk/device.h"
+// #include "lucyvk/instance.h"
+// #include "lucyvk/device.h"
 // #include "lucyvk/physical_device.h"
 #include "lucyvk/functions.h"
 #include "lucyvk/create_info.h"

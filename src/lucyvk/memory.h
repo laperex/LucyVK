@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lucyvk/types.h"
+#include "lucyvk/handles.h"
 #include "vk_mem_alloc.h"
 
 // |--------------------------------------------------

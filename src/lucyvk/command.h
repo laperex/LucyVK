@@ -1,18 +1,10 @@
 #pragma once
 
-#include "lucyvk/synchronization.h"
-#include "lucyvk/types.h"
-#include <vulkan/vulkan_core.h>
+#include <cstddef>
+#include <functional>
+#include "lucyvk/handles.h"
 
 
-// |--------------------------------------------------
-// ----------------> COMMAND POOL
-// |--------------------------------------------------
-
-
-struct lvk_command_pool {
-	VkCommandPool _command_pool;
-};
 
 
 // |--------------------------------------------------
@@ -72,16 +64,4 @@ struct lvk_command_buffer {
 	VkSubmitInfo immediate_transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const;
 
 	VkSubmitInfo immediate(std::function<void()> function) const;
-};
-
-
-// |--------------------------------------------------
-// ----------------> IMMEDIATE COMMAND BUFFER
-// |--------------------------------------------------
-
-
-struct lvk_immediate_command {
-	lvk_command_pool command_pool;
-	lvk_command_buffer command_buffer;
-	lvk_fence fence;
 };

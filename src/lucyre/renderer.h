@@ -6,10 +6,10 @@
 #include "lucyvk/device.h"
 #include "lucyvk/instance.h"
 #include "lucyvk/memory.h"
-#include "lucyvk/synchronization.h"
+// #include "lucyvk/synchronization.h"
 #include "lucyvk/types.h"
-#include "lucyvk/render_pass.h"
-#include "lucyvk/swapchain.h"
+// #include "lucyvk/render_pass.h"
+// #include "lucyvk/swapchain.h"
 
 #define FRAMES_IN_FLIGHT 2
 
@@ -26,7 +26,7 @@ namespace lre {
 			uint32_t image_index;
 		} frame_array[FRAMES_IN_FLIGHT];
 		
-		lvk_instance_destructor<VkDevice> deletion_queue;
+		// lvk_instance_destructor<VkDevice> deletion_queue;
 
 		lvk_command_pool command_pool;
 
@@ -59,7 +59,7 @@ namespace lre {
 		lvk_image_view compute_image_view;
 		// lvk_image compute_image;
 		
-		lvk_immediate_command immediate_command_buffer;
+		// lvk_immediate_command immediate_command_buffer;
 		
 		
 		VkClearValue clear_value[2] = {

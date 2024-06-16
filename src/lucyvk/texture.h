@@ -5,8 +5,4 @@
 
 struct lvk_sampler {
 	VkSampler _sampler;
-	
-	// static lvk_sampler init() {
-		
-	// }
 };

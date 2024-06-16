@@ -341,7 +341,7 @@ void lre::renderer::update() {
 void lre::renderer::destroy() {
 	device->wait_idle();
 	
-	deletion_queue.flush(device->_device);
+	// deletion_queue.flush(device->_device);
 	
 	// vkDestroySemaphore(device->_device, sema)
 

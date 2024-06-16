@@ -1,6 +1,7 @@
 #pragma once
 
-#include "types.h"
+#include "lucyvk/types.h"
+#include "lucyvk/handles.h"
 #include <vulkan/vulkan_core.h>
 
 namespace lvk::info {

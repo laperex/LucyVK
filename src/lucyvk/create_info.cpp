@@ -2,7 +2,7 @@
 #include "lucyvk/functions.h"
 #include "lucyvk/shaders.h"
 #include "lucyvk/command.h"
-#include "lucyvk/synchronization.h"
+// #include "lucyvk/synchronization.h"
 
 #include <fstream>
 #include <iostream>

@@ -4,7 +4,7 @@
 
 // #include "lucyvk/physical_device.h"
 #include "lucyvk/device.h"
-#include "lucyvk/render_pass.h"
+// #include "lucyvk/render_pass.h"
 #include "lucyvk/memory.h"
 
 #include "lucyio/logger.h"
@@ -223,99 +223,3 @@ void lvk_command_buffer::begin_render_pass(const lvk_render_pass render_pass, co
 void lvk_command_buffer::end_render_pass() const {
 	vkCmdEndRenderPass(_command_buffer);
 }
-
-
-// // |--------------------------------------------------
-// // ----------------> IMMEDIATE COMMAND BUFFER
-// // |--------------------------------------------------
-
-
-// lvk_immediate_command_buffer lvk_command_pool::init_immediate_command_buffer() {
-// 	lvk_immediate_command_buffer immediate_command_buffer = {
-// 		.command_pool = this,
-// 		// .device = this->device
-// 	};
-	
-// 	VkCommandBufferAllocateInfo allocate_info = {
-// 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-
-// 		.commandPool = _command_pool,
-// 		.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-// 		.commandBufferCount = 1,
-// 	};
-	
-// 	if (vkAllocateCommandBuffers(device->_device, &allocate_info, &immediate_command_buffer._command_buffer) != VK_SUCCESS) {
-// 		throw std::runtime_error("immediate command buffer allocation failed!");
-// 	}
-// 	dloggln("Immediate Command Buffer Allocated: ", &immediate_command_buffer._command_buffer);
-	
-// 	VkFenceCreateInfo createInfo = {
-// 		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-// 	};
-	
-// 	if (vkCreateFence(device->_device, &createInfo, VK_NULL_HANDLE, &immediate_command_buffer._fence) != VK_SUCCESS) {
-// 		throw std::runtime_error("immediate fence creation failed");
-// 	}
-// 	dloggln("Immediate Fence Created");
-	
-// 	deletion_queue->push([=]{
-// 		vkDestroyFence(device->_device, immediate_command_buffer._fence, VK_NULL_HANDLE);
-// 		dloggln("Fence Destroyed");
-// 	});
-
-// 	return immediate_command_buffer;
-// }
-
-// void lvk_immediate_command_buffer::transition_image(VkImage image, VkImageLayout old_layout, VkImageLayout new_layout) const {
-// 	VkCommandBufferBeginInfo begin_info = {
-// 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-// 		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-// 		.pInheritanceInfo = VK_NULL_HANDLE
-// 	};
-
-// 	vkBeginCommandBuffer(_command_buffer, &begin_info);
-	
-// 	{
-// 		VkImageMemoryBarrier transfer_image_barrier = {
-// 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-
-// 			.srcAccessMask = 0,
-// 			.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-
-// 			.oldLayout = old_layout,
-// 			.newLayout = new_layout,
-
-// 			.image = image,
-// 			.subresourceRange = {
-// 				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-// 				.baseMipLevel = 0,
-// 				.levelCount = 1,
-// 				.baseArrayLayer = 0,
-// 				.layerCount = 1,
-// 			},
-// 		};
-
-// 		//barrier the image into the transfer-receive layout
-// 		vkCmdPipelineBarrier(_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &transfer_image_barrier);
-// 	}
-
-// 	vkEndCommandBuffer(_command_buffer);
-
-// 	VkCommandBufferSubmitInfo cmdinfo = {
-// 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-// 		.commandBuffer = _command_buffer,
-// 	};
-	
-// 	VkSubmitInfo submit_info = {
-// 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-		
-// 		.commandBufferCount = 1,
-// 		.pCommandBuffers = &_command_buffer,
-// 	};
-
-// 	// device->submit(&submit_info, 1, _fence, LVK_TIMEOUT);
-
-// 	// vkWaitForFences(device->_device, 1, &_fence, true, LVK_TIMEOUT);
-// 	// vkResetFences(device->_device, 1, &_fence);
-// 	// vkResetCommandBuffer(_command_buffer, 0);
-// }
