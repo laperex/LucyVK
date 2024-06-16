@@ -38,11 +38,11 @@ struct lvk_command_buffer {
 	
 	void bind_pipeline(const lvk_pipeline* pipeline) const;
 
-	void bind_descriptor_set(const lvk_pipeline* pipeline, const lvk_descriptor_set* descriptor_set, const uint32_t descript_set_count) const;
+	void bind_descriptor_set(const lvk_pipeline_layout& pipeline_layout, const lvk_pipeline& pipeline, const lvk_descriptor_set* descriptor_set, const uint32_t descriptor_set_count) const;
 
 	template <std::size_t _ds_N> [[__gnu__::__always_inline__]]
-	constexpr void bind_descriptor_set(const lvk_pipeline* pipeline, const lvk_descriptor_set (&descriptor_set)[_ds_N]) const noexcept {
-		return bind_descriptor_set(pipeline, descriptor_set, _ds_N);
+	constexpr void bind_descriptor_set(const lvk_pipeline_layout& pipeline_layout, const lvk_pipeline& pipeline, const lvk_descriptor_set (&descriptor_set)[_ds_N]) const noexcept {
+		return bind_descriptor_set(pipeline_layout, pipeline, descriptor_set, _ds_N);
 	}
 	
 	void bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding = 0) const;

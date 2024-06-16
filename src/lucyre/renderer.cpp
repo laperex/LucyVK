@@ -172,10 +172,10 @@ void lre::renderer::init_pipeline() {
 		// .dynamic_rendering = lvk::info::rendering(VK_FORMAT_D32_SFLOAT)
 	};
 
-	graphics_pipeline_layout = device->init_pipeline_layout({
+	graphics_pipeline_layout = device->create_pipeline_layout({
 		descriptor_set_layout._descriptor_set_layout
 	});
-	graphics_pipeline = graphics_pipeline_layout.init_graphics_pipeline(&config, &render_pass);
+	graphics_pipeline = device->create_graphics_pipeline(graphics_pipeline_layout, &config, &render_pass);
 	
 	lvk_shader_module compute_shader = device->init_shader_module(VK_SHADER_STAGE_COMPUTE_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/gradient.comp.spv");
 	

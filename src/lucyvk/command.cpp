@@ -38,8 +38,8 @@ void lvk_command_buffer::bind_pipeline(const lvk_pipeline* pipeline) const {
 	vkCmdBindPipeline(_command_buffer, pipeline->type, pipeline->_pipeline);
 }
 
-void lvk_command_buffer::bind_descriptor_set(const lvk_pipeline* pipeline, const lvk_descriptor_set* descriptor_set, const uint32_t descriptor_set_count) const {
-	vkCmdBindDescriptorSets(_command_buffer, pipeline->type, pipeline->pipeline_layout->_pipeline_layout, 0, descriptor_set_count, &descriptor_set->_descriptor_set, 0, VK_NULL_HANDLE);
+void lvk_command_buffer::bind_descriptor_set(const lvk_pipeline_layout& pipeline_layout, const lvk_pipeline& pipeline, const lvk_descriptor_set* descriptor_set, const uint32_t descriptor_set_count) const {
+	vkCmdBindDescriptorSets(_command_buffer, pipeline.type, pipeline_layout._pipeline_layout, 0, descriptor_set_count, &descriptor_set->_descriptor_set, 0, VK_NULL_HANDLE);
 }
 
 void lvk_command_buffer::bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding) const {

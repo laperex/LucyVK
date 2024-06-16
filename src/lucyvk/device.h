@@ -90,8 +90,35 @@ struct lvk_device {
 
 
 	lvk_swapchain create_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format);
-	void swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, uint32_t height);
-	VkResult swapchain_acquire_next_image(const lvk_swapchain& swapchain, uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT);
+	void swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, uint32_t height) const;
+	VkResult swapchain_acquire_next_image(const lvk_swapchain& swapchain, uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT) const;
+	
+	
+	// PIPELINE		---------- ---------- ---------- ----------
+	
+	
+	lvk_pipeline_layout create_pipeline_layout(const VkPushConstantRange* push_constant_ranges = VK_NULL_HANDLE, const uint32_t push_constant_range_count = 0, const VkDescriptorSetLayout* descriptor_set_layouts = VK_NULL_HANDLE, const uint32_t descriptor_set_layout_count = 0);
+	
+	lvk_pipeline create_graphics_pipeline(const lvk_pipeline_layout& pipeline_layout, const lvk::config::graphics_pipeline* config, const lvk_render_pass* render_pass);
+	lvk_pipeline create_compute_pipeline(const lvk_pipeline_layout& pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info);
+
+	// lvk_pipeline_layout init_pipeline_layout(const VkPushConstantRange* push_constant_ranges = VK_NULL_HANDLE, const uint32_t push_constant_range_count = 0, const VkDescriptorSetLayout* descriptor_set_layouts = VK_NULL_HANDLE, const uint32_t descriptor_set_layout_count = 0);
+
+	template <std::size_t _pcr_N, std::size_t _dsl_N> [[nodiscard, __gnu__::__always_inline__]]
+    constexpr lvk_pipeline_layout create_pipeline_layout(const VkPushConstantRange (&push_constant_ranges)[_pcr_N], const VkDescriptorSetLayout (&descriptor_set_layouts)[_dsl_N]) noexcept {
+		return create_pipeline_layout(push_constant_ranges, _pcr_N, descriptor_set_layouts, _dsl_N);
+	}
+	
+	template <std::size_t _pcr_N> [[nodiscard, __gnu__::__always_inline__]]
+    constexpr lvk_pipeline_layout create_pipeline_layout(const VkPushConstantRange (&push_constant_ranges)[_pcr_N]) noexcept {
+		return create_pipeline_layout(push_constant_ranges, _pcr_N, VK_NULL_HANDLE, 0);
+	}
+	
+	template <std::size_t _dsl_N> [[nodiscard, __gnu__::__always_inline__]]
+    constexpr lvk_pipeline_layout create_pipeline_layout(const VkDescriptorSetLayout (&descriptor_set_layouts)[_dsl_N]) noexcept {
+		return create_pipeline_layout(VK_NULL_HANDLE, 0, descriptor_set_layouts, _dsl_N);
+	}
+	
 
 	// lvk_command_pool init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
 	
@@ -108,7 +135,6 @@ struct lvk_device {
 
 	lvk_shader_module init_shader_module(VkShaderStageFlagBits stage, const char* filename);
 	
-	lvk_pipeline_layout init_pipeline_layout(const VkPushConstantRange* push_constant_ranges = VK_NULL_HANDLE, const uint32_t push_constant_range_count = 0, const VkDescriptorSetLayout* descriptor_set_layouts = VK_NULL_HANDLE, const uint32_t descriptor_set_layout_count = 0);
 	
 	lvk_allocator init_allocator();
 	
@@ -118,21 +144,6 @@ struct lvk_device {
 	// TODO: why ???
 	template <std::size_t _ad_N, std::size_t _sdn_N, std::size_t _sdc_N>
 	lvk_render_pass init_render_pass(const VkAttachmentDescription (&attachment)[_ad_N], const VkSubpassDescription (&subpass)[_sdn_N], const VkSubpassDependency (&dependency)[_sdc_N], bool enable_transform = false);
-
-	template <std::size_t _pcr_N, std::size_t _dsl_N> [[nodiscard, __gnu__::__always_inline__]]
-    constexpr lvk_pipeline_layout init_pipeline_layout(const VkPushConstantRange (&push_constant_ranges)[_pcr_N], const VkDescriptorSetLayout (&descriptor_set_layouts)[_dsl_N]) noexcept {
-		return init_pipeline_layout(push_constant_ranges, _pcr_N, descriptor_set_layouts, _dsl_N);
-	}
-	
-	template <std::size_t _pcr_N> [[nodiscard, __gnu__::__always_inline__]]
-    constexpr lvk_pipeline_layout init_pipeline_layout(const VkPushConstantRange (&push_constant_ranges)[_pcr_N]) noexcept {
-		return init_pipeline_layout(push_constant_ranges, _pcr_N, VK_NULL_HANDLE, 0);
-	}
-	
-	template <std::size_t _dsl_N> [[nodiscard, __gnu__::__always_inline__]]
-    constexpr lvk_pipeline_layout init_pipeline_layout(const VkDescriptorSetLayout (&descriptor_set_layouts)[_dsl_N]) noexcept {
-		return init_pipeline_layout(VK_NULL_HANDLE, 0, descriptor_set_layouts, _dsl_N);
-	}
 	
 	template <std::size_t _dslb_N> [[nodiscard, __gnu__::__always_inline__]]
 	constexpr lvk_descriptor_set_layout init_descriptor_set_layout(const VkDescriptorSetLayoutBinding (&bindings)[_dslb_N]) noexcept {
