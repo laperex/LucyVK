@@ -1,5 +1,6 @@
 #include "lucyvk/device.h"
 #include "lucyvk/instance.h"
+#include "lucyvk/swapchain.h"
 #include "lucyvk/functions.h"
 
 #include "lucyio/logger.h"
@@ -366,6 +367,173 @@ std::vector<lvk_command_buffer> lvk_device::allocate_command_buffers(const lvk_c
 	});
 	
 	return command_buffer_array;
+}
+
+
+// |--------------------------------------------------
+// ----------------> SWAPCHAIN
+// |--------------------------------------------------
+
+
+lvk_swapchain lvk_device::create_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format) {
+	const auto& capabilities = physical_device._swapchain_support_details.capabilities;
+	// physical_device._swapchain_support_details.capabilities;
+
+	lvk_swapchain swapchain = {
+		._swapchain = VK_NULL_HANDLE,
+		._extent = VkExtent2D { width, height },
+		._surface_format = surface_format,
+		._present_mode = VK_PRESENT_MODE_FIFO_KHR,
+		._image_usage = image_usage_flags,
+		// .device = this,
+		// .physical_device = physical_device,
+		// .instance = instance
+	};
+
+	// TODO: support for more presentMode types
+	// * VK_PRESENT_MODE_IMMEDIATE_KHR = Not suggested causes tearing
+	// * VK_PRESENT_MODE_MAILBOX_KHR = Mailbox
+	// * VK_PRESENT_MODE_FIFO_KHR = V-sync
+	// * VK_PRESENT_MODE_FIFO_RELAXED_KHR
+	// * VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR
+	// * VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR
+
+	for (const auto& availablePresentMode: physical_device._swapchain_support_details.present_modes) {
+		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+			swapchain._present_mode = availablePresentMode;
+			break;
+		}
+		if (availablePresentMode == VK_PRESENT_MODE_FIFO_RELAXED_KHR) {
+			swapchain._present_mode = availablePresentMode;
+			break;
+		}
+	}
+
+	swapchain_recreate(swapchain, width, height);
+	
+	deletion_queue.push([=]{
+		vkDestroySwapchainKHR(_device, swapchain._swapchain, VK_NULL_HANDLE);
+		dloggln("Swapchain Destroyed");
+
+		for (int i = 0; i < swapchain._image_count; i++) {
+			vkDestroyImageView(_device, swapchain._image_views[i], VK_NULL_HANDLE);
+		}
+		dloggln("ImageViews Destroyed");
+		
+		delete [] swapchain._image_views;
+		delete [] swapchain._images;
+	});
+
+	return swapchain;
+}
+
+
+void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, uint32_t height) {
+	if (swapchain._image_count) {
+		for (int i = 0; i < swapchain._image_count; i++) {
+			vkDestroyImageView(this->_device, swapchain._image_views[i], VK_NULL_HANDLE);
+		}
+		dloggln("ImageViews Destroyed");
+	}
+
+	if (swapchain._swapchain != VK_NULL_HANDLE) {
+		vkDestroySwapchainKHR(this->_device, swapchain._swapchain, VK_NULL_HANDLE);
+		dloggln("Swapchain Destroyed");
+	}
+	
+	swapchain._extent.width = width;
+	swapchain._extent.height = height;
+	
+	const auto& present_modes = this->physical_device._swapchain_support_details.present_modes;
+	const auto& capabilities = this->physical_device._swapchain_support_details.capabilities;
+	
+	VkSwapchainCreateInfoKHR create_info = {
+		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+		.pNext = nullptr,
+		.flags = 0,
+		.surface = instance->_surface,
+
+		// TF ???
+		.minImageCount = (capabilities.maxImageCount > 0 && capabilities.minImageCount + 1 > capabilities.maxImageCount) ? capabilities.maxImageCount: capabilities.minImageCount + 1,
+
+		.imageFormat = swapchain._surface_format.format,
+		.imageColorSpace = swapchain._surface_format.colorSpace,
+		.imageExtent = (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) ?
+			capabilities.currentExtent:
+			VkExtent2D {
+				std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, swapchain._extent.width)),
+				std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, swapchain._extent.height))
+			},
+		.imageArrayLayers = 1,
+		.imageUsage = swapchain._image_usage,
+		.preTransform = capabilities.currentTransform,
+		.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+		.presentMode = swapchain._present_mode,
+		
+		// TODO: user defined clipping state
+		.clipped = VK_TRUE,
+		
+		// TODO: remains to be tested
+		.oldSwapchain = VK_NULL_HANDLE,
+	};
+	
+	// TODO: better approach
+	uint32_t queue_family_indices[] = {
+		this->physical_device._queue_family_indices.graphics.value(),
+		this->physical_device._queue_family_indices.present.value()
+	};
+
+	// TODO: Sharing Mode is always exclusive in lvk_buffer. Therefore only one queue is possible
+	if (this->physical_device._queue_family_indices.present == this->physical_device._queue_family_indices.graphics) {
+		create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		create_info.queueFamilyIndexCount = 0;
+		create_info.pQueueFamilyIndices = nullptr;
+	} else {
+		throw std::runtime_error("VK_SHARING_MODE_CONCURRENT is not implemented yet");
+		
+		create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		create_info.queueFamilyIndexCount = std::size(queue_family_indices);
+		create_info.pQueueFamilyIndices = queue_family_indices;
+	}
+	
+	if (vkCreateSwapchainKHR(this->_device, &create_info, VK_NULL_HANDLE, &swapchain._swapchain) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create swapchain!");
+	}
+	dloggln("Created Swapchain");
+	
+	
+	// ImageViews
+	
+	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, VK_NULL_HANDLE);
+	swapchain._images = new VkImage[swapchain._image_count];
+	swapchain._image_views = new VkImageView[swapchain._image_count];
+	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, swapchain._images);
+
+	for (size_t i = 0; i < swapchain._image_count; i++) {
+		VkImageViewCreateInfo viewInfo = {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+			.image = swapchain._images[i],
+			.viewType = VK_IMAGE_VIEW_TYPE_2D,
+			.format = swapchain._surface_format.format,
+
+			.subresourceRange = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel = 0,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1,
+			}
+		};
+
+		if (vkCreateImageView(this->_device, &viewInfo, VK_NULL_HANDLE, &swapchain._image_views[i]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create image!");
+		}
+	}
+	dloggln("ImageViews Created");
+}
+
+VkResult lvk_device::swapchain_acquire_next_image(const lvk_swapchain& swapchain, uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout) {
+	return vkAcquireNextImageKHR(this->_device, swapchain._swapchain, timeout, semaphore, fence, index);
 }
 
 // VkResult lvk_device::immediate_submit(const VkSubmitInfo submit_info, const lvk_fence& fence) const {

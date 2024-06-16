@@ -37,7 +37,7 @@ void lre::renderer::init_frame_data() {
 }
 
 void lre::renderer::init_swapchain(glm::ivec2 size) {
-	swapchain = device->init_swapchain(size.x, size.y, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
+	swapchain = device->create_swapchain(size.x, size.y, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
 		.format = VK_FORMAT_B8G8R8A8_UNORM,
 		.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 	});
@@ -225,7 +225,8 @@ void lre::renderer::record(uint32_t frame_number) {
 	auto& frame = frame_array[frame_number % FRAMES_IN_FLIGHT];
 	auto& cmd = frame.command_buffer;
 
-	swapchain.acquire_next_image(&frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE);
+	// swapchain.acquire_next_image(&frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE);
+	device->swapchain_acquire_next_image(swapchain, &frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE);
 
 	// draw.extent = *(const VkExtent2D*)&draw.image._extent;
 
