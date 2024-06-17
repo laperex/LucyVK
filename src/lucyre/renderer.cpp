@@ -47,24 +47,28 @@ void lre::renderer::init_swapchain(glm::ivec2 size) {
 
 void lre::renderer::init_descriptor_pool() {
 	uint32_t descriptor_set_max_size = 10;
+
 	VkDescriptorPoolSize descriptor_pool_sizes[] = {
 		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }
+
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
+
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 },
 	};
 
-	lvk_descriptor_pool descriptor_pool = device.create_descriptor_pool(descriptor_set_max_size, descriptor_pool_sizes);
+	descriptor_pool = device.create_descriptor_pool(descriptor_set_max_size, descriptor_pool_sizes);
 
 	// seperate for each shader type
 	descriptor_set_layout = device.create_descriptor_set_layout({
 		lvk::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1),
 		lvk::descriptor_set_layout_binding(1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
+		lvk::descriptor_set_layout_binding(2, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1),
 	});
 
 	descriptor = device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
 
 	// binding for uniform buffer
 	device.update_descriptor_set(descriptor, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
-	// descriptor.update(0, &compute_image_view, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 }
 
 void lre::renderer::init_render_pass() {
@@ -82,7 +86,7 @@ void lre::renderer::init_render_pass() {
 void lre::renderer::init_pipeline() {
 	lvk_shader_module vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "./shaders/colored_triangle.vert.spv");
 	lvk_shader_module fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "./shaders/colored_triangle.frag.spv");
-	
+
 	VkViewport viewport[] = {
 		{
 			.x = 0.0f,
@@ -100,23 +104,7 @@ void lre::renderer::init_pipeline() {
 			.extent = { static_cast<uint32_t>(swapchain._extent.width), static_cast<uint32_t>(swapchain._extent.height) }
 		}
 	};
-	
-	VkVertexInputBindingDescription bindings[] = {
-		{
-			.binding = 0,
-			.stride = sizeof(glm::vec3),
-			.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-		}
-	};
-	
-	VkVertexInputAttributeDescription attributes[] = {
-		{
-			.location = 0,
-			.binding = 0,
-			.format = VK_FORMAT_R32G32B32_SFLOAT,
-			.offset = 0,
-		}
-	};
+
 
 	lvk::config::graphics_pipeline config = {
 		.shader_stage_array = {
@@ -179,7 +167,11 @@ void lre::renderer::init_pipeline() {
 	});
 	graphics_pipeline = device.create_graphics_pipeline(graphics_pipeline_layout, &config, &render_pass);
 	
-	lvk_shader_module compute_shader = device.init_shader_module(VK_SHADER_STAGE_COMPUTE_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/gradient.comp.spv");
+	// texture_pipeline_layout = device.create_pipeline_layout({
+	// 	texture_descriptor_set_layout._descriptor_set_layout
+	// });
+	
+	// lvk_shader_module compute_shader = device.init_shader_module(VK_SHADER_STAGE_COMPUTE_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/gradient.comp.spv");
 	
 	// compute_pipeline_layout = device.init_pipeline_layout({
 	// 	descriptor_set_layout._descriptor_set_layout
@@ -286,9 +278,9 @@ void lre::renderer::initialization(SDL_Window* window) {
 	instance = lvk_instance::init(&instance_config, window);
 	// physical_device = instance.init_device();
 	device = instance.create_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME });
-	
+
 	allocator = device.create_allocator();
-	
+
 	mvp_uniform_buffer = allocator.create_uniform_buffer<mvp_matrix>();
 
 	init_frame_data();
@@ -314,9 +306,12 @@ void lre::renderer::initialization(SDL_Window* window) {
 
 
 	immediate_command = device.create_immediate_command();
-	lvk_image load_image;
-	load_image_from_file("/home/laperex/Programming/C++/LucyVK/assets/buff einstein.jpg", load_image);
-	
+
+	load_image_from_file("/home/laperex/Pictures/Screenshots/Screenshot_2024-06-17-00-24-47_2560x1600.png", load_image);
+	load_image_view = device.create_image_view(load_image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+	sampler = device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+
+	device.update_descriptor_set(descriptor, 2, &load_image_view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);
 }
 
 void lre::renderer::record(uint32_t frame_number) {
@@ -333,7 +328,7 @@ void lre::renderer::record(uint32_t frame_number) {
 	mvp_matrix mvp = {
 		.projection = glm::perspective(glm::radians(70.f), float(swapchain._extent.width) / float(swapchain._extent.height), 0.1f, 200.0f),
 		.view = glm::translate(glm::mat4(1.f), cam_pos),
-		.model = glm::rotate(glm::mat4(1.0f), glm::radians(frame_number * 0.4f), glm::vec3(0, 1, 0)),
+		.model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0, 1, 0)),
 		.color = { 0, 1, 0, 1},
 	};
 	
@@ -364,7 +359,7 @@ void lre::renderer::record(uint32_t frame_number) {
 
 	// cmd.bind_pipeline(&compute_pipeline);
 	
-	// cmd.transition_image(&compute_image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	// cmd.transition_image(load_image._image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
 	// vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, compute_pipeline_layout._pipeline_layout, 0, 1, &descriptor._descriptor_set, 0, VK_NULL_HANDLE);
 	// vkCmdDispatch(cmd._command_buffer, std::ceil(swapchain._extent.width / 16.0), std::ceil(swapchain._extent.height / 16.0), 1);
@@ -375,6 +370,7 @@ void lre::renderer::record(uint32_t frame_number) {
 	cmd.bind_pipeline(&graphics_pipeline);
 
 	vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout._pipeline_layout, 0, 1, &descriptor._descriptor_set, 0, VK_NULL_HANDLE);
+	// vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout._pipeline_layout, 0, 0, &descriptor._descriptor_set, 0, VK_NULL_HANDLE);
 
 	vkCmdDraw(cmd._command_buffer, 6, 1, 0, 0);
 

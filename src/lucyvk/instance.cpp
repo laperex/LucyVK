@@ -64,8 +64,8 @@ static bool CheckValidationLayerSupport() {
 
 lvk_instance::~lvk_instance()
 {
-	static int i = 0;
-	dloggln("-- Instance Destructor\n", i++);
+	// static int i = 0;
+	// dloggln("-- Instance Destructor\n", i++);
 }
 
 lvk_instance lvk_instance::init(const lvk::config::instance* config, SDL_Window* sdl_window) {
@@ -161,7 +161,7 @@ lvk_instance lvk_instance::init(const lvk::config::instance* config, SDL_Window*
 		dloggln("Debug Messenger Created");
 	}
 
-	if (SDL_Vulkan_CreateSurface(sdl_window, instance._instance, &instance._surface)) {
+	if (SDL_Vulkan_CreateSurface(sdl_window, instance._instance, &instance._surfaceKHR)) {
 		dloggln("Surface Created");
 	}
 
@@ -175,7 +175,7 @@ void lvk_instance::destroy()
 		dloggln("DebugUtilMessenger Destroyed");
 	}
 	
-	vkDestroySurfaceKHR(_instance, _surface, VK_NULL_HANDLE);
+	vkDestroySurfaceKHR(_instance, _surfaceKHR, VK_NULL_HANDLE);
 	dloggln("SurfaceKHR Destroyed");
 
     vkDestroyInstance(_instance, VK_NULL_HANDLE);
@@ -198,11 +198,14 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std:
 		.extensions = extensions,
 		.layers = layers,
 		
+		
 		.physical_device = {},
 		.deletion_queue = {},
-		.instance = this,
+
+		._surfaceKHR = _surfaceKHR,
+		._instance = _instance,
 	};
-	
+
 	{
 		uint32_t availableDeviceCount = 0;
 
@@ -218,8 +221,8 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std:
 			throw std::runtime_error("failed to find suitable PhysicalDevice!");
 		}
 
-		device.physical_device._queue_family_indices = lvk::query_queue_family_indices(device.physical_device._physical_device, this->_surface);
-		device.physical_device._swapchain_support_details = lvk::query_swapchain_support_details(device.physical_device._physical_device, this->_surface);
+		device.physical_device._queue_family_indices = lvk::query_queue_family_indices(device.physical_device._physical_device, this->_surfaceKHR);
+		device.physical_device._swapchain_support_details = lvk::query_swapchain_support_details(device.physical_device._physical_device, this->_surfaceKHR);
 
 		vkGetPhysicalDeviceFeatures(device.physical_device._physical_device, &device.physical_device._features);
 		vkGetPhysicalDeviceProperties(device.physical_device._physical_device, &device.physical_device._properties);

@@ -52,25 +52,6 @@ VkResult lvk_device::present(const VkPresentInfoKHR* present_info) const {
 	return vkQueuePresentKHR(_present_queue, present_info);
 }
 
-lvk_sampler lvk_device::init_sampler(VkFilter min_filter, VkFilter mag_filter, VkSamplerAddressMode sampler_addres_mode) {
-	lvk_sampler sampler = {
-		._sampler = VK_NULL_HANDLE
-	};
-
-	VkSamplerCreateInfo create_info = {
-		.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-		
-		.magFilter = mag_filter,
-		.minFilter = min_filter,
-		
-		.addressModeU = sampler_addres_mode,
-		.addressModeV = sampler_addres_mode,
-		.addressModeW = sampler_addres_mode,
-	};
-
-	return sampler;
-}
-
 void lvk_device::destroy() {
 	deletion_queue.flush();
 
@@ -445,7 +426,7 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, ui
 		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 		.pNext = nullptr,
 		.flags = 0,
-		.surface = instance->_surface,
+		.surface = _surfaceKHR,
 
 		// TF ???
 		.minImageCount = (capabilities.maxImageCount > 0 && capabilities.minImageCount + 1 > capabilities.maxImageCount) ? capabilities.maxImageCount: capabilities.minImageCount + 1,
@@ -652,7 +633,7 @@ lvk_allocator lvk_device::create_allocator() {
 	VmaAllocatorCreateInfo allocator_info = {
 		.physicalDevice = physical_device._physical_device,
 		.device = _device,
-		.instance = instance->_instance,
+		.instance = _instance,
 	};
 
     vmaCreateAllocator(&allocator_info, &allocator._allocator);
@@ -682,7 +663,7 @@ lvk_image_view lvk_device::create_image_view(const lvk_image& image, VkImageAspe
 	if (vkCreateImageView(this->_device, &createInfo, VK_NULL_HANDLE, &image_view._image_view) != VK_SUCCESS) {
 		throw std::runtime_error("image_view creation failed!");
 	}
-	dloggln("ImageView Created");
+	dloggln("ImageView Created - ", image_view._image_view);
 
 	deletion_queue.push([=]{
 		vkDestroyImageView(this->_device, image_view._image_view, VK_NULL_HANDLE);
@@ -768,10 +749,11 @@ void lvk_device::update_descriptor_set(const lvk_descriptor_set& descriptor_set,
 	vkUpdateDescriptorSets(this->_device, 1, &write_set, 0, VK_NULL_HANDLE);
 }
 
-void lvk_device::update_descriptor_set(const lvk_descriptor_set& descriptor_set, uint32_t binding, const lvk_image_view* image_view, VkDescriptorType type, const std::size_t offset) const {
+void lvk_device::update_descriptor_set(const lvk_descriptor_set& descriptor_set, uint32_t binding, const lvk_image_view* image_view, const lvk_sampler& sampler, VkImageLayout image_layout, VkDescriptorType type, const std::size_t offset) const {
 	VkDescriptorImageInfo image_info = {
+		.sampler = sampler._sampler,
 		.imageView = image_view->_image_view,
-		.imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+		.imageLayout = image_layout,
 	};
 	
 	VkWriteDescriptorSet write_set = {
@@ -973,4 +955,39 @@ lvk_framebuffer lvk_device::create_framebuffer(const lvk_render_pass& render_pas
 	});
 
 	return framebuffer;
+}
+
+
+// |--------------------------------------------------
+// ----------------> SAMPLER
+// |--------------------------------------------------
+
+
+lvk_sampler lvk_device::create_sampler(VkFilter min_filter, VkFilter mag_filter, VkSamplerAddressMode sampler_addres_mode) {
+	lvk_sampler sampler {
+		._sampler = VK_NULL_HANDLE
+	};
+
+	VkSamplerCreateInfo create_info = {
+		.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+		
+		.magFilter = mag_filter,
+		.minFilter = min_filter,
+		
+		.addressModeU = sampler_addres_mode,
+		.addressModeV = sampler_addres_mode,
+		.addressModeW = sampler_addres_mode,
+	};
+	
+	if (vkCreateSampler(this->_device, &create_info, VK_NULL_HANDLE, &sampler._sampler) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create framebuffer");
+	}
+	dloggln("Framebuffer Created");
+	
+	deletion_queue.push([=]{
+		vkDestroySampler(this->_device, sampler._sampler, VK_NULL_HANDLE);
+		dloggln("Framebuffer Destroyed");
+	});
+
+	return sampler;
 }

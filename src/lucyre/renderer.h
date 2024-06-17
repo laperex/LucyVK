@@ -44,8 +44,15 @@ namespace lre {
 		
 		lvk_pipeline graphics_pipeline;
 		lvk_pipeline_layout graphics_pipeline_layout;
+
 		lvk_descriptor_set descriptor;
 		lvk_descriptor_set_layout descriptor_set_layout;
+		
+		lvk_image load_image;
+		lvk_image_view load_image_view;
+
+		lvk_sampler sampler;
+		// lvk_descriptor_set_layout texture_descriptor_set_layout;
 		
 		// lvk_pipeline compute_pipeline;
 		// lvk_pipeline_layout compute_pipeline_layout;

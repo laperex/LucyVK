@@ -84,7 +84,7 @@ VkPhysicalDevice lvk::default_physical_device(const std::vector<VkPhysicalDevice
 		
 		dloggln(properties.deviceName);
 		
-		for (const auto& mode: query_swapchain_support_details(physical_device, instance->_surface).present_modes) {
+		for (const auto& mode: query_swapchain_support_details(physical_device, instance->_surfaceKHR).present_modes) {
 			switch (mode) {
 				case VK_PRESENT_MODE_IMMEDIATE_KHR:
 					dloggln("	VK_PRESENT_MODE_IMMEDIATE_KHR");
@@ -131,10 +131,10 @@ VkPhysicalDevice lvk::default_physical_device(const std::vector<VkPhysicalDevice
 		}
 
 		{
-			isIndicesComplete = query_queue_family_indices(physicalDevice, instance->_surface);
+			isIndicesComplete = query_queue_family_indices(physicalDevice, instance->_surfaceKHR);
 
 			if (isRequiredDeviceExtensionsAvailable) {
-				lvk::swapchain_support_details swapchainSupport = query_swapchain_support_details(physicalDevice, instance->_surface);
+				lvk::swapchain_support_details swapchainSupport = query_swapchain_support_details(physicalDevice, instance->_surfaceKHR);
 				isSwapchainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.present_modes.empty();
 			}
 

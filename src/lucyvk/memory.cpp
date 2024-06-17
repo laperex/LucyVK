@@ -96,6 +96,7 @@ lvk_image lvk_allocator::create_image(VkFormat format, VkImageUsageFlags usage, 
 	lvk_image image = {
 		._image = VK_NULL_HANDLE,
 		._allocation = VK_NULL_HANDLE,
+
 		._format = format,
 		._image_type = image_type,
 		._extent = extent,
@@ -127,13 +128,13 @@ lvk_image lvk_allocator::create_image(VkFormat format, VkImageUsageFlags usage, 
 
 	VmaAllocationCreateInfo allocationInfo = {
 		.usage = VMA_MEMORY_USAGE_GPU_ONLY,
-		.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 	};
 
 	if (vmaCreateImage(_allocator, &createInfo, &allocationInfo, &image._image, &image._allocation, VK_NULL_HANDLE) != VK_SUCCESS) {
 		throw std::runtime_error("image creation failed!");
 	}
-	dloggln("Image Created");
+	dloggln("Image Created - ", image._image);
 
 	deletion_queue->push([=]{
 		vmaDestroyImage(_allocator, image._image, image._allocation);

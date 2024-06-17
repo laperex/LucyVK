@@ -44,9 +44,11 @@ struct lvk_device {
 
 	// const lvk_physical_device* physical_device;
 	lvk::deletion_queue deletion_queue;
-	
-	const lvk_instance* instance;
-	
+
+	// const lvk_instance* instance;
+	VkSurfaceKHR _surfaceKHR;
+	VkInstance _instance;
+
 	// ~lvk_device();
 
 
@@ -148,7 +150,7 @@ struct lvk_device {
 	
 	lvk_descriptor_set create_descriptor_set(const lvk_descriptor_pool& descriptor_pool, const lvk_descriptor_set_layout& descriptor_set_layout);
 	void update_descriptor_set(const lvk_descriptor_set& descriptor_set, uint32_t binding, const lvk_buffer* buffer, VkDescriptorType type, const std::size_t offset = 0) const;
-	void update_descriptor_set(const lvk_descriptor_set& descriptor_set, uint32_t binding, const lvk_image_view* image_view, VkDescriptorType type, const std::size_t offset = 0) const;
+	void update_descriptor_set(const lvk_descriptor_set& descriptor_set, uint32_t binding, const lvk_image_view* image_view, const lvk_sampler& sampler, VkImageLayout image_layout, VkDescriptorType type, const std::size_t offset = 0) const;
 	// template <std::size_t _ds_N> [[nodiscard, __gnu__::__always_inline__]]
 	// constexpr lvk_descriptor_set create_descriptor_set(const lvk_descriptor_pool& descriptor_pool, const lvk_descriptor_set_layout& descriptor_set_layout)
 
@@ -187,14 +189,18 @@ struct lvk_device {
 	constexpr lvk_framebuffer create_framebuffer(const lvk_render_pass& render_pass, const VkExtent2D extent, const VkImageView (&image_views)[_iv_N]) noexcept {
 		return create_framebuffer(render_pass, extent, image_views, _iv_N);
 	}
-	
+
+
+	// SAMPLER	---------- ---------- ---------- ----------
+
+
+	lvk_sampler create_sampler(VkFilter min_filter, VkFilter mag_filter, VkSamplerAddressMode sampler_addres_mode);
 	
 	// 	 ---------- ---------- ---------- ---------- ----------
 
 	// lvk_command_pool init_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
 
 
-	lvk_sampler init_sampler(VkFilter min_filter, VkFilter mag_filter, VkSamplerAddressMode sampler_addres_mode);
 	
 	// lvk_queue init_queue();
 
