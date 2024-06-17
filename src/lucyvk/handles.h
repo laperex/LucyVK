@@ -15,9 +15,6 @@ struct lvk_command_buffer;
 struct lvk_shader_module;
 
 struct lvk_allocator;
-struct lvk_buffer;
-struct lvk_image;
-struct lvk_image_view;
 
 
 using lvk_device_ptr = std::unique_ptr<lvk_device>;

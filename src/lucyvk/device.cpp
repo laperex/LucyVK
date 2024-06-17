@@ -320,6 +320,15 @@ lvk_immediate_command lvk_device::create_immediate_command() {
 			throw std::runtime_error("fence creation failed");
 		}
 	}
+	
+	dloggln("Immediate Commands Created");
+	
+	deletion_queue.push([=]{
+		vkFreeCommandBuffers(this->_device, immediate_command._command_pool, 1, &immediate_command._command_buffer);
+		vkDestroyCommandPool(this->_device, immediate_command._command_pool, VK_NULL_HANDLE);
+		vkDestroyFence(this->_device, immediate_command._fence, VK_NULL_HANDLE);
+		dloggln("Immediate Commands Destroyed");
+	});
 
 	return immediate_command;
 }

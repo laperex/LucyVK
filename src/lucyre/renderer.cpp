@@ -2,6 +2,9 @@
 #include "lucyvk/create_info.h"
 #include "lucyvk/shaders.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include "lucyio/logger.h"
 
 #include "lucyre/renderer.h"
@@ -189,6 +192,91 @@ void lre::renderer::upload_mesh(Mesh& mesh) {
 	
 }
 
+bool lre::renderer::load_image_from_file(const char* filename, lvk_image& image) {
+	int texWidth, texHeight, texChannels;
+
+	stbi_uc* pixels = stbi_load(filename, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+	if (!pixels) {
+		std::cout << "Failed to load texture file " << filename << std::endl;
+		return false;
+	}
+	
+	void* pixel_ptr = pixels;
+	VkDeviceSize imageSize = texWidth * texHeight * 4;
+
+	//the format R8G8B8A8 matches exactly with the pixels loaded from stb_image lib
+	VkFormat image_format = VK_FORMAT_R8G8B8A8_SRGB;
+
+	//allocate temporary buffer for holding texture data to upload
+	// lvk_buffer stagingBuffer = engine.create_buffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+	VkExtent3D imageExtent = {
+		.width = static_cast<uint32_t>(texWidth),
+		.height = static_cast<uint32_t>(texHeight),
+		.depth = 1,
+	};
+
+	lvk_buffer staging_buffer = allocator.create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, pixel_ptr, imageSize);
+
+	image = allocator.create_image(image_format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, imageExtent, VK_IMAGE_TYPE_2D);
+
+	device.immediate_submit(immediate_command, [&](VkCommandBuffer cmd) {
+		VkImageSubresourceRange range = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		};
+
+		VkImageMemoryBarrier imageBarrier_toTransfer = {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+
+			.srcAccessMask = 0,
+			.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+
+			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+
+			.image = image._image,
+			.subresourceRange = range,
+		};
+
+		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
+		
+		VkBufferImageCopy copy_region = {
+			.bufferOffset = 0,
+			.bufferRowLength = 0,
+			.bufferImageHeight = 0,
+
+			.imageSubresource = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.mipLevel = 0,
+				.baseArrayLayer = 0,
+				.layerCount = 1,
+			},
+			.imageExtent = imageExtent,
+		};
+
+		//copy the buffer into the image
+		vkCmdCopyBufferToImage(cmd, staging_buffer._buffer, image._image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
+		
+		VkImageMemoryBarrier imageBarrier_toReadable = imageBarrier_toTransfer;
+		imageBarrier_toReadable.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		imageBarrier_toReadable.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		imageBarrier_toReadable.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		imageBarrier_toReadable.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		//barrier the image into the shader readable layout
+		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toReadable);
+	});
+
+	stbi_image_free(pixels);
+
+	return true;
+}
+
 void lre::renderer::initialization(SDL_Window* window) {
 	lvk::config::instance instance_config = {
 		.name = "Lucy Framework v7",
@@ -223,12 +311,12 @@ void lre::renderer::initialization(SDL_Window* window) {
 
 	init_render_pass();
 	init_pipeline();
-	
-	
+
+
 	immediate_command = device.create_immediate_command();
-	device.immediate_submit(immediate_command, [=](const VkCommandBuffer cmd){
-		
-	});
+	lvk_image load_image;
+	load_image_from_file("/home/laperex/Programming/C++/LucyVK/assets/buff einstein.jpg", load_image);
+	
 }
 
 void lre::renderer::record(uint32_t frame_number) {

@@ -87,6 +87,7 @@ namespace lre {
 		void init_pipeline();
 		
 		void upload_mesh(Mesh& mesh);
+		bool load_image_from_file(const char* filename, lvk_image& image);
 
 	public:
 		renderer();
