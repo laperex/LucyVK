@@ -166,17 +166,6 @@ void lre::renderer::init_pipeline() {
 		descriptor_set_layout._descriptor_set_layout
 	});
 	graphics_pipeline = device.create_graphics_pipeline(graphics_pipeline_layout, &config, &render_pass);
-	
-	// texture_pipeline_layout = device.create_pipeline_layout({
-	// 	texture_descriptor_set_layout._descriptor_set_layout
-	// });
-	
-	// lvk_shader_module compute_shader = device.init_shader_module(VK_SHADER_STAGE_COMPUTE_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/gradient.comp.spv");
-	
-	// compute_pipeline_layout = device.init_pipeline_layout({
-	// 	descriptor_set_layout._descriptor_set_layout
-	// });
-	// compute_pipeline = compute_pipeline_layout.init_compute_pipeline(lvk::info::shader_stage(&compute_shader));
 }
 
 void lre::renderer::upload_mesh(Mesh& mesh) {
