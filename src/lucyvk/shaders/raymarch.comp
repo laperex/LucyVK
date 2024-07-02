@@ -1,0 +1,27 @@
+#version 460
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+layout(rgba16f, set = 0, binding = 0) uniform image2D image;
+layout(set = 0, binding = 1) uniform CameraBuffer {
+	mat4 projection;
+	mat4 view;
+	mat4 model;
+	vec4 color;
+} cam_data;
+
+
+void main() 
+{
+    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);//gl_FragCoord
+	ivec2 size = imageSize(image);
+	
+	texelCoord.y = size.y - texelCoord.y;
+
+	vec4 color = vec4(0);
+	
+	if (gl_LocalInvocationID.x != 0 || gl_LocalInvocationID.y != 0)
+		color = vec4(float(texelCoord.x)/size.x, float(texelCoord.y)/size.y, 0, 0);
+
+	imageStore(image, texelCoord, color);
+}

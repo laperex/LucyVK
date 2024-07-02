@@ -60,7 +60,7 @@ namespace lre {
 		// // lvk_descriptor_set_layout compute_descriptor_set_layout;
 		
 		lvk_render_pass render_pass;
-		lvk_framebuffer* framebuffer_array;
+		std::vector<lvk_framebuffer> framebuffer_array;
 
 		lvk_image depth_image;
 		lvk_image_view depth_image_view;
@@ -84,14 +84,6 @@ namespace lre {
 		};
 		
 		SDL_Window* sdl_window = nullptr;
-
-		void init_frame_data();
-		void init_upload_mesh();
-		void init_swapchain(const glm::ivec2 size);
-		void init_descriptor_pool();
-		
-		void init_render_pass();
-		void init_pipeline();
 		
 		void upload_mesh(Mesh& mesh);
 		bool load_image_from_file(const char* filename, lvk_image& image);
@@ -99,10 +91,12 @@ namespace lre {
 	public:
 		renderer();
 	
-		void initialization(SDL_Window*);
-		
+		void init(SDL_Window*);
+
+
 		void record(uint32_t frame_number);
 		void submit(uint32_t frame_number);
+
 		
 		void update();
 		

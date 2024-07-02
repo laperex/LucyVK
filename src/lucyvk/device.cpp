@@ -582,8 +582,8 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const lvk_pipeline_layout& pip
 		throw std::runtime_error("graphics pipeline creation failed!");
 	}
 	dloggln("Graphics Pipeline Created");
-	
-	deletion_queue.push([=]{
+
+	deletion_queue.push([=, this]{
 		vkDestroyPipeline(this->_device, pipeline._pipeline, VK_NULL_HANDLE);
 		dloggln("Graphics Pipeline Destroyed");
 	});
@@ -665,7 +665,7 @@ lvk_image_view lvk_device::create_image_view(const lvk_image& image, VkImageAspe
 	}
 	dloggln("ImageView Created - ", image_view._image_view);
 
-	deletion_queue.push([=]{
+	deletion_queue.push([=, this]{
 		vkDestroyImageView(this->_device, image_view._image_view, VK_NULL_HANDLE);
 		dloggln("ImageView Destroyed");
 	});
@@ -696,7 +696,7 @@ lvk_descriptor_set_layout lvk_device::create_descriptor_set_layout(const VkDescr
 	}
 	dloggln("DescriptorSetLayout Created");
 
-	deletion_queue.push([=]() {
+	deletion_queue.push([=, this]() {
 		vkDestroyDescriptorSetLayout(_device, descriptor_set_layout._descriptor_set_layout, VK_NULL_HANDLE);
 		dloggln("DescriptorSetLayout Destroyed");
 	});
@@ -913,7 +913,7 @@ lvk_render_pass lvk_device::create_render_pass(const VkAttachmentDescription* at
 	}
 	dloggln("RenderPass Created");
 	
-	deletion_queue.push([=]{
+	deletion_queue.push([=, this]{
 		vkDestroyRenderPass(_device, render_pass._render_pass, VK_NULL_HANDLE);
 		dloggln("RenderPass Destroyed");
 	});
@@ -949,7 +949,7 @@ lvk_framebuffer lvk_device::create_framebuffer(const lvk_render_pass& render_pas
 	}
 	dloggln("Framebuffer Created");
 	
-	deletion_queue.push([=]{
+	deletion_queue.push([=, this]{
 		vkDestroyFramebuffer(this->_device, framebuffer._framebuffer, VK_NULL_HANDLE);
 		dloggln("Framebuffer Destroyed");
 	});
@@ -984,7 +984,7 @@ lvk_sampler lvk_device::create_sampler(VkFilter min_filter, VkFilter mag_filter,
 	}
 	dloggln("Framebuffer Created");
 	
-	deletion_queue.push([=]{
+	deletion_queue.push([=, this]{
 		vkDestroySampler(this->_device, sampler._sampler, VK_NULL_HANDLE);
 		dloggln("Framebuffer Destroyed");
 	});

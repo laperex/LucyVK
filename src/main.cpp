@@ -30,7 +30,7 @@ int main(int count, char** args) {
 	
 	_window.initialize("lucy", { 50, 50 }, { 1920, 1080 });
 
-	_renderer.initialization(_window.window);
+	_renderer.init(_window.window);
 	
 	double dt = 0;
 	while (!_events.quit()) {
@@ -47,6 +47,6 @@ int main(int count, char** args) {
 		const auto& end_time = std::chrono::high_resolution_clock::now();
 		dt = std::chrono::duration<double, std::ratio<1, 60>>(end_time - start_time).count();
 	}
-	
+
 	_renderer.destroy();
 }
