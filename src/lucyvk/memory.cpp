@@ -65,6 +65,10 @@ lvk_buffer lvk_allocator::create_buffer(VkBufferUsageFlagBits buffer_usage, VmaM
 	return buffer;
 }
 
+lvk_buffer lvk_allocator::create_index_buffer(const void* data, const std::size_t size) {
+	return create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, data, size);
+}
+
 lvk_buffer lvk_allocator::create_vertex_buffer(const void* data, const std::size_t size) {
 	return create_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, data, size);
 }

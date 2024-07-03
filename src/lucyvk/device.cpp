@@ -36,16 +36,16 @@ void lvk_device::wait_idle() const {
 	vkDeviceWaitIdle(_device);
 }
 
-VkResult lvk_device::submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const lvk_fence& fence, uint64_t timeout) const {
-	return vkQueueSubmit(_graphics_queue, 1, submit_info, fence._fence);
+VkResult lvk_device::submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const VkFence fence, uint64_t timeout) const {
+	return vkQueueSubmit(_graphics_queue, 1, submit_info, fence);
 }
 
 // VkResult lvk_device::submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const VkFence fence, uint64_t timeout) const {
 // 	return vkQueueSubmit(_graphics_queue, 1, submit_info, fence);
 // }
 
-VkResult lvk_device::submit2(const VkSubmitInfo2* submit_info2, const uint32_t submit_info2_count, const lvk_fence& fence) const {
-	return vkQueueSubmit2(_graphics_queue, submit_info2_count, submit_info2, fence._fence);
+VkResult lvk_device::submit2(const VkSubmitInfo2* submit_info2, const uint32_t submit_info2_count, const VkFence fence) const {
+	return vkQueueSubmit2(_graphics_queue, submit_info2_count, submit_info2, fence);
 }
 
 VkResult lvk_device::present(const VkPresentInfoKHR* present_info) const {
@@ -304,7 +304,7 @@ lvk_immediate_command lvk_device::create_immediate_command() {
 	
 	dloggln("Immediate Commands Created");
 	
-	deletion_queue.push([=]{
+	deletion_queue.push([=, this]{
 		vkFreeCommandBuffers(this->_device, immediate_command._command_pool, 1, &immediate_command._command_buffer);
 		vkDestroyCommandPool(this->_device, immediate_command._command_pool, VK_NULL_HANDLE);
 		vkDestroyFence(this->_device, immediate_command._fence, VK_NULL_HANDLE);
@@ -321,11 +321,11 @@ VkResult lvk_device::immediate_submit(const lvk_immediate_command& immediate_com
 		.pInheritanceInfo = VK_NULL_HANDLE
 	};
 
-	vkBeginCommandBuffer(immediate_command._command_buffer, &begin_info);
+	vkBeginCommandBuffer(immediate_command, &begin_info);
 	
-	function(immediate_command._command_buffer);
+	function(immediate_command);
 	
-	vkEndCommandBuffer(immediate_command._command_buffer);
+	vkEndCommandBuffer(immediate_command);
 	
 	VkSubmitInfo submit_info = {
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -339,7 +339,7 @@ VkResult lvk_device::immediate_submit(const lvk_immediate_command& immediate_com
 	vkWaitForFences(_device, 1, &immediate_command._fence, true, LVK_TIMEOUT);
 	vkResetFences(_device, 1, &immediate_command._fence);
 	
-	vkResetCommandPool(_device, immediate_command._command_pool, 0);
+	vkResetCommandPool(_device, immediate_command, 0);
 	
 	return result;
 }
@@ -554,7 +554,7 @@ lvk_pipeline_layout lvk_device::create_pipeline_layout(const VkPushConstantRange
 lvk_pipeline lvk_device::create_graphics_pipeline(const lvk_pipeline_layout& pipeline_layout, const lvk::config::graphics_pipeline* config, const lvk_render_pass* render_pass) {
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE,
-		.type = VK_PIPELINE_BIND_POINT_GRAPHICS,
+		// .type = VK_PIPELINE_BIND_POINT_GRAPHICS,
 	};
 	
 	VkGraphicsPipelineCreateInfo pipeline_info = {
@@ -594,7 +594,7 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const lvk_pipeline_layout& pip
 lvk_pipeline lvk_device::create_compute_pipeline(const lvk_pipeline_layout& pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info) {
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE,
-		.type = VK_PIPELINE_BIND_POINT_COMPUTE,
+		// .type = VK_PIPELINE_BIND_POINT_COMPUTE,
 	};
 
 	VkComputePipelineCreateInfo pipeline_info = {

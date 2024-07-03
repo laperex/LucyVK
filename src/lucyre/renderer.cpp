@@ -57,55 +57,21 @@ bool lre::renderer::load_image_from_file(const char* filename, lvk_image& image)
 	image = allocator.create_image(image_format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, imageExtent, VK_IMAGE_TYPE_2D);
 
 	device.immediate_submit(immediate_command, [&](VkCommandBuffer cmd) {
-		VkImageSubresourceRange range = {
-			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-			.baseMipLevel = 0,
-			.levelCount = 1,
-			.baseArrayLayer = 0,
-			.layerCount = 1,
-		};
+		lvk_command_buffer command_buffer = static_cast<lvk_command_buffer>(cmd);
 
-		VkImageMemoryBarrier imageBarrier_toTransfer = {
-			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		VkImageMemoryBarrier image_barrier = lvk::info::image_memory_barrier(image, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, lvk::info::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT));
 
-			.srcAccessMask = 0,
-			.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-
-			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-
-			.image = image._image,
-			.subresourceRange = range,
-		};
-
-		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toTransfer);
+		command_buffer.pipeline_barrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, image_barrier);
 		
-		VkBufferImageCopy copy_region = {
-			.bufferOffset = 0,
-			.bufferRowLength = 0,
-			.bufferImageHeight = 0,
+		command_buffer.copy_buffer_to_image(staging_buffer, image, image._extent);
 
-			.imageSubresource = {
-				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-				.mipLevel = 0,
-				.baseArrayLayer = 0,
-				.layerCount = 1,
-			},
-			.imageExtent = imageExtent,
-		};
+		image_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		image_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		//copy the buffer into the image
-		vkCmdCopyBufferToImage(cmd, staging_buffer._buffer, image._image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
-		
-		VkImageMemoryBarrier imageBarrier_toReadable = imageBarrier_toTransfer;
-		imageBarrier_toReadable.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		imageBarrier_toReadable.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		image_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		image_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-		imageBarrier_toReadable.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		imageBarrier_toReadable.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-		//barrier the image into the shader readable layout
-		vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageBarrier_toReadable);
+		command_buffer.pipeline_barrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, image_barrier);
 	});
 
 	stbi_image_free(pixels);
@@ -113,94 +79,19 @@ bool lre::renderer::load_image_from_file(const char* filename, lvk_image& image)
 	return true;
 }
 
-void lre::renderer::init(SDL_Window* window) {
-	lvk::config::instance instance_config = {
-		.name = "Lucy Framework v7",
-		.enable_validation_layers = true
-	};
+void lre::renderer::texture_pipeline_init() {
+	lvk_shader_module vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "./shaders/texture.vert.spv");
+	lvk_shader_module fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "./shaders/texture.frag.spv");
 
-	instance = lvk_instance::init(&instance_config, window);
-	device = instance.create_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME });
-	allocator = device.create_allocator();
-
-
-	mvp_uniform_buffer = allocator.create_uniform_buffer<mvp_matrix>();
-	
-	command_pool = device.create_graphics_command_pool();
-
-	for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
-		frame_array[i].command_buffer = device.allocate_command_buffer_unique(command_pool);
-
-		frame_array[i].render_fence = device.create_fence();
-		frame_array[i].render_semaphore = device.create_semaphore();
-		frame_array[i].present_semaphore = device.create_semaphore();
-	}
-
-
-	glm::ivec2 size;
-	SDL_GetWindowSize(window, &size.x, &size.y);
-
-	swapchain = device.create_swapchain(size.x, size.y, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
-		.format = VK_FORMAT_R8G8B8A8_UNORM,
-		.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
-	});
-
-	// compute_image = allocator.init_image(VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
-	// compute_image_view = compute_image.init_image_view(VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
-
-	// immediate_command_buffer = command_pool.init_immediate_command_buffer();
-	
-	// immediate_command_buffer.transition_image(compute_image._image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
-	
-	// lvk_init_sampler
-
-	
-	uint32_t descriptor_set_max_size = 10;
-
-	VkDescriptorPoolSize descriptor_pool_sizes[] = {
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10 },
-
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
-
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 },
-	};
-
-	descriptor_pool = device.create_descriptor_pool(descriptor_set_max_size, descriptor_pool_sizes);
-
-	// seperate for each shader type
-	descriptor_set_layout = device.create_descriptor_set_layout({
-		lvk::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1),
-		lvk::descriptor_set_layout_binding(1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
-		lvk::descriptor_set_layout_binding(2, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1),
-	});
-
-	descriptor = device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
-
-	// binding for uniform buffer
-	device.update_descriptor_set(descriptor, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
-
-	
-	
-	depth_image = allocator.create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
-	depth_image_view = device.create_image_view(depth_image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
-
-	render_pass = device.create_default_render_pass(swapchain._surface_format.format);
-	framebuffer_array.reserve(swapchain._image_count);
-
-	for (int i = 0; i < swapchain._image_count; i++) {
-		framebuffer_array[i] = device.create_framebuffer(render_pass, swapchain._extent, { swapchain._image_views[i], depth_image_view._image_view });
-	}
-
-
-	lvk_shader_module vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.vert.spv");
-	lvk_shader_module fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "/home/laperex/Programming/C++/LucyVK/build/shaders/colored_triangle.frag.spv");
 
 	VkViewport viewport[] = {
 		{
 			.x = 0.0f,
 			.y = 0.0f,
+
 			.width = static_cast<float>(swapchain._extent.width),
 			.height = static_cast<float>(swapchain._extent.height),
+
 			.minDepth = 0.0f,
 			.maxDepth = 1.0f
 		}
@@ -212,23 +103,18 @@ void lre::renderer::init(SDL_Window* window) {
 			.extent = { static_cast<uint32_t>(swapchain._extent.width), static_cast<uint32_t>(swapchain._extent.height) }
 		}
 	};
+	
+	
+	VertexInputDescription vertex_description = Vertex::get_vertex_input_description();
 
 
 	lvk::config::graphics_pipeline config = {
 		.shader_stage_array = {
-			lvk::info::shader_stage(&vertex_shader),
-			lvk::info::shader_stage(&fragment_shader),
+			lvk::info::shader_stage(vertex_shader),
+			lvk::info::shader_stage(fragment_shader),
 		},
 
-		.vertex_input_state = {
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-
-			// .vertexBindingDescriptionCount = std::size(bindings),
-			// .pVertexBindingDescriptions = bindings,
-
-			// .vertexAttributeDescriptionCount = std::size(attributes),
-			// .pVertexAttributeDescriptions = attributes,
-		},
+		.vertex_input_state = lvk::info::vertex_input_state(vertex_description.bindings, vertex_description.attributes),
 
 		.input_assembly_state = {
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -258,23 +144,108 @@ void lre::renderer::init(SDL_Window* window) {
 		},
 
 		.multisample_state = lvk::info::multisample_state(),
+
 		.depth_stencil_state = lvk::info::depth_stencil_state(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
-		
+
 		.color_blend_state = lvk::info::color_blend_state({
 			{
 				.blendEnable = VK_FALSE,
 				.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
 			}
 		}),
-
-		// .dynamic_rendering = lvk::info::rendering(VK_FORMAT_D32_SFLOAT)
 	};
 
 	graphics_pipeline_layout = device.create_pipeline_layout({
 		descriptor_set_layout._descriptor_set_layout
 	});
 	graphics_pipeline = device.create_graphics_pipeline(graphics_pipeline_layout, &config, &render_pass);
+}
 
+void lre::renderer::descriptor_set_init() {
+	uint32_t descriptor_set_max_size = 10;
+
+	VkDescriptorPoolSize descriptor_pool_sizes[] = {
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 },
+	};
+
+	descriptor_pool = device.create_descriptor_pool(descriptor_set_max_size, descriptor_pool_sizes);
+
+	// seperate for each shader type
+	descriptor_set_layout = device.create_descriptor_set_layout({
+		lvk::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1),
+		lvk::descriptor_set_layout_binding(1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
+		lvk::descriptor_set_layout_binding(2, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1),
+	});
+
+	descriptor_ubo = device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
+}
+
+void lre::renderer::init(SDL_Window* window) {
+	lvk::config::instance instance_config = {
+		.name = "Lucy Framework v7",
+		.enable_validation_layers = true
+	};
+
+	instance = lvk_instance::init(&instance_config, window);
+	device = instance.create_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME });
+	allocator = device.create_allocator();
+
+	mvp_uniform_buffer = allocator.create_uniform_buffer<mvp_matrix>();
+
+	command_pool = device.create_graphics_command_pool();
+
+	for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
+		frame_array[i].command_buffer = device.allocate_command_buffer_unique(command_pool);
+
+		frame_array[i].render_fence = device.create_fence();
+		frame_array[i].render_semaphore = device.create_semaphore();
+		frame_array[i].present_semaphore = device.create_semaphore();
+	}
+	
+	
+	mesh.vertices = std::vector<Vertex> {
+		{ {  1.0f,  1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } },
+		{ { -1.0f,  1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f } },
+		{ { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f } },
+		{ {  1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } },
+	};
+	
+	mesh.indices = { 0,1,2, 2,3,0 };
+	
+	mesh.index_buffer = allocator.create_index_buffer(mesh.indices);
+	
+	mesh.vertex_buffer = allocator.create_vertex_buffer(mesh.vertices);
+
+
+	glm::ivec2 size;
+	SDL_GetWindowSize(window, &size.x, &size.y);
+
+	swapchain = device.create_swapchain(size.x, size.y, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
+		.format = VK_FORMAT_B8G8R8A8_UNORM,
+		.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+	});
+
+	descriptor_set_init();
+	
+	
+
+	// binding for uniform buffer
+	device.update_descriptor_set(descriptor_ubo, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
+
+
+	depth_image = allocator.create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
+	depth_image_view = device.create_image_view(depth_image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+
+	render_pass = device.create_default_render_pass(swapchain._surface_format.format);
+	framebuffer_array.reserve(swapchain._image_count);
+
+	for (int i = 0; i < swapchain._image_count; i++) {
+		framebuffer_array[i] = device.create_framebuffer(render_pass, swapchain._extent, { swapchain._image_views[i], depth_image_view._image_view });
+	}
+
+	texture_pipeline_init();
 
 	immediate_command = device.create_immediate_command();
 
@@ -283,7 +254,7 @@ void lre::renderer::init(SDL_Window* window) {
 	load_image_view = device.create_image_view(load_image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
 	sampler = device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 
-	device.update_descriptor_set(descriptor, 2, &load_image_view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);
+	device.update_descriptor_set(descriptor_ubo, 2, &load_image_view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);
 }
 
 void lre::renderer::record(uint32_t frame_number) {
@@ -300,59 +271,31 @@ void lre::renderer::record(uint32_t frame_number) {
 	mvp_matrix mvp = {
 		.projection = glm::perspective(glm::radians(70.f), float(swapchain._extent.width) / float(swapchain._extent.height), 0.1f, 200.0f),
 		.view = glm::translate(glm::mat4(1.f), cam_pos),
-		.model = glm::rotate(glm::mat4(1.0f), glm::radians(frame_number * 0.4f), glm::vec3(0, 1, 0)),
+		.model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0, 1, 0)),
 		.color = { 0, 1, 0, 1},
 	};
-	
+
 	mvp.projection[1][1] *= -1;
 
-	// mvp_uniform_buffer.upload(mvp);
 	allocator.upload(mvp_uniform_buffer, mvp);
 
+
 	cmd.reset();
-	
-	// Allo
 
 	cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-	VkRenderPassBeginInfo render_pass_begin_info = {
-		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		.renderPass = render_pass._render_pass,
-		.framebuffer = framebuffer_array[frame.image_index]._framebuffer,
-
-		.renderArea = {
-			.offset = { 0, 0 },
-			.extent = swapchain._extent,
-		},
-
-		.clearValueCount = static_cast<uint32_t>(std::size(clear_value)),
-		.pClearValues = clear_value
-	};
-
-	// cmd.bind_pipeline(&compute_pipeline);
+	cmd.begin_render_pass(render_pass, framebuffer_array[frame.image_index], swapchain, VK_SUBPASS_CONTENTS_INLINE, clear_value);
 	
-	// cmd.transition_image(load_image._image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+	cmd.bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 
-	// vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, compute_pipeline_layout._pipeline_layout, 0, 1, &descriptor._descriptor_set, 0, VK_NULL_HANDLE);
-	// vkCmdDispatch(cmd._command_buffer, std::ceil(swapchain._extent.width / 16.0), std::ceil(swapchain._extent.height / 16.0), 1);
+	cmd.bind_vertex_buffers({ mesh.vertex_buffer._buffer }, { 0 }, 0);
+	cmd.bind_index_buffer(mesh.index_buffer, VK_INDEX_TYPE_UINT32);
+	cmd.bind_descriptor_set(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout, { descriptor_ubo });
 
-	cmd.begin_render_pass(&render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdDrawIndexed(cmd, mesh.indices.size(), 1, 0, 0, 0);
 	
-	// cmd.bind_vertex_buffers({ terrain.vertex_buffer._buffer }, { 0 });
-	cmd.bind_pipeline(&graphics_pipeline);
-
-	vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout._pipeline_layout, 0, 1, &descriptor._descriptor_set, 0, VK_NULL_HANDLE);
-	// vkCmdBindDescriptorSets(cmd._command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout._pipeline_layout, 0, 0, &descriptor._descriptor_set, 0, VK_NULL_HANDLE);
-
-	vkCmdDraw(cmd._command_buffer, 6, 1, 0, 0);
 
 	cmd.end_render_pass();
-// 	projection = glm::perspective(glm::radians(fov), float(width) / float(height), c_near, c_far);
-// }
-
-	// upload.command_pool = device.create_graphics_command_pool();
-	// upload.command_buffer = device.allocate_command_buffer_unique(upload.command_pool);
-	// upload.fence = device.create_fence();
 
 	cmd.end();
 }
@@ -382,7 +325,7 @@ void lre::renderer::submit(uint32_t frame_number) {
 	vkWaitForFences(device._device, 1, &frame.render_fence._fence, false, LVK_TIMEOUT);
 	vkResetFences(device._device, 1, &frame.render_fence._fence);
 
-	VkPresentInfoKHR presentInfo = {
+	VkPresentInfoKHR present_info = {
 		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		
 		.waitSemaphoreCount = 1,
@@ -394,7 +337,7 @@ void lre::renderer::submit(uint32_t frame_number) {
 		.pImageIndices = &frame.image_index,
 	};
 
-	device.present(&presentInfo);
+	device.present(&present_info);
 }
 
 void lre::renderer::update() {

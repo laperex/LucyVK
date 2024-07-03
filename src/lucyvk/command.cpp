@@ -34,12 +34,16 @@ void lvk_command_buffer::begin(const VkCommandBufferUsageFlags flags, const VkCo
 	vkBeginCommandBuffer(_command_buffer, &cmdBeginInfo);
 }
 
-void lvk_command_buffer::bind_pipeline(const lvk_pipeline* pipeline) const {
-	vkCmdBindPipeline(_command_buffer, pipeline->type, pipeline->_pipeline);
+void lvk_command_buffer::bind_pipeline(const VkPipelineBindPoint pipeline_bind_point, const VkPipeline pipeline) const {
+	vkCmdBindPipeline(_command_buffer, pipeline_bind_point, pipeline);
 }
 
-void lvk_command_buffer::bind_descriptor_set(const lvk_pipeline_layout& pipeline_layout, const lvk_pipeline& pipeline, const lvk_descriptor_set* descriptor_set, const uint32_t descriptor_set_count) const {
-	vkCmdBindDescriptorSets(_command_buffer, pipeline.type, pipeline_layout._pipeline_layout, 0, descriptor_set_count, &descriptor_set->_descriptor_set, 0, VK_NULL_HANDLE);
+void lvk_command_buffer::bind_descriptor_set(const VkPipelineBindPoint pipeline_bind_point, const VkPipelineLayout pipeline_layout, const lvk_descriptor_set* descriptor_set, const uint32_t descriptor_set_count, uint32_t first_set) const {
+	vkCmdBindDescriptorSets(_command_buffer, pipeline_bind_point, pipeline_layout, first_set, descriptor_set_count, &descriptor_set->_descriptor_set, 0, VK_NULL_HANDLE);
+}
+
+void lvk_command_buffer::bind_index_buffer(const VkBuffer index_buffer, const VkIndexType index_type, const VkDeviceSize offset) const {
+	vkCmdBindIndexBuffer(_command_buffer, index_buffer, offset, index_type);
 }
 
 void lvk_command_buffer::bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding) const {
@@ -47,27 +51,31 @@ void lvk_command_buffer::bind_vertex_buffers(const VkBuffer* vertex_buffers, con
 }
 
 
-void lvk_command_buffer::transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const {
-	VkImageMemoryBarrier transfer_image_barrier = {
-		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+void lvk_command_buffer::transition_image(VkImageMemoryBarrier image_memory_barrier) const {
+	// VkImageMemoryBarrier transfer_image_barrier = {
+	// 	.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 
-		.srcAccessMask = 0,
-		.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+	// 	.srcAccessMask = src_access_mask,
+	// 	.dstAccessMask = dst_access_flags,
 
-		.oldLayout = current_layout,
-		.newLayout = new_layout,
+	// 	.oldLayout = old_layout,
+	// 	.newLayout = new_layout,
 
-		.image = image,
-		.subresourceRange = {
-			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-			.baseMipLevel = 0,
-			.levelCount = 1,
-			.baseArrayLayer = 0,
-			.layerCount = 1,
-		},
-	};
+	// 	.image = image,
+	// 	.subresourceRange = {
+	// 		.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+	// 		.baseMipLevel = 0,
+	// 		.levelCount = 1,
+	// 		.baseArrayLayer = 0,
+	// 		.layerCount = 1,
+	// 	},
+	// };
 
-	vkCmdPipelineBarrier(_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &transfer_image_barrier);
+	vkCmdPipelineBarrier(_command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+}
+
+void lvk_command_buffer::pipeline_barrier(VkPipelineStageFlags src_pipeline_stage, VkPipelineStageFlags dst_pipeline_stage, const VkImageMemoryBarrier image_memory_barrier) const {
+	vkCmdPipelineBarrier(_command_buffer, src_pipeline_stage, dst_pipeline_stage, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
 }
 
 // VkSubmitInfo lvk_command_buffer::immediate_transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const {
@@ -114,7 +122,7 @@ void lvk_command_buffer::transition_image2(VkImage image, VkImageLayout current_
 }
 
 
-void lvk_command_buffer::copy_image_to_image(VkImage source, VkImage destination, VkImageLayout source_layout, VkImageLayout destination_layout, VkExtent2D src_size, VkExtent2D dst_size) const {
+void lvk_command_buffer::copy_image_to_image2(VkImage source, VkImage destination, VkImageLayout source_layout, VkImageLayout destination_layout, VkExtent2D src_size, VkExtent2D dst_size) const {
 	VkImageCopy2 copy_region = {
 		
 	};
@@ -132,6 +140,25 @@ void lvk_command_buffer::copy_image_to_image(VkImage source, VkImage destination
 	};
 	
 	vkCmdCopyImage2(_command_buffer, &copy_info);
+}
+
+void lvk_command_buffer::copy_buffer_to_image(VkBuffer source, VkImage destination, VkExtent3D region) const {
+	VkBufferImageCopy copy_region = {
+		.bufferOffset = 0,
+		.bufferRowLength = 0,
+		.bufferImageHeight = 0,
+
+		.imageSubresource = {
+			.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+			.mipLevel = 0,
+			.baseArrayLayer = 0,
+			.layerCount = 1,
+		},
+		.imageExtent = region,
+	};
+
+	// copy the buffer into the image
+	vkCmdCopyBufferToImage(_command_buffer, source, destination, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
 }
 
 void lvk_command_buffer::dispatch(uint32_t group_count_x, uint32_t group_count_y, uint32_t group_count_z) const {
@@ -187,22 +214,27 @@ void lvk_command_buffer::end() const {
 	vkEndCommandBuffer(_command_buffer);
 }
 
-void lvk_command_buffer::begin_render_pass(const VkRenderPassBeginInfo* beginInfo, const VkSubpassContents subpass_contents) const {
-	vkCmdBeginRenderPass(_command_buffer, beginInfo, subpass_contents);
+void lvk_command_buffer::begin_render_pass(const VkRenderPassBeginInfo begin_info, const VkSubpassContents subpass_contents) const {
+	vkCmdBeginRenderPass(_command_buffer, &begin_info, subpass_contents);
 }
 
-void lvk_command_buffer::begin_render_pass(const lvk_render_pass render_pass, const lvk_framebuffer& framebuffer, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count) const {
+void lvk_command_buffer::begin_render_pass(const VkRenderPass render_pass, const VkFramebuffer framebuffer, const VkExtent2D extent, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count) const {
 	VkRenderPassBeginInfo begin_info = {
 		.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-		.pNext = VK_NULL_HANDLE,
-		.renderPass = render_pass._render_pass,
-		.framebuffer = framebuffer._framebuffer,
-		.renderArea = { { 0, 0 }, framebuffer._extent },
+		
+		.renderPass = render_pass,
+		.framebuffer = framebuffer,
+
+		.renderArea = {
+			.offset = { 0, 0 },
+			.extent = extent,
+		},
+		
 		.clearValueCount = clear_value_count,
 		.pClearValues = clear_values,
 	};
 
-	begin_render_pass(&begin_info, subpass_contents);
+	begin_render_pass(begin_info, subpass_contents);
 }
 
 void lvk_command_buffer::end_render_pass() const {

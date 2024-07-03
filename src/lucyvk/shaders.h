@@ -1,4 +1,4 @@
-#include "lucyvk/types.h"
+#include "lucyvk/handles.h"
 #include <map>
 #include <vulkan/vulkan_core.h>
 
@@ -9,7 +9,7 @@
 // ! |--------------------------------------------------
 
 struct lvk_shader_module {
-	VkShaderModule _shader_module;
+	HANDLE_DEF(VkShaderModule, _shader_module)
 
 	const VkShaderStageFlagBits _stage;
 };

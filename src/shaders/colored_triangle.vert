@@ -1,6 +1,8 @@
 #version 450
 
 //output variable to the fragment shader
+// layout (location = 0) in vec3
+
 layout (location = 0) out vec3 outColor;
 layout (location = 1) out vec2 outUV;
 
@@ -47,5 +49,6 @@ void main()
 	);
 
 	gl_Position = camera_data.projection * camera_data.view * camera_data.model * vec4(positions[gl_VertexIndex % 6], 1.0f);
-	outColor = colors[gl_VertexIndex % 6];
+	outColor = vec3(1, 0, 0);
+	outUV = uv[gl_VertexIndex % 6];
 }

@@ -4,6 +4,8 @@
 #include <memory>
 #include <vulkan/vulkan.h>
 
+#define HANDLE_DEF(h_type, h_name) h_type h_name; operator decltype(h_name)() const { return h_name; }
+
 struct lvk_device;
 
 struct lvk_instance;
@@ -17,19 +19,13 @@ struct lvk_shader_module;
 struct lvk_allocator;
 
 
-using lvk_device_ptr = std::unique_ptr<lvk_device>;
-struct lvk_device_inherit {
-	const lvk_device* device = VK_NULL_HANDLE;
-};
-
-
 // |--------------------------------------------------
 // ----------------> COMMAND POOL
 // |--------------------------------------------------
 
 
 struct lvk_command_pool {
-	VkCommandPool _command_pool;
+	HANDLE_DEF(VkCommandPool, _command_pool)
 };
 
 
@@ -39,7 +35,7 @@ struct lvk_command_pool {
 
 
 struct lvk_pipeline_layout {
-	VkPipelineLayout _pipeline_layout;
+	HANDLE_DEF(VkPipelineLayout, _pipeline_layout)
 };
 
 
@@ -49,9 +45,9 @@ struct lvk_pipeline_layout {
 
 
 struct lvk_pipeline {
-	VkPipeline _pipeline;
+	HANDLE_DEF(VkPipeline, _pipeline)
 	
-	VkPipelineBindPoint type;
+	// VkPipelineBindPoint type;
 };
 
 
@@ -61,8 +57,9 @@ struct lvk_pipeline {
 
 
 struct lvk_swapchain {
-	VkSwapchainKHR _swapchain;
-	VkExtent2D _extent;
+	HANDLE_DEF(VkSwapchainKHR, _swapchain)
+	HANDLE_DEF(VkExtent2D, _extent)
+
 	VkSurfaceFormatKHR _surface_format;
 	VkPresentModeKHR _present_mode;
 	VkImageUsageFlags _image_usage;
@@ -79,7 +76,7 @@ struct lvk_swapchain {
 
 
 struct lvk_semaphore {
-	VkSemaphore _semaphore;
+	HANDLE_DEF(VkSemaphore, _semaphore)
 };
 
 
@@ -89,7 +86,7 @@ struct lvk_semaphore {
 
 
 struct lvk_fence {
-	VkFence _fence;
+	HANDLE_DEF(VkFence, _fence)
 };
 
 
@@ -99,7 +96,7 @@ struct lvk_fence {
 
 
 struct lvk_descriptor_set_layout {
-	VkDescriptorSetLayout _descriptor_set_layout;
+	HANDLE_DEF(VkDescriptorSetLayout, _descriptor_set_layout)
 };
 
 
@@ -109,7 +106,7 @@ struct lvk_descriptor_set_layout {
 
 
 struct lvk_descriptor_pool {
-	VkDescriptorPool _descriptor_pool;
+	HANDLE_DEF(VkDescriptorPool, _descriptor_pool)
 };
 
 
@@ -119,7 +116,7 @@ struct lvk_descriptor_pool {
 
 
 struct lvk_descriptor_set {
-	VkDescriptorSet _descriptor_set;
+	HANDLE_DEF(VkDescriptorSet, _descriptor_set)
 };
 
 
@@ -129,7 +126,7 @@ struct lvk_descriptor_set {
 
 
 struct lvk_framebuffer {
-	VkFramebuffer _framebuffer;
+	HANDLE_DEF(VkFramebuffer, _framebuffer)
 	VkExtent2D _extent;
 };
 
@@ -140,7 +137,7 @@ struct lvk_framebuffer {
 
 
 struct lvk_render_pass {
-	VkRenderPass _render_pass;
+	HANDLE_DEF(VkRenderPass, _render_pass)
 };
 
 
@@ -150,7 +147,8 @@ struct lvk_render_pass {
 
 
 struct lvk_buffer {
-	VkBuffer _buffer;
+	HANDLE_DEF(VkBuffer, _buffer)
+
 	VmaAllocation _allocation;
 	
 	std::size_t _allocated_size;
@@ -164,7 +162,8 @@ struct lvk_buffer {
 
 
 struct lvk_image {
-	VkImage _image;
+	HANDLE_DEF(VkImage, _image)
+
 	VmaAllocation _allocation;
 	
 	VkFormat _format;
@@ -180,7 +179,17 @@ struct lvk_image {
 
 
 struct lvk_image_view {
-	VkImageView _image_view;
+	HANDLE_DEF(VkImageView, _image_view)
+};
+
+
+// |--------------------------------------------------
+// ----------------> SAMPLER
+// |--------------------------------------------------
+
+
+struct lvk_sampler {
+	HANDLE_DEF(VkSampler, _sampler)
 };
 
 
@@ -190,7 +199,7 @@ struct lvk_image_view {
 
 
 struct lvk_immediate_command {
-	VkCommandPool _command_pool;
-	VkCommandBuffer _command_buffer;
-	VkFence _fence;
+	HANDLE_DEF(VkCommandPool, _command_pool)
+	HANDLE_DEF(VkCommandBuffer, _command_buffer)
+	HANDLE_DEF(VkFence, _fence)
 };

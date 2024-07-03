@@ -11,9 +11,9 @@
 
 
 struct lvk_instance {
-	VkDebugUtilsMessengerEXT _debug_messenger;
+	HANDLE_DEF(VkInstance, _instance)
 	VkSurfaceKHR _surfaceKHR;
-	VkInstance _instance;
+	VkDebugUtilsMessengerEXT _debug_messenger;
 
 	std::vector<const char*> layers = {};
 

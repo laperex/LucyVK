@@ -3,6 +3,7 @@
 #include "lucylm/math.hpp"
 #include "lucyvk/memory.h"
 
+
 namespace lre {
 	struct VertexInputDescription {
 		std::vector<VkVertexInputBindingDescription> bindings;
@@ -15,9 +16,9 @@ namespace lre {
 	struct Vertex {
 		glm::vec3 position;
 		glm::vec3 normal;
-		glm::vec3 color;
+		glm::vec3 uv;
 
-		
+
 		static VertexInputDescription get_vertex_input_description() {
 			return {
 				.bindings = {
@@ -45,8 +46,8 @@ namespace lre {
 						.location = 2,
 						.binding = 0,
 						.format = VK_FORMAT_R32G32B32_SFLOAT,
-						.offset = offsetof(Vertex, color),
-					}
+						.offset = offsetof(Vertex, uv),
+					},
 				},
 
 				.flags = 0
@@ -57,8 +58,10 @@ namespace lre {
 
 	struct Mesh {
 		std::vector<Vertex> vertices;
+		std::vector<uint32_t> indices;
 
 		lvk_buffer vertex_buffer;
+		lvk_buffer index_buffer;
 		
 		void load_obj(const char* filename);
 	};

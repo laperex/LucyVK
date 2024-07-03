@@ -10,9 +10,10 @@ namespace lvk::info {
 	VkPipelineDepthStencilStateCreateInfo depth_stencil_state(bool depth_test, bool depth_write, VkCompareOp compare_op);
 
 	VkPipelineShaderStageCreateInfo shader_stage(VkShaderStageFlagBits flag, VkShaderModule shader_module, const VkSpecializationInfo* specialization = nullptr);
-	VkPipelineShaderStageCreateInfo shader_stage(const lvk_shader_module* shader_module, const VkSpecializationInfo* specialization = nullptr);
+	VkPipelineShaderStageCreateInfo shader_stage(const lvk_shader_module& shader_module, const VkSpecializationInfo* specialization = nullptr);
 
 	VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription* binding_description = {}, uint32_t binding_description_count = 0, const VkVertexInputAttributeDescription* attribute_description = {}, uint32_t attribute_description_count = 0);
+	VkPipelineVertexInputStateCreateInfo vertex_input_state(const std::vector<VkVertexInputBindingDescription>& binding_description = {}, const std::vector<VkVertexInputAttributeDescription>& attribute_description = {});
 	template <std::size_t _b_N, std::size_t _a_N>  [[nodiscard, __gnu__::__always_inline__]]
 	constexpr VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription (&bindings)[_b_N], const VkVertexInputAttributeDescription (&attributes)[_a_N]) noexcept {
 		return vertex_input_state(bindings, _b_N, attributes, _a_N);
@@ -52,8 +53,8 @@ namespace lvk::info {
 		return rendering(depth_attachment_format, stencil_attachment_format, color_attachment_formats, _f_N);
 	}
 
-	VkImageViewCreateInfo image_view(VkImage image, VkFormat format, VkImageViewType view_type, VkImageSubresourceRange subresource_range, VkComponentMapping components);
-	VkImageViewCreateInfo image_view(VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType view_type);
+	VkImageViewCreateInfo image_view(const VkImage image, VkFormat format, VkImageViewType view_type, VkImageSubresourceRange subresource_range, VkComponentMapping components);
+	VkImageViewCreateInfo image_view(const VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType view_type);
 	
 	VkSemaphoreSubmitInfo semaphore_submit(VkPipelineStageFlags2 stage_mask, const VkSemaphore semaphore);
 	
@@ -65,4 +66,10 @@ namespace lvk::info {
 	constexpr VkSubmitInfo2 submit2(const VkCommandBufferSubmitInfo (&command_buffer_infos)[_cbsi_N], const VkSemaphoreSubmitInfo (&signal_semaphore_infos)[_sssi_N], const VkSemaphoreSubmitInfo (&wait_semaphore_infos)[_wssi_N]) noexcept {
 		return submit2(command_buffer_infos, _cbsi_N, signal_semaphore_infos, _sssi_N, wait_semaphore_infos, _wssi_N);
 	}
+
+	VkImageSubresourceRange image_subresource_range(VkImageAspectFlags aspectMask, uint32_t baseMipLevel, uint32_t levelCount, uint32_t baseArrayLayer, uint32_t layerCount);
+	VkImageSubresourceRange image_subresource_range(VkImageAspectFlags aspect_mask);
+	
+	VkImageMemoryBarrier image_memory_barrier(const VkImage image, VkAccessFlags src_access, VkAccessFlags dst_access, VkImageLayout old_layout, VkImageLayout new_layout, uint32_t src_queue_index, uint32_t dst_queue_index, VkImageSubresourceRange subresource_range);
+	VkImageMemoryBarrier image_memory_barrier(const VkImage image, VkAccessFlags src_access, VkAccessFlags dst_access, VkImageLayout old_layout, VkImageLayout new_layout, VkImageSubresourceRange subresource_range);
 }

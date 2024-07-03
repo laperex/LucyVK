@@ -45,7 +45,7 @@ namespace lre {
 		lvk_pipeline graphics_pipeline;
 		lvk_pipeline_layout graphics_pipeline_layout;
 
-		lvk_descriptor_set descriptor;
+		lvk_descriptor_set descriptor_ubo;
 		lvk_descriptor_set_layout descriptor_set_layout;
 		
 		lvk_image load_image;
@@ -66,9 +66,11 @@ namespace lre {
 		lvk_image_view depth_image_view;
 		
 		lvk_buffer mvp_uniform_buffer;
+		
 		lvk_image_view compute_image_view;
 		// lvk_image compute_image;
 		
+		Mesh mesh;
 		
 		VkClearValue clear_value[2] = {
 			{
@@ -87,6 +89,9 @@ namespace lre {
 		
 		void upload_mesh(Mesh& mesh);
 		bool load_image_from_file(const char* filename, lvk_image& image);
+		
+		void texture_pipeline_init();
+		void descriptor_set_init();
 
 	public:
 		renderer();

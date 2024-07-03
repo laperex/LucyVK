@@ -59,8 +59,8 @@ VkPipelineShaderStageCreateInfo lvk::info::shader_stage(VkShaderStageFlagBits fl
 	};
 }
 
-VkPipelineShaderStageCreateInfo lvk::info::shader_stage(const lvk_shader_module* shader_module, const VkSpecializationInfo* specialization) {
-	return shader_stage(shader_module->_stage, shader_module->_shader_module, specialization);
+VkPipelineShaderStageCreateInfo lvk::info::shader_stage(const lvk_shader_module& shader_module, const VkSpecializationInfo* specialization) {
+	return shader_stage(shader_module._stage, shader_module._shader_module, specialization);
 }
 
 VkPipelineVertexInputStateCreateInfo lvk::info::vertex_input_state(const VkVertexInputBindingDescription* binding_description, uint32_t binding_description_count, const VkVertexInputAttributeDescription* attribute_description, uint32_t attribute_description_count) {
@@ -73,6 +73,10 @@ VkPipelineVertexInputStateCreateInfo lvk::info::vertex_input_state(const VkVerte
 		.vertexAttributeDescriptionCount = attribute_description_count,
 		.pVertexAttributeDescriptions = attribute_description
 	};
+}
+
+VkPipelineVertexInputStateCreateInfo lvk::info::vertex_input_state(const std::vector<VkVertexInputBindingDescription>& binding_description, const std::vector<VkVertexInputAttributeDescription>& attribute_description) {
+	return vertex_input_state(binding_description.data(), binding_description.size(), attribute_description.data(), attribute_description.size());
 }
 
 VkPipelineInputAssemblyStateCreateInfo lvk::info::input_assembly_state(const VkPrimitiveTopology topology, bool primitive_restart_enable) {
@@ -162,7 +166,7 @@ VkPipelineRenderingCreateInfo lvk::info::rendering(const VkFormat depth_attachme
 	};
 }
 
-VkImageViewCreateInfo lvk::info::image_view(VkImage image, VkFormat format, VkImageViewType view_type, VkImageSubresourceRange subresource_range, VkComponentMapping components) {
+VkImageViewCreateInfo lvk::info::image_view(const VkImage image, VkFormat format, VkImageViewType view_type, VkImageSubresourceRange subresource_range, VkComponentMapping components) {
 	return {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 		.pNext = VK_NULL_HANDLE,
@@ -175,7 +179,7 @@ VkImageViewCreateInfo lvk::info::image_view(VkImage image, VkFormat format, VkIm
 	};
 }
 
-VkImageViewCreateInfo lvk::info::image_view(VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType view_type) {
+VkImageViewCreateInfo lvk::info::image_view(const VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType view_type) {
 	return image_view(image, format, view_type, { aspect_flag, 0, 1, 0, 1 }, {});
 }
 
@@ -202,6 +206,43 @@ VkSubmitInfo2 lvk::info::submit2(const VkCommandBufferSubmitInfo* command_buffer
 		.signalSemaphoreInfoCount = signal_semaphore_infos_count,
 		.pSignalSemaphoreInfos = signal_semaphore_infos,
 	};
+}
+
+VkImageSubresourceRange lvk::info::image_subresource_range(VkImageAspectFlags aspect_mask, uint32_t base_mip_level, uint32_t level_count, uint32_t base_array_layer, uint32_t layer_count) {
+	return {
+		.aspectMask = aspect_mask,
+		.baseMipLevel = base_mip_level,
+		.levelCount = level_count,
+		.baseArrayLayer = base_array_layer,
+		.layerCount = layer_count,
+	};
+}
+
+VkImageSubresourceRange lvk::info::image_subresource_range(VkImageAspectFlags aspect_mask) {
+	return image_subresource_range(aspect_mask, 0, 1, 0, 1);
+}
+
+VkImageMemoryBarrier lvk::info::image_memory_barrier(const VkImage image, VkAccessFlags src_access, VkAccessFlags dst_access, VkImageLayout old_layout, VkImageLayout new_layout, uint32_t src_queue_index, uint32_t dst_queue_index, VkImageSubresourceRange subresource_range) {
+	return {
+		.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+
+		.srcAccessMask = src_access,
+		.dstAccessMask = dst_access,
+
+		.oldLayout = old_layout,
+		.newLayout = new_layout,
+
+		.srcQueueFamilyIndex = src_queue_index,
+		.dstQueueFamilyIndex = dst_queue_index,
+
+		.image = image,
+
+		.subresourceRange = subresource_range
+	};
+}
+
+VkImageMemoryBarrier lvk::info::image_memory_barrier(const VkImage image, VkAccessFlags src_access, VkAccessFlags dst_access, VkImageLayout old_layout, VkImageLayout new_layout, VkImageSubresourceRange subresource_range) {
+	return image_memory_barrier(image, src_access, dst_access, old_layout, new_layout, 0, 0, subresource_range);
 }
 
 VkCommandBufferSubmitInfo lvk::info::command_buffer_submit(const lvk_command_buffer* command_buffer) {

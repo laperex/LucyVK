@@ -22,7 +22,21 @@ struct lvk_allocator {
 	
 	lvk_buffer create_buffer(VkBufferUsageFlagBits buffer_usage, VmaMemoryUsage memory_usage, const void* data, const std::size_t size);
 
+	
+	lvk_buffer create_index_buffer(const void* data, const std::size_t size);
+
+	template <typename T>
+	lvk_buffer create_index_buffer(const std::vector<T>& data) {
+		return create_index_buffer(data.data(), data.size() * sizeof(T));
+	}
+	
+	
 	lvk_buffer create_vertex_buffer(const void* data, const std::size_t size);
+
+	template <typename T>
+	lvk_buffer create_vertex_buffer(const std::vector<T>& data) {
+		return create_vertex_buffer(data.data(), data.size() * sizeof(T));
+	}
 
 	template <typename T, std::size_t N> [[nodiscard, __gnu__::__always_inline__]]
 	constexpr lvk_buffer create_vertex_buffer(const T (&data)[N]) noexcept {
