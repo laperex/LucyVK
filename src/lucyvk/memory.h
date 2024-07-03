@@ -21,7 +21,6 @@ struct lvk_allocator {
 	}
 	
 	lvk_buffer create_buffer(VkBufferUsageFlagBits buffer_usage, VmaMemoryUsage memory_usage, const void* data, const std::size_t size);
-
 	
 	lvk_buffer create_index_buffer(const void* data, const std::size_t size);
 

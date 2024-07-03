@@ -41,7 +41,7 @@ namespace lre {
 		lvk_swapchain swapchain;
 		
 		lvk_descriptor_pool descriptor_pool;
-		
+
 		lvk_pipeline graphics_pipeline;
 		lvk_pipeline_layout graphics_pipeline_layout;
 
@@ -53,7 +53,7 @@ namespace lre {
 
 		lvk_sampler sampler;
 		// lvk_descriptor_set_layout texture_descriptor_set_layout;
-		
+
 		// lvk_pipeline compute_pipeline;
 		// lvk_pipeline_layout compute_pipeline_layout;
 		// // lvk_descriptor_set compute_descriptor;
@@ -88,12 +88,13 @@ namespace lre {
 		SDL_Window* sdl_window = nullptr;
 		
 		void upload_mesh(Mesh& mesh);
-		bool load_image_from_file(const char* filename, lvk_image& image);
 		
 		void texture_pipeline_init();
 		void descriptor_set_init();
 
 	public:
+		lvk_image load_image_from_file(const char* filename);
+
 		renderer();
 	
 		void init(SDL_Window*);
@@ -102,7 +103,9 @@ namespace lre {
 		void record(uint32_t frame_number);
 		void submit(uint32_t frame_number);
 
-		
+		void begin();
+		void end();
+
 		void update();
 		
 		void destroy();

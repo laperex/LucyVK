@@ -99,12 +99,24 @@ struct lvk_device {
 	VkResult swapchain_acquire_next_image(const lvk_swapchain& swapchain, uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT) const;
 	
 	
+	// SHADER		---------- ---------- ---------- ----------
+	
+
+	lvk_shader_module create_shader_module(const char* filename);
+	
+	
 	// PIPELINE		---------- ---------- ---------- ----------
 	
 	
 	lvk_pipeline_layout create_pipeline_layout(const VkPushConstantRange* push_constant_ranges = VK_NULL_HANDLE, const uint32_t push_constant_range_count = 0, const VkDescriptorSetLayout* descriptor_set_layouts = VK_NULL_HANDLE, const uint32_t descriptor_set_layout_count = 0);
 	
-	lvk_pipeline create_graphics_pipeline(const lvk_pipeline_layout& pipeline_layout, const lvk::config::graphics_pipeline* config, const lvk_render_pass* render_pass);
+	// template <std::size_t _pssci_N> [[nodiscard, __gnu__::__always_inline__]]
+	// constexpr lvk_pipeline create_graphics_pipeline(const lvk_pipeline_layout& pipeline_layout, const VkPipelineShaderStageCreateInfo (&shader_stages)[_pssci_N], const VkRenderPass render_pass) noexcept {
+	// 	return 
+	// }
+	lvk_pipeline create_graphics_pipeline(const lvk_pipeline_layout& pipeline_layout, const VkPipelineShaderStageCreateInfo shader_stages, const uint32_t shader_stages_count, const VkRenderPass render_pass);
+	
+	
 	lvk_pipeline create_compute_pipeline(const lvk_pipeline_layout& pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info);
 
 
@@ -205,8 +217,6 @@ struct lvk_device {
 
 	// lvk_semaphore init_semaphore();
 	// lvk_fence init_fence(VkFenceCreateFlags flags = 0);
-
-	lvk_shader_module init_shader_module(VkShaderStageFlagBits stage, const char* filename);
 	
 	
 	// lvk_allocator init_allocator();

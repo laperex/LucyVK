@@ -1,6 +1,6 @@
 #include "lucyvk/functions.h"
 #include "lucyvk/create_info.h"
-#include "lucyvk/shaders.h"
+// #include "lucyvk/shaders.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -28,41 +28,34 @@ void lre::renderer::upload_mesh(Mesh& mesh) {
 	
 }
 
-bool lre::renderer::load_image_from_file(const char* filename, lvk_image& image) {
-	int texWidth, texHeight, texChannels;
+lvk_image lre::renderer::load_image_from_file(const char* filename) {
+	int width, height, channels;
 
-	stbi_uc* pixels = stbi_load(filename, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	stbi_uc* pixels = stbi_load(filename, &width, &height, &channels, STBI_rgb_alpha);
 
 	if (!pixels) {
-		std::cout << "Failed to load texture file " << filename << std::endl;
-		return false;
+		dloggln("Failed to load texture file ", filename);
+		return { ._image = VK_NULL_HANDLE };
 	}
-	
-	void* pixel_ptr = pixels;
-	VkDeviceSize imageSize = texWidth * texHeight * 4;
 
-	//the format R8G8B8A8 matches exactly with the pixels loaded from stb_image lib
 	VkFormat image_format = VK_FORMAT_R8G8B8A8_SRGB;
-
-	//allocate temporary buffer for holding texture data to upload
-	// lvk_buffer stagingBuffer = engine.create_buffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
-	VkExtent3D imageExtent = {
-		.width = static_cast<uint32_t>(texWidth),
-		.height = static_cast<uint32_t>(texHeight),
+	VkDeviceSize image_size = width * height * 4;
+	VkExtent3D image_extent = {
+		.width = static_cast<uint32_t>(width),
+		.height = static_cast<uint32_t>(height),
 		.depth = 1,
 	};
 
-	lvk_buffer staging_buffer = allocator.create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, pixel_ptr, imageSize);
+	lvk_buffer staging_buffer = this->allocator.create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, pixels, image_size);
 
-	image = allocator.create_image(image_format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, imageExtent, VK_IMAGE_TYPE_2D);
+	lvk_image image = this->allocator.create_image(image_format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, image_extent, VK_IMAGE_TYPE_2D);
 
-	device.immediate_submit(immediate_command, [&](VkCommandBuffer cmd) {
+	this->device.immediate_submit(immediate_command, [&](VkCommandBuffer cmd) {
 		lvk_command_buffer command_buffer = static_cast<lvk_command_buffer>(cmd);
 
 		VkImageMemoryBarrier image_barrier = lvk::info::image_memory_barrier(image, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, lvk::info::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT));
 
 		command_buffer.pipeline_barrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, image_barrier);
-		
 		command_buffer.copy_buffer_to_image(staging_buffer, image, image._extent);
 
 		image_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -76,12 +69,12 @@ bool lre::renderer::load_image_from_file(const char* filename, lvk_image& image)
 
 	stbi_image_free(pixels);
 
-	return true;
+	return image;
 }
 
 void lre::renderer::texture_pipeline_init() {
-	lvk_shader_module vertex_shader = device.init_shader_module(VK_SHADER_STAGE_VERTEX_BIT, "./shaders/texture.vert.spv");
-	lvk_shader_module fragment_shader = device.init_shader_module(VK_SHADER_STAGE_FRAGMENT_BIT, "./shaders/texture.frag.spv");
+	lvk_shader_module vertex_shader = device.create_shader_module("./shaders/texture.vert.spv");
+	lvk_shader_module fragment_shader = device.create_shader_module("./shaders/texture.frag.spv");
 
 
 	VkViewport viewport[] = {
@@ -96,56 +89,35 @@ void lre::renderer::texture_pipeline_init() {
 			.maxDepth = 1.0f
 		}
 	};
-	
+
 	VkRect2D scissor[] = {
 		{
 			.offset = { 0, 0 },
 			.extent = { static_cast<uint32_t>(swapchain._extent.width), static_cast<uint32_t>(swapchain._extent.height) }
 		}
 	};
-	
-	
+
+
 	VertexInputDescription vertex_description = Vertex::get_vertex_input_description();
 
 
 	lvk::config::graphics_pipeline config = {
 		.shader_stage_array = {
-			lvk::info::shader_stage(vertex_shader),
-			lvk::info::shader_stage(fragment_shader),
+			lvk::info::shader_stage(VK_SHADER_STAGE_VERTEX_BIT, vertex_shader),
+			lvk::info::shader_stage(VK_SHADER_STAGE_FRAGMENT_BIT, fragment_shader),
 		},
 
 		.vertex_input_state = lvk::info::vertex_input_state(vertex_description.bindings, vertex_description.attributes),
 
-		.input_assembly_state = {
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+		.input_assembly_state = lvk::info::input_assembly_state(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE),
 
-			.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-			.primitiveRestartEnable = VK_FALSE
-		},
-
-		.viewport_state = {
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-			
-			.viewportCount = 1,
-			.pViewports = viewport,
-			
-			.scissorCount = 1,
-			.pScissors = scissor
-		},
+		.viewport_state = lvk::info::viewport_state(viewport, scissor),
 		
-		.rasterization_state = {
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-			
-			.polygonMode = VK_POLYGON_MODE_FILL,
-			.cullMode = VK_CULL_MODE_NONE,
-			.frontFace = VK_FRONT_FACE_CLOCKWISE,
-			
-			.lineWidth = 1.0,
-		},
+		.rasterization_state = lvk::info::rasterization_state(VK_POLYGON_MODE_FILL),
 
 		.multisample_state = lvk::info::multisample_state(),
 
-		.depth_stencil_state = lvk::info::depth_stencil_state(true, true, VK_COMPARE_OP_LESS_OR_EQUAL),
+		.depth_stencil_state = lvk::info::depth_stencil_state(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL),
 
 		.color_blend_state = lvk::info::color_blend_state({
 			{
@@ -155,10 +127,8 @@ void lre::renderer::texture_pipeline_init() {
 		}),
 	};
 
-	graphics_pipeline_layout = device.create_pipeline_layout({
-		descriptor_set_layout._descriptor_set_layout
-	});
-	graphics_pipeline = device.create_graphics_pipeline(graphics_pipeline_layout, &config, &render_pass);
+	graphics_pipeline_layout = device.create_pipeline_layout({ descriptor_set_layout });
+	graphics_pipeline = device.create_graphics_pipeline(graphics_pipeline_layout, config, render_pass);
 }
 
 void lre::renderer::descriptor_set_init() {
@@ -206,10 +176,10 @@ void lre::renderer::init(SDL_Window* window) {
 	
 	
 	mesh.vertices = std::vector<Vertex> {
-		{ {  1.0f,  1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } },
-		{ { -1.0f,  1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f } },
-		{ { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f } },
-		{ {  1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } },
+		{ {  0.5f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } },
+		{ { -0.5f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f } },
+		{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f } },
+		{ {  0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } },
 	};
 	
 	mesh.indices = { 0,1,2, 2,3,0 };
@@ -249,7 +219,7 @@ void lre::renderer::init(SDL_Window* window) {
 
 	immediate_command = device.create_immediate_command();
 
-	load_image_from_file("/home/laperex/Programming/C++/LucyVK/assets/buff einstein.jpg", load_image);
+	load_image = load_image_from_file("/home/laperex/Programming/C++/LucyVK/assets/buff einstein.jpg");
 
 	load_image_view = device.create_image_view(load_image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
 	sampler = device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
@@ -292,8 +262,9 @@ void lre::renderer::record(uint32_t frame_number) {
 	cmd.bind_index_buffer(mesh.index_buffer, VK_INDEX_TYPE_UINT32);
 	cmd.bind_descriptor_set(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout, { descriptor_ubo });
 
+
 	vkCmdDrawIndexed(cmd, mesh.indices.size(), 1, 0, 0, 0);
-	
+
 
 	cmd.end_render_pass();
 

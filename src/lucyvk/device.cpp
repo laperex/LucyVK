@@ -537,12 +537,43 @@ lvk_pipeline_layout lvk_device::create_pipeline_layout(const VkPushConstantRange
 	}
 	dloggln("Pipeline Layout Created");
 	
-	deletion_queue.push([=]{
-		vkDestroyPipelineLayout(_device, pipeline_layout._pipeline_layout, VK_NULL_HANDLE);
+	deletion_queue.push([=, this]{
+		vkDestroyPipelineLayout(this->_device, pipeline_layout._pipeline_layout, VK_NULL_HANDLE);
 		dloggln("Pipeline Layout Destroyed");
 	});
 	
 	return pipeline_layout;
+}
+
+
+// ! |--------------------------------------------------
+// ! ----------------> SHADER
+// ! |--------------------------------------------------
+
+
+lvk_shader_module lvk_device::create_shader_module(const char* filename) {
+	lvk_shader_module shader_module = {
+		._shader_module = VK_NULL_HANDLE,
+		// ._stage = stage
+	};
+	
+	VkShaderModuleCreateInfo info = lvk::info::shader_module(filename);
+
+	if (!info.codeSize) {
+		throw std::runtime_error(std::string("shader is invalid") + filename);
+	}
+
+	if (vkCreateShaderModule(_device, &info, VK_NULL_HANDLE, &shader_module._shader_module) != VK_SUCCESS) {
+		throw std::runtime_error(std::string("failed to create shader module! -> ") + filename);
+	}
+	dloggln("ShaderModule Created - ", filename);
+	
+	deletion_queue.push([=]{
+		vkDestroyShaderModule(this->_device, shader_module._shader_module, VK_NULL_HANDLE);
+		dloggln("Shader Module Destroyed");
+	});
+
+	return shader_module;
 }
 
 
@@ -551,29 +582,28 @@ lvk_pipeline_layout lvk_device::create_pipeline_layout(const VkPushConstantRange
 // |--------------------------------------------------
 
 
-lvk_pipeline lvk_device::create_graphics_pipeline(const lvk_pipeline_layout& pipeline_layout, const lvk::config::graphics_pipeline* config, const lvk_render_pass* render_pass) {
+lvk_pipeline lvk_device::create_graphics_pipeline(const lvk_pipeline_layout& pipeline_layout, const VkPipelineShaderStageCreateInfo shader_stages, const uint32_t shader_stages_count, const VkRenderPass render_pass) {
 	lvk_pipeline pipeline = {
-		._pipeline = VK_NULL_HANDLE,
-		// .type = VK_PIPELINE_BIND_POINT_GRAPHICS,
+		._pipeline = VK_NULL_HANDLE
 	};
 	
 	VkGraphicsPipelineCreateInfo pipeline_info = {
 		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 
-		.pNext = (config->rendering_info.sType == VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO) ? &config->rendering_info: VK_NULL_HANDLE,
+		.pNext = (config.rendering_info.sType == VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO) ? &config.rendering_info: VK_NULL_HANDLE,
 
-		.stageCount = static_cast<uint32_t>(config->shader_stage_array.size()),
-		.pStages = config->shader_stage_array.data(),
+		.stageCount = static_cast<uint32_t>(config.shader_stage_array.size()),
+		.pStages = config.shader_stage_array.data(),
 
-		.pVertexInputState = &config->vertex_input_state,
-		.pInputAssemblyState = &config->input_assembly_state,
-		.pViewportState = &config->viewport_state,
-		.pRasterizationState = &config->rasterization_state,
-		.pMultisampleState = &config->multisample_state,
-		.pDepthStencilState = &config->depth_stencil_state,
-		.pColorBlendState = &config->color_blend_state,
+		.pVertexInputState = &config.vertex_input_state,
+		.pInputAssemblyState = &config.input_assembly_state,
+		.pViewportState = &config.viewport_state,
+		.pRasterizationState = &config.rasterization_state,
+		.pMultisampleState = &config.multisample_state,
+		.pDepthStencilState = &config.depth_stencil_state,
+		.pColorBlendState = &config.color_blend_state,
 		.layout = pipeline_layout._pipeline_layout,
-		.renderPass = (render_pass != VK_NULL_HANDLE) ? render_pass->_render_pass: VK_NULL_HANDLE,
+		.renderPass = (config.dynamic_state.sType != VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO) ? render_pass: VK_NULL_HANDLE,
 		.subpass = 0,
 		.basePipelineHandle = VK_NULL_HANDLE,
 	};

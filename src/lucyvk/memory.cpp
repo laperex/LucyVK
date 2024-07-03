@@ -57,7 +57,7 @@ lvk_buffer lvk_allocator::create_buffer(VkBufferUsageFlagBits buffer_usage, VmaM
 		upload(buffer, data, size);
 	}
 
-	deletion_queue->push([=]{
+	deletion_queue->push([=, this]{
 		vmaDestroyBuffer(_allocator, buffer._buffer, buffer._allocation);
 		dloggln("Buffer Destroyed: ", lvk::to_string(buffer._usage));
 	});

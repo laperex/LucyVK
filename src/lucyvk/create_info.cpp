@@ -1,6 +1,6 @@
 #include "lucyvk/create_info.h"
 #include "lucyvk/functions.h"
-#include "lucyvk/shaders.h"
+// #include "lucyvk/shaders.h"
 #include "lucyvk/command.h"
 // #include "lucyvk/synchronization.h"
 
@@ -47,20 +47,16 @@ VkPipelineDepthStencilStateCreateInfo lvk::info::depth_stencil_state(bool depth_
 	};
 }
 
-VkPipelineShaderStageCreateInfo lvk::info::shader_stage(VkShaderStageFlagBits flag_bits, VkShaderModule shader_module, const VkSpecializationInfo* specialization) {
+VkPipelineShaderStageCreateInfo lvk::info::shader_stage(VkShaderStageFlagBits flag, VkShaderModule shader_module, const char* main, const VkSpecializationInfo* specialization) {
 	return {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 		.pNext = VK_NULL_HANDLE,
 		.flags = 0,
-		.stage = flag_bits,
+		.stage = flag,
 		.module = shader_module,
-		.pName = "main",
+		.pName = main,
 		.pSpecializationInfo = specialization
 	};
-}
-
-VkPipelineShaderStageCreateInfo lvk::info::shader_stage(const lvk_shader_module& shader_module, const VkSpecializationInfo* specialization) {
-	return shader_stage(shader_module._stage, shader_module._shader_module, specialization);
 }
 
 VkPipelineVertexInputStateCreateInfo lvk::info::vertex_input_state(const VkVertexInputBindingDescription* binding_description, uint32_t binding_description_count, const VkVertexInputAttributeDescription* attribute_description, uint32_t attribute_description_count) {
@@ -89,7 +85,7 @@ VkPipelineInputAssemblyStateCreateInfo lvk::info::input_assembly_state(const VkP
 	};
 }
 
-VkPipelineRasterizationStateCreateInfo lvk::info::rasterization_state_create_info(const VkPolygonMode polygon_mode, const VkCullModeFlags cull_mode, const VkFrontFace front_face, float line_width, const bool depth_clamp_enable, const bool discard_rasterizer, const bool depth_bias_enable, const float depth_bias_constant_factor, float depth_bias_clamp, float depth_bias_slope_factor) {
+VkPipelineRasterizationStateCreateInfo lvk::info::rasterization_state(const VkPolygonMode polygon_mode, const VkCullModeFlags cull_mode, const VkFrontFace front_face, float line_width, const bool depth_clamp_enable, const bool discard_rasterizer, const bool depth_bias_enable, const float depth_bias_constant_factor, float depth_bias_clamp, float depth_bias_slope_factor) {
 	return {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 		.pNext = VK_NULL_HANDLE,
@@ -108,7 +104,7 @@ VkPipelineRasterizationStateCreateInfo lvk::info::rasterization_state_create_inf
 }
 
 VkPipelineRasterizationStateCreateInfo lvk::info::rasterization_state(const VkPolygonMode polygon_mode) {
-	return rasterization_state_create_info(polygon_mode, VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
+	return rasterization_state(polygon_mode, VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE);
 }
 
 VkPipelineMultisampleStateCreateInfo lvk::info::multisample_state_create_info(VkSampleCountFlagBits rasterization_sample, bool sample_shading, float min_sample_shading, const VkSampleMask* sample_mask, bool alpha_to_coverage, bool alpha_to_one) {

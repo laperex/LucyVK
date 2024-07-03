@@ -9,8 +9,7 @@ namespace lvk::info {
 	
 	VkPipelineDepthStencilStateCreateInfo depth_stencil_state(bool depth_test, bool depth_write, VkCompareOp compare_op);
 
-	VkPipelineShaderStageCreateInfo shader_stage(VkShaderStageFlagBits flag, VkShaderModule shader_module, const VkSpecializationInfo* specialization = nullptr);
-	VkPipelineShaderStageCreateInfo shader_stage(const lvk_shader_module& shader_module, const VkSpecializationInfo* specialization = nullptr);
+	VkPipelineShaderStageCreateInfo shader_stage(VkShaderStageFlagBits flag, VkShaderModule shader_module, const char* main = "main", const VkSpecializationInfo* specialization = nullptr);
 
 	VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription* binding_description = {}, uint32_t binding_description_count = 0, const VkVertexInputAttributeDescription* attribute_description = {}, uint32_t attribute_description_count = 0);
 	VkPipelineVertexInputStateCreateInfo vertex_input_state(const std::vector<VkVertexInputBindingDescription>& binding_description = {}, const std::vector<VkVertexInputAttributeDescription>& attribute_description = {});
@@ -21,7 +20,7 @@ namespace lvk::info {
 	
 	VkPipelineInputAssemblyStateCreateInfo input_assembly_state(const VkPrimitiveTopology topology, bool primitive_restart_enable);
 	
-	VkPipelineRasterizationStateCreateInfo rasterization_state_create_info(const VkPolygonMode polygon_mode, const VkCullModeFlags cull_mode, const VkFrontFace front_face, float line_width = 1.0, const bool depth_clamp_enable = false, const bool discard_rasterizer = false, const bool depth_bias_enable = false, const float depth_bias_constant_factor = 0, float depth_bias_clamp = 0, float depth_bias_slope_factor = 0);
+	VkPipelineRasterizationStateCreateInfo rasterization_state(const VkPolygonMode polygon_mode, const VkCullModeFlags cull_mode, const VkFrontFace front_face, float line_width = 1.0, const bool depth_clamp_enable = false, const bool discard_rasterizer = false, const bool depth_bias_enable = false, const float depth_bias_constant_factor = 0, float depth_bias_clamp = 0, float depth_bias_slope_factor = 0);
 	VkPipelineRasterizationStateCreateInfo rasterization_state(const VkPolygonMode polygon_mode);
 	
 	VkPipelineMultisampleStateCreateInfo multisample_state_create_info(VkSampleCountFlagBits rasterization_sample, bool sample_shading, float min_sample_shading = 1.0, const VkSampleMask* sample_mask = VK_NULL_HANDLE, bool alpha_to_coverage = false, bool alpha_to_one = false);

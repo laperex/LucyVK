@@ -188,6 +188,18 @@ struct lvk_image_view {
 // |--------------------------------------------------
 
 
+struct lvk_shader_module {
+	HANDLE_DEF(VkShaderModule, _shader_module)
+
+	// const VkShaderStageFlagBits _stage;
+};
+
+
+// |--------------------------------------------------
+// ----------------> SAMPLER
+// |--------------------------------------------------
+
+
 struct lvk_sampler {
 	HANDLE_DEF(VkSampler, _sampler)
 };
