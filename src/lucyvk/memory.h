@@ -21,14 +21,14 @@ struct lvk_allocator {
 		upload(buffer, sizeof(T), &data);
 	}
 	
-	lvk_buffer create_buffer(VkBufferUsageFlagBits buffer_usage, VmaMemoryUsage memory_usage, const VkDeviceSize size, const void* data = nullptr);
+	lvk_buffer create_buffer(const VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, const VkDeviceSize size, const void* data = nullptr);
 	
 	
 	lvk_buffer create_staging_buffer(const VkDeviceSize size, const void* data = nullptr);
 	
 	
 	lvk_buffer create_index_buffer(const VkDeviceSize size, const void* data = nullptr);
-	lvk_buffer create_static_index_buffer();
+	lvk_buffer create_index_buffer_static();
 
 	template <typename T>
 	lvk_buffer create_index_buffer(const std::vector<T>& data) {
@@ -37,7 +37,7 @@ struct lvk_allocator {
 	
 	
 	lvk_buffer create_vertex_buffer(const VkDeviceSize size, const void* data = nullptr);
-	lvk_buffer create_static_vertex_buffer();
+	lvk_buffer create_vertex_buffer_static();
 
 	template <typename T>
 	lvk_buffer create_vertex_buffer(const std::vector<T>& data) {
@@ -51,7 +51,7 @@ struct lvk_allocator {
 
 
 	lvk_buffer create_uniform_buffer(const VkDeviceSize size, const void* data = nullptr);
-	lvk_buffer create_static_uniform_buffer();
+	lvk_buffer create_uniform_buffer_static();
 
 	template <typename T> [[nodiscard, __gnu__::__always_inline__]]
 	constexpr lvk_buffer create_uniform_buffer(const T* data = nullptr) noexcept {

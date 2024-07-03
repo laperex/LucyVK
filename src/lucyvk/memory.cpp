@@ -21,13 +21,14 @@
 // |--------------------------------------------------
 
 
-lvk_buffer lvk_allocator::create_buffer(VkBufferUsageFlagBits buffer_usage, VmaMemoryUsage memory_usage, const std::size_t size, const void* data) {
+lvk_buffer lvk_allocator::create_buffer(const VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, const VkDeviceSize size, const void* data) {
 	lvk_buffer buffer = {
 		._buffer = VK_NULL_HANDLE,
 		._allocation = VK_NULL_HANDLE,
 		._allocated_size = size,
 		// ._usage = buffer_usage,
 		// .allocator = this
+		._is_static = memory_usage == VMA_MEMORY_USAGE_GPU_ONLY ? VK_TRUE: VK_FALSE
 	};
 	
 	VkBufferCreateInfo bufferInfo = {
@@ -51,7 +52,7 @@ lvk_buffer lvk_allocator::create_buffer(VkBufferUsageFlagBits buffer_usage, VmaM
 		throw std::runtime_error("failed to create buffer!");
 	}
 
-	dloggln("Buffer Created: ", lvk::to_string(buffer_usage));
+	dloggln("Buffer Created");
 	
 	if (data != nullptr) {
 		upload(buffer, size, data);
@@ -65,37 +66,41 @@ lvk_buffer lvk_allocator::create_buffer(VkBufferUsageFlagBits buffer_usage, VmaM
 	return buffer;
 }
 
-lvk_buffer lvk_allocator::create_staging_buffer(const std::size_t size, const void* data) {
+lvk_buffer lvk_allocator::create_staging_buffer(const VkDeviceSize size, const void* data) {
 	return create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, size, data);
 }
 
-lvk_buffer lvk_allocator::create_index_buffer(const std::size_t size, const void* data) {
+lvk_buffer lvk_allocator::create_index_buffer(const VkDeviceSize size, const void* data) {
 	return create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, size, data);
 }
 
-lvk_buffer lvk_allocator::create_static_index_buffer() {
-	return create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0, nullptr);
+lvk_buffer lvk_allocator::create_index_buffer_static() {
+	return create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0, nullptr);
 }
 
-lvk_buffer lvk_allocator::create_vertex_buffer(const std::size_t size, const void* data) {
+lvk_buffer lvk_allocator::create_vertex_buffer(const VkDeviceSize size, const void* data) {
 	return create_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, size, data);
 }
 
-lvk_buffer lvk_allocator::create_static_vertex_buffer() {
-	return create_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0, nullptr);
+lvk_buffer lvk_allocator::create_vertex_buffer_static() {
+	return create_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0, nullptr);
 }
 
-lvk_buffer lvk_allocator::create_uniform_buffer(const std::size_t size, const void* data) {
+lvk_buffer lvk_allocator::create_uniform_buffer(const VkDeviceSize size, const void* data) {
 	return create_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, size, data);
 }
 
-lvk_buffer lvk_allocator::create_static_uniform_buffer() {
-	return create_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0, nullptr);
+lvk_buffer lvk_allocator::create_uniform_buffer_static() {
+	return create_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0, nullptr);
 }
 
-void lvk_allocator::upload(const lvk_buffer& buffer, const std::size_t size, const void* data) const {
+void lvk_allocator::upload(const lvk_buffer& buffer, const VkDeviceSize size, const void* data) const {
 	if (size > buffer._allocated_size) {
 		throw std::runtime_error("required size is greater than allocated size!");
+	}
+	
+	if (buffer._is_static == VK_TRUE) {
+		throw std::runtime_error("unable to directly write to a static buffer!");
 	}
 
 	void* _data = nullptr;

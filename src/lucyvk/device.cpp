@@ -259,24 +259,28 @@ std::vector<lvk_command_buffer> lvk_device::allocate_command_buffers(const lvk_c
 	return command_buffer_array;
 }
 
-lvk_immediate_command lvk_device::create_immediate_command() {
-	lvk_immediate_command immediate_command = {
-		._command_pool = VK_NULL_HANDLE,
-		._command_buffer = VK_NULL_HANDLE,
-		._fence = VK_NULL_HANDLE
-	};
-	
-	VkCommandPoolCreateInfo create_info = {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-		.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-		.queueFamilyIndex = physical_device._queue_family_indices.graphics.value(),
-	};
 
-    if (vkCreateCommandPool(_device, &create_info, VK_NULL_HANDLE, &immediate_command._command_pool) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create command pool!");
-    }
+VkResult lvk_device::immediate_submit(std::function<void(const VkCommandBuffer)> function) {
+	static struct {
+		VkCommandPool _command_pool = VK_NULL_HANDLE;
+		VkCommandBuffer _command_buffer = VK_NULL_HANDLE;
+		VkFence _fence = VK_NULL_HANDLE;
+	} immediate_command;
+
+
+	if (immediate_command._command_pool == VK_NULL_HANDLE) {
+		VkCommandPoolCreateInfo create_info = {
+			.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+			.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+			.queueFamilyIndex = physical_device._queue_family_indices.graphics.value(),
+		};
+
+		if (vkCreateCommandPool(_device, &create_info, VK_NULL_HANDLE, &immediate_command._command_pool) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create command pool!");
+		}
+	}
 	
-	{
+	if (immediate_command._command_buffer == VK_NULL_HANDLE) {
 		VkCommandBufferAllocateInfo allocate_info = {
 			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 
@@ -289,8 +293,8 @@ lvk_immediate_command lvk_device::create_immediate_command() {
 			throw std::runtime_error("command buffers allocation failed!");
 		}
 	}
-	
-	{
+
+	if (immediate_command._fence == VK_NULL_HANDLE) {
 		VkFenceCreateInfo create_info = {
 			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
 			.pNext = VK_NULL_HANDLE,
@@ -300,32 +304,26 @@ lvk_immediate_command lvk_device::create_immediate_command() {
 		if (vkCreateFence(this->_device, &create_info, VK_NULL_HANDLE, &immediate_command._fence) != VK_SUCCESS) {
 			throw std::runtime_error("fence creation failed");
 		}
+		
+		deletion_queue.push([=, this]{
+			vkFreeCommandBuffers(_device, immediate_command._command_pool, 1, &immediate_command._command_buffer);
+			vkDestroyCommandPool(_device, immediate_command._command_pool, VK_NULL_HANDLE);
+			vkDestroyFence(_device, immediate_command._fence, VK_NULL_HANDLE);
+			dloggln("Immediate Commands Destroyed");
+		});
 	}
-	
-	dloggln("Immediate Commands Created");
-	
-	deletion_queue.push([=, this]{
-		vkFreeCommandBuffers(this->_device, immediate_command._command_pool, 1, &immediate_command._command_buffer);
-		vkDestroyCommandPool(this->_device, immediate_command._command_pool, VK_NULL_HANDLE);
-		vkDestroyFence(this->_device, immediate_command._fence, VK_NULL_HANDLE);
-		dloggln("Immediate Commands Destroyed");
-	});
 
-	return immediate_command;
-}
-
-VkResult lvk_device::immediate_submit(const lvk_immediate_command& immediate_command, std::function<void(const VkCommandBuffer)> function) const {
 	VkCommandBufferBeginInfo begin_info = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
 		.pInheritanceInfo = VK_NULL_HANDLE
 	};
 
-	vkBeginCommandBuffer(immediate_command, &begin_info);
+	vkBeginCommandBuffer(immediate_command._command_buffer, &begin_info);
 	
-	function(immediate_command);
+	function(immediate_command._command_buffer);
 	
-	vkEndCommandBuffer(immediate_command);
+	vkEndCommandBuffer(immediate_command._command_buffer);
 	
 	VkSubmitInfo submit_info = {
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -339,7 +337,7 @@ VkResult lvk_device::immediate_submit(const lvk_immediate_command& immediate_com
 	vkWaitForFences(_device, 1, &immediate_command._fence, true, LVK_TIMEOUT);
 	vkResetFences(_device, 1, &immediate_command._fence);
 	
-	vkResetCommandPool(_device, immediate_command, 0);
+	vkResetCommandPool(_device, immediate_command._command_pool, 0);
 	
 	return result;
 }

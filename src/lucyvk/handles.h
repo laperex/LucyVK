@@ -154,6 +154,7 @@ struct lvk_buffer {
 
 	// VkBufferUsageFlagBits _buffer_usage;
 	// VmaMemoryUsage _memory_usage;
+	VkBool32 _is_static = VK_FALSE;
 };
 
 
@@ -206,13 +207,13 @@ struct lvk_sampler {
 };
 
 
-// |--------------------------------------------------
-// ----------------> COMMAND BUFFER IMMEDIATE
-// |--------------------------------------------------
+// // |--------------------------------------------------
+// // ----------------> COMMAND BUFFER IMMEDIATE
+// // |--------------------------------------------------
 
 
-struct lvk_immediate_command {
-	HANDLE_DEF(VkCommandPool, _command_pool)
-	HANDLE_DEF(VkCommandBuffer, _command_buffer)
-	HANDLE_DEF(VkFence, _fence)
-};
+// struct lvk_immediate_command {
+// 	HANDLE_DEF(VkCommandPool, _command_pool)
+// 	HANDLE_DEF(VkCommandBuffer, _command_buffer)
+// 	HANDLE_DEF(VkFence, _fence)
+// };

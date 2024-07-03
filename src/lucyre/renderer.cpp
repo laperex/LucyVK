@@ -50,7 +50,7 @@ lvk_image lre::renderer::load_image_from_file(const char* filename) {
 
 	lvk_image image = this->allocator.create_image(image_format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, image_extent, VK_IMAGE_TYPE_2D);
 
-	this->device.immediate_submit(immediate_command, [&](VkCommandBuffer cmd) {
+	this->device.immediate_submit([&](VkCommandBuffer cmd) {
 		lvk_command_buffer command_buffer = static_cast<lvk_command_buffer>(cmd);
 
 		VkImageMemoryBarrier image_barrier = lvk::info::image_memory_barrier(image, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, lvk::info::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT));
@@ -217,7 +217,7 @@ void lre::renderer::init(SDL_Window* window) {
 
 	texture_pipeline_init();
 
-	immediate_command = device.create_immediate_command();
+	// immediate_command = device.create_immediate_command();
 
 	load_image = load_image_from_file("/home/laperex/Programming/C++/LucyVK/assets/buff einstein.jpg");
 

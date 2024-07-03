@@ -30,8 +30,6 @@ namespace lre {
 
 
 		lvk_command_pool command_pool;
-		
-		lvk_immediate_command immediate_command;
 
 		lvk_instance instance;
 		// lvk_physical_device physical_device;
