@@ -150,9 +150,10 @@ struct lvk_buffer {
 	HANDLE_DEF(VkBuffer, _buffer)
 
 	VmaAllocation _allocation;
-	
 	std::size_t _allocated_size;
-	VkBufferUsageFlagBits _usage;
+
+	// VkBufferUsageFlagBits _buffer_usage;
+	// VmaMemoryUsage _memory_usage;
 };
 
 

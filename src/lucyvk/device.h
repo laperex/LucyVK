@@ -110,14 +110,6 @@ struct lvk_device {
 	
 	lvk_pipeline_layout create_pipeline_layout(const VkPushConstantRange* push_constant_ranges = VK_NULL_HANDLE, const uint32_t push_constant_range_count = 0, const VkDescriptorSetLayout* descriptor_set_layouts = VK_NULL_HANDLE, const uint32_t descriptor_set_layout_count = 0);
 	
-	// template <std::size_t _pssci_N> [[nodiscard, __gnu__::__always_inline__]]
-	// constexpr lvk_pipeline create_graphics_pipeline(const lvk_pipeline_layout& pipeline_layout, const VkPipelineShaderStageCreateInfo (&shader_stages)[_pssci_N], const VkRenderPass render_pass) noexcept {
-	// 	return 
-	// }
-	lvk_pipeline create_graphics_pipeline(const lvk_pipeline_layout& pipeline_layout, const VkPipelineShaderStageCreateInfo shader_stages, const uint32_t shader_stages_count, const VkRenderPass render_pass);
-	
-	
-	lvk_pipeline create_compute_pipeline(const lvk_pipeline_layout& pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info);
 
 
 	template <std::size_t _pcr_N, std::size_t _dsl_N> [[nodiscard, __gnu__::__always_inline__]]
@@ -134,6 +126,58 @@ struct lvk_device {
     constexpr lvk_pipeline_layout create_pipeline_layout(const VkDescriptorSetLayout (&descriptor_set_layouts)[_dsl_N]) noexcept {
 		return create_pipeline_layout(VK_NULL_HANDLE, 0, descriptor_set_layouts, _dsl_N);
 	}
+
+
+	// template <std::size_t _pssci_N> [[nodiscard, __gnu__::__always_inline__]]
+	// constexpr lvk_pipeline create_graphics_pipeline(
+	// 	const VkPipelineLayout pipeline_layout,
+	// 	const VkPipelineShaderStageCreateInfo (&shader_stages)[_pssci_N],
+	// 	const VkPipelineVertexInputStateCreateInfo vertex_input_state,
+	// 	const VkPipelineInputAssemblyStateCreateInfo input_assembly_state,
+	// 	const VkPipelineTessellationStateCreateInfo testallation_state,
+	// 	const VkPipelineViewportStateCreateInfo viewport_state,
+	// 	const VkPipelineRasterizationStateCreateInfo rasterization_state,
+	// 	const VkPipelineMultisampleStateCreateInfo multisample_state,
+	// 	const VkPipelineDepthStencilStateCreateInfo depth_stencil_state,
+	// 	const VkPipelineColorBlendStateCreateInfo color_blend_state,
+	// 	const VkPipelineDynamicStateCreateInfo dynamic_state,
+	// 	const VkRenderPass render_pass
+	// ) noexcept {
+	// 	return create_graphics_pipeline(
+	// 		pipeline_layout,
+	// 		shader_stages,
+	// 		_pssci_N,
+	// 		vertex_input_state,
+	// 		input_assembly_state,
+	// 		testallation_state,
+	// 		viewport_state,
+	// 		rasterization_state,
+	// 		multisample_state,
+	// 		depth_stencil_state,
+	// 		color_blend_state,
+	// 		dynamic_state,
+	// 		render_pass
+	// 	);
+	// }
+	
+	// lvk_pipeline create_graphics_pipeline(
+	// 	const VkPipelineLayout pipeline_layout,
+	// 	const VkPipelineShaderStageCreateInfo* shader_stage_array,
+	// 	const uint32_t shader_stage_array_size,
+	// 	const VkPipelineVertexInputStateCreateInfo vertex_input_state,
+	// 	const VkPipelineInputAssemblyStateCreateInfo input_assembly_state,
+	// 	const VkPipelineTessellationStateCreateInfo testallation_state,
+	// 	const VkPipelineViewportStateCreateInfo viewport_state,
+	// 	const VkPipelineRasterizationStateCreateInfo rasterization_state,
+	// 	const VkPipelineMultisampleStateCreateInfo multisample_state,
+	// 	const VkPipelineDepthStencilStateCreateInfo depth_stencil_state,
+	// 	const VkPipelineColorBlendStateCreateInfo color_blend_state,
+	// 	const VkPipelineDynamicStateCreateInfo dynamic_state,
+	// 	const VkRenderPass render_pass
+	// );
+	
+	lvk_pipeline create_graphics_pipeline(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config, const VkRenderPass render_pass);
+	lvk_pipeline create_compute_pipeline(const VkPipelineLayout pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info);
 	
 
 	// ALLOCATOR	---------- ---------- ---------- ----------

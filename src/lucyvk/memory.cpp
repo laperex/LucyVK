@@ -21,12 +21,12 @@
 // |--------------------------------------------------
 
 
-lvk_buffer lvk_allocator::create_buffer(VkBufferUsageFlagBits buffer_usage, VmaMemoryUsage memory_usage, const void* data, const std::size_t size) {
+lvk_buffer lvk_allocator::create_buffer(VkBufferUsageFlagBits buffer_usage, VmaMemoryUsage memory_usage, const std::size_t size, const void* data) {
 	lvk_buffer buffer = {
 		._buffer = VK_NULL_HANDLE,
 		._allocation = VK_NULL_HANDLE,
 		._allocated_size = size,
-		._usage = buffer_usage,
+		// ._usage = buffer_usage,
 		// .allocator = this
 	};
 	
@@ -54,39 +54,56 @@ lvk_buffer lvk_allocator::create_buffer(VkBufferUsageFlagBits buffer_usage, VmaM
 	dloggln("Buffer Created: ", lvk::to_string(buffer_usage));
 	
 	if (data != nullptr) {
-		upload(buffer, data, size);
+		upload(buffer, size, data);
 	}
 
 	deletion_queue->push([=, this]{
 		vmaDestroyBuffer(_allocator, buffer._buffer, buffer._allocation);
-		dloggln("Buffer Destroyed: ", lvk::to_string(buffer._usage));
+		dloggln("Buffer Destroyed");
 	});
 
 	return buffer;
 }
 
-lvk_buffer lvk_allocator::create_index_buffer(const void* data, const std::size_t size) {
-	return create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, data, size);
+lvk_buffer lvk_allocator::create_staging_buffer(const std::size_t size, const void* data) {
+	return create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, size, data);
 }
 
-lvk_buffer lvk_allocator::create_vertex_buffer(const void* data, const std::size_t size) {
-	return create_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, data, size);
+lvk_buffer lvk_allocator::create_index_buffer(const std::size_t size, const void* data) {
+	return create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, size, data);
 }
 
-lvk_buffer lvk_allocator::create_uniform_buffer(const void* data, const std::size_t size) {
-	return create_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, data, size);
+lvk_buffer lvk_allocator::create_static_index_buffer() {
+	return create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0, nullptr);
 }
 
-void lvk_allocator::upload(const lvk_buffer& buffer, const void* data, const std::size_t size) const {
+lvk_buffer lvk_allocator::create_vertex_buffer(const std::size_t size, const void* data) {
+	return create_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, size, data);
+}
+
+lvk_buffer lvk_allocator::create_static_vertex_buffer() {
+	return create_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0, nullptr);
+}
+
+lvk_buffer lvk_allocator::create_uniform_buffer(const std::size_t size, const void* data) {
+	return create_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, size, data);
+}
+
+lvk_buffer lvk_allocator::create_static_uniform_buffer() {
+	return create_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0, nullptr);
+}
+
+void lvk_allocator::upload(const lvk_buffer& buffer, const std::size_t size, const void* data) const {
 	if (size > buffer._allocated_size) {
 		throw std::runtime_error("required size is greater than allocated size!");
 	}
 
-	void* _data;
+	void* _data = nullptr;
+	
 	vmaMapMemory(this->_allocator, buffer._allocation, &_data);
-
+	
 	memcpy(_data, data, size);
-
+	
 	vmaUnmapMemory(this->_allocator, buffer._allocation);
 }
 
@@ -140,8 +157,8 @@ lvk_image lvk_allocator::create_image(VkFormat format, VkImageUsageFlags usage, 
 	}
 	dloggln("Image Created - ", image._image);
 
-	deletion_queue->push([=]{
-		vmaDestroyImage(_allocator, image._image, image._allocation);
+	deletion_queue->push([=, this]{
+		vmaDestroyImage(this->_allocator, image._image, image._allocation);
 		dloggln("Image Destroyed");
 	});
 

@@ -582,7 +582,7 @@ lvk_shader_module lvk_device::create_shader_module(const char* filename) {
 // |--------------------------------------------------
 
 
-lvk_pipeline lvk_device::create_graphics_pipeline(const lvk_pipeline_layout& pipeline_layout, const VkPipelineShaderStageCreateInfo shader_stages, const uint32_t shader_stages_count, const VkRenderPass render_pass) {
+lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config, const VkRenderPass render_pass) {
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE
 	};
@@ -602,8 +602,8 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const lvk_pipeline_layout& pip
 		.pMultisampleState = &config.multisample_state,
 		.pDepthStencilState = &config.depth_stencil_state,
 		.pColorBlendState = &config.color_blend_state,
-		.layout = pipeline_layout._pipeline_layout,
-		.renderPass = (config.dynamic_state.sType != VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO) ? render_pass: VK_NULL_HANDLE,
+		.layout = pipeline_layout,
+		.renderPass = render_pass,
 		.subpass = 0,
 		.basePipelineHandle = VK_NULL_HANDLE,
 	};
@@ -621,7 +621,7 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const lvk_pipeline_layout& pip
 	return pipeline;
 }
 
-lvk_pipeline lvk_device::create_compute_pipeline(const lvk_pipeline_layout& pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info) {
+lvk_pipeline lvk_device::create_compute_pipeline(const VkPipelineLayout pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info) {
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE,
 		// .type = VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -630,7 +630,7 @@ lvk_pipeline lvk_device::create_compute_pipeline(const lvk_pipeline_layout& pipe
 	VkComputePipelineCreateInfo pipeline_info = {
 		.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
 		.stage = stage_info,
-		.layout = pipeline_layout._pipeline_layout,
+		.layout = pipeline_layout,
 	};
 
 	if (vkCreateComputePipelines(this->_device, VK_NULL_HANDLE, 1, &pipeline_info, VK_NULL_HANDLE, &pipeline._pipeline) != VK_SUCCESS) {

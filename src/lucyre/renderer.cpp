@@ -24,7 +24,7 @@ lre::renderer::renderer()
 
 
 void lre::renderer::upload_mesh(Mesh& mesh) {
-	mesh.vertex_buffer = allocator.create_vertex_buffer(mesh.vertices.data(), mesh.vertices.size());
+	mesh.vertex_buffer = allocator.create_vertex_buffer(mesh.vertices.size(), mesh.vertices.data());
 	
 }
 
@@ -46,7 +46,7 @@ lvk_image lre::renderer::load_image_from_file(const char* filename) {
 		.depth = 1,
 	};
 
-	lvk_buffer staging_buffer = this->allocator.create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, pixels, image_size);
+	lvk_buffer staging_buffer = this->allocator.create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, image_size, pixels);
 
 	lvk_image image = this->allocator.create_image(image_format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, image_extent, VK_IMAGE_TYPE_2D);
 
@@ -162,7 +162,7 @@ void lre::renderer::init(SDL_Window* window) {
 	device = instance.create_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME });
 	allocator = device.create_allocator();
 
-	mvp_uniform_buffer = allocator.create_uniform_buffer<mvp_matrix>();
+	mvp_uniform_buffer = allocator.create_uniform_buffer<mvp_matrix>();	
 
 	command_pool = device.create_graphics_command_pool();
 
