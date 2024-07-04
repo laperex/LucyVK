@@ -5,7 +5,7 @@
 // #include "lucyvk/physical_device.h"
 #include "lucyvk/device.h"
 // #include "lucyvk/render_pass.h"
-#include "lucyvk/memory.h"
+// #include "lucyvk/memory.h"
 
 #include "lucyio/logger.h"
 #include <stdexcept>

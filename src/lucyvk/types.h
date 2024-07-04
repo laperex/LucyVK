@@ -11,19 +11,19 @@
 
 
 namespace lvk {
-	struct deletion_queue {
-		std::deque<std::function<void()>> deletion_queue;
+	// struct deletion_queue {
+	// 	std::deque<std::function<void()>> deletion_queue;
 
-		void flush() const {
-			for (auto function = deletion_queue.rbegin(); function != deletion_queue.rend(); function++) {
-				(*function)();
-			}
-		}
+	// 	void flush() const {
+	// 		for (auto function = deletion_queue.rbegin(); function != deletion_queue.rend(); function++) {
+	// 			(*function)();
+	// 		}
+	// 	}
 
-		void push(std::function<void()>&& function) {
-			deletion_queue.push_back(function);
-		}
-	};
+	// 	void push(std::function<void()>&& function) {
+	// 		deletion_queue.push_back(function);
+	// 	}
+	// };
 
 	struct queue_family_indices {
 		std::optional<uint32_t> graphics;

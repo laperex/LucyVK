@@ -197,13 +197,18 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std:
 		
 		.extensions = extensions,
 		.layers = layers,
-		
-		
-		.physical_device = {},
-		.deletion_queue = {},
+
+		.physical_device = {
+			._physical_device = VK_NULL_HANDLE,
+		},
+		.allocator = {
+			._allocator = VK_NULL_HANDLE
+		},
+		.deletion_queue = {
+			.deletion_queue = {}
+		},
 
 		._surfaceKHR = _surfaceKHR,
-		._instance = _instance,
 	};
 
 	{
@@ -284,6 +289,7 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std:
     }
 	dloggln("Logical Device Created");
 
+
     for (uint32_t index: unique_queue_indices) {
 		VkQueue queue;
     	vkGetDeviceQueue(device._device, index, 0, &queue);
@@ -307,6 +313,16 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std:
 	}
 	
 	delete [] queue_create_info_array;
+	
+	
+	VmaAllocatorCreateInfo allocator_create_info = {
+		.physicalDevice = device.physical_device,
+		.device = device,
+		.instance = _instance,
+	};
+
+    vmaCreateAllocator(&allocator_create_info, &device.allocator._allocator);
+	dloggln("Allocator Created");
 	
 	return device;
 }

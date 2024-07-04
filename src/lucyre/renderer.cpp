@@ -24,7 +24,7 @@ lre::renderer::renderer()
 
 
 void lre::renderer::upload_mesh(Mesh& mesh) {
-	mesh.vertex_buffer = allocator.create_vertex_buffer(mesh.vertices.size(), mesh.vertices.data());
+	mesh.vertex_buffer = device.create_vertex_buffer(mesh.vertices.size(), mesh.vertices.data());
 	
 }
 
@@ -46,9 +46,9 @@ lvk_image lre::renderer::load_image_from_file(const char* filename) {
 		.depth = 1,
 	};
 
-	lvk_buffer staging_buffer = this->allocator.create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, image_size, image_data);
+	lvk_buffer staging_buffer = this->device.create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, image_size, image_data);
 
-	lvk_image image = this->allocator.create_image(image_format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, image_extent, VK_IMAGE_TYPE_2D);
+	lvk_image image = this->device.create_image(image_format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, image_extent, VK_IMAGE_TYPE_2D);
 
 	this->device.imm_submit([&](VkCommandBuffer cmd) {
 		lvk_command_buffer command_buffer = static_cast<lvk_command_buffer>(cmd);
@@ -160,9 +160,8 @@ void lre::renderer::init(SDL_Window* window) {
 
 	instance = lvk_instance::init(&instance_config, window);
 	device = instance.create_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME });
-	allocator = device.create_allocator();
 
-	mvp_uniform_buffer = allocator.create_uniform_buffer<mvp_matrix>();	
+	mvp_uniform_buffer = device.create_uniform_buffer<mvp_matrix>();
 
 	command_pool = device.create_graphics_command_pool();
 
@@ -184,8 +183,8 @@ void lre::renderer::init(SDL_Window* window) {
 	
 	mesh.indices = { 0,1,2, 2,3,0 };
 	
-	mesh.index_buffer = allocator.create_index_buffer(mesh.indices);	
-	mesh.vertex_buffer = allocator.create_vertex_buffer(mesh.vertices);
+	mesh.index_buffer = device.create_index_buffer(mesh.indices);	
+	mesh.vertex_buffer = device.create_vertex_buffer(mesh.vertices);
 
 
 	glm::ivec2 size;
@@ -204,7 +203,7 @@ void lre::renderer::init(SDL_Window* window) {
 	device.update_descriptor_set(descriptor_ubo, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
 
 
-	depth_image = allocator.create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
+	depth_image = device.create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
 	depth_image_view = device.create_image_view(depth_image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
 
 	render_pass = device.create_default_render_pass(swapchain._surface_format.format);
@@ -246,7 +245,7 @@ void lre::renderer::record(uint32_t frame_number) {
 
 	mvp.projection[1][1] *= -1;
 
-	allocator.upload(mvp_uniform_buffer, mvp);
+	device.upload(mvp_uniform_buffer, mvp);
 
 
 	cmd.reset();

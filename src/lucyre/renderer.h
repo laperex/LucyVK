@@ -5,11 +5,13 @@
 #include "lucyre/mesh.h"
 #include "lucyvk/command.h"
 #include "lucyvk/device.h"
+#include "lucyvk/handles.h"
 #include "lucyvk/instance.h"
 #include "lucyvk/functions.h"
-#include "lucyvk/memory.h"
+// #include "lucyvk/memory.h"
 // #include "lucyvk/synchronization.h"
 #include "lucyvk/types.h"
+#include <vector>
 // #include "lucyvk/render_pass.h"
 // #include "lucyvk/swapchain.h"
 
@@ -34,7 +36,6 @@ namespace lre {
 		lvk_instance instance;
 		// lvk_physical_device physical_device;
 		lvk_device device;
-		lvk_allocator allocator;
 
 		lvk_swapchain swapchain;
 		

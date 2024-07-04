@@ -1,7 +1,8 @@
 #pragma once
 
 #include "lucylm/math.hpp"
-#include "lucyvk/memory.h"
+#include "lucyvk/device.h"
+// #include "lucyvk/memory.h"
 
 
 namespace lre {
