@@ -13,7 +13,7 @@
 
 
 struct lvk_command_buffer {
-	HANDLE_DEF(VkCommandBuffer, _command_buffer)
+	LVK_HANDLE_DEF(VkCommandBuffer, _command_buffer)
 
 	void reset(VkCommandBufferResetFlags flags = 0) const;
 

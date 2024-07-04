@@ -1194,3 +1194,18 @@ lvk_sampler lvk_device::create_sampler(VkFilter min_filter, VkFilter mag_filter,
 
 	return sampler;
 }
+
+void lvk_device::destroyer::flush() const {
+	for (auto function = deletion_queue.rbegin(); function != deletion_queue.rend(); function++) {
+		(*function)();
+	}
+}
+
+void lvk_device::destroyer::pop() {
+	(*deletion_queue.rend())();
+	deletion_queue.pop_back();
+}
+
+void lvk_device::destroyer::push(std::function<void()>&& function) {
+	deletion_queue.push_back(function);
+}

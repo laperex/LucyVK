@@ -17,13 +17,13 @@
 
 
 struct lvk_device {
-	HANDLE_DEF(VkDevice, _device)
+	LVK_HANDLE_DEF(VkDevice, _device)
 	
 	std::vector<const char*> extensions;
 
 	struct {
 		struct {
-			HANDLE_DEF(VkQueue, handle)
+			LVK_HANDLE_DEF(VkQueue, handle)
 			std::optional<uint32_t> index;
 		} graphics, present, compute, transfer;
 
@@ -39,7 +39,7 @@ struct lvk_device {
 	} _swapchain_support_details;
 
 	struct {
-		HANDLE_DEF(VkPhysicalDevice, _physical_device)
+		LVK_HANDLE_DEF(VkPhysicalDevice, _physical_device)
 
 		VkPhysicalDeviceFeatures _features;
 		VkPhysicalDeviceProperties _properties;
@@ -49,32 +49,20 @@ struct lvk_device {
 	} physical_device;
 
 	struct {
-		HANDLE_DEF(VmaAllocator, _allocator)
+		LVK_HANDLE_DEF(VmaAllocator, _allocator)
 	} allocator;
 
-	struct {
+	struct destroyer {
 		std::deque<std::function<void()>> deletion_queue;
+		
 
-		void flush() const {
-			for (auto function = deletion_queue.rbegin(); function != deletion_queue.rend(); function++) {
-				(*function)();
-			}
-		}
-
-		void pop() {
-			(*deletion_queue.rend())();
-			deletion_queue.pop_back();
-		}
-
-		void push(std::function<void()>&& function) {
-			deletion_queue.push_back(function);
-		}
+		void flush() const;
+		void pop();
+		void push(std::function<void()>&& function);
 	} deletion_queue;
 
 
 	VkSurfaceKHR _surfaceKHR;
-	// VkInstance _instance;
-
 
 	void destroy_device();
 

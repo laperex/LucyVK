@@ -13,7 +13,7 @@
 
 
 struct lvk_instance {
-	HANDLE_DEF(VkInstance, _instance)
+	LVK_HANDLE_DEF(VkInstance, _instance)
 	VkSurfaceKHR _surfaceKHR;
 	VkDebugUtilsMessengerEXT _debug_messenger;
 

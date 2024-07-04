@@ -23,7 +23,7 @@ struct lvk_allocator;
 
 
 struct lvk_command_pool {
-	HANDLE_DEF(VkCommandPool, _command_pool)
+	LVK_HANDLE_DEF(VkCommandPool, _command_pool)
 };
 
 
@@ -33,7 +33,7 @@ struct lvk_command_pool {
 
 
 struct lvk_pipeline_layout {
-	HANDLE_DEF(VkPipelineLayout, _pipeline_layout)
+	LVK_HANDLE_DEF(VkPipelineLayout, _pipeline_layout)
 };
 
 
@@ -43,7 +43,7 @@ struct lvk_pipeline_layout {
 
 
 struct lvk_pipeline {
-	HANDLE_DEF(VkPipeline, _pipeline)
+	LVK_HANDLE_DEF(VkPipeline, _pipeline)
 	
 	// VkPipelineBindPoint type;
 };
@@ -55,8 +55,8 @@ struct lvk_pipeline {
 
 
 struct lvk_swapchain {
-	HANDLE_DEF(VkSwapchainKHR, _swapchain)
-	HANDLE_DEF(VkExtent2D, _extent)
+	LVK_HANDLE_DEF(VkSwapchainKHR, _swapchain)
+	LVK_HANDLE_DEF(VkExtent2D, _extent)
 
 	VkSurfaceFormatKHR _surface_format;
 	VkPresentModeKHR _present_mode;
@@ -74,7 +74,7 @@ struct lvk_swapchain {
 
 
 struct lvk_semaphore {
-	HANDLE_DEF(VkSemaphore, _semaphore)
+	LVK_HANDLE_DEF(VkSemaphore, _semaphore)
 };
 
 
@@ -84,7 +84,7 @@ struct lvk_semaphore {
 
 
 struct lvk_fence {
-	HANDLE_DEF(VkFence, _fence)
+	LVK_HANDLE_DEF(VkFence, _fence)
 };
 
 
@@ -94,7 +94,7 @@ struct lvk_fence {
 
 
 struct lvk_descriptor_set_layout {
-	HANDLE_DEF(VkDescriptorSetLayout, _descriptor_set_layout)
+	LVK_HANDLE_DEF(VkDescriptorSetLayout, _descriptor_set_layout)
 };
 
 
@@ -104,7 +104,7 @@ struct lvk_descriptor_set_layout {
 
 
 struct lvk_descriptor_pool {
-	HANDLE_DEF(VkDescriptorPool, _descriptor_pool)
+	LVK_HANDLE_DEF(VkDescriptorPool, _descriptor_pool)
 };
 
 
@@ -114,7 +114,7 @@ struct lvk_descriptor_pool {
 
 
 struct lvk_descriptor_set {
-	HANDLE_DEF(VkDescriptorSet, _descriptor_set)
+	LVK_HANDLE_DEF(VkDescriptorSet, _descriptor_set)
 };
 
 
@@ -124,7 +124,7 @@ struct lvk_descriptor_set {
 
 
 struct lvk_framebuffer {
-	HANDLE_DEF(VkFramebuffer, _framebuffer)
+	LVK_HANDLE_DEF(VkFramebuffer, _framebuffer)
 	VkExtent2D _extent;
 };
 
@@ -135,7 +135,7 @@ struct lvk_framebuffer {
 
 
 struct lvk_render_pass {
-	HANDLE_DEF(VkRenderPass, _render_pass)
+	LVK_HANDLE_DEF(VkRenderPass, _render_pass)
 };
 
 
@@ -145,7 +145,7 @@ struct lvk_render_pass {
 
 
 struct lvk_buffer {
-	HANDLE_DEF(VkBuffer, _buffer)
+	LVK_HANDLE_DEF(VkBuffer, _buffer)
 	VmaAllocation _allocation;
 
 	VkDeviceSize _allocated_size;
@@ -160,7 +160,7 @@ struct lvk_buffer {
 
 
 struct lvk_image {
-	HANDLE_DEF(VkImage, _image)
+	LVK_HANDLE_DEF(VkImage, _image)
 
 	VmaAllocation _allocation;
 	
@@ -178,7 +178,7 @@ struct lvk_image {
 
 
 struct lvk_image_view {
-	HANDLE_DEF(VkImageView, _image_view)
+	LVK_HANDLE_DEF(VkImageView, _image_view)
 };
 
 
@@ -188,7 +188,7 @@ struct lvk_image_view {
 
 
 struct lvk_shader_module {
-	HANDLE_DEF(VkShaderModule, _shader_module)
+	LVK_HANDLE_DEF(VkShaderModule, _shader_module)
 
 	// const VkShaderStageFlagBits _stage;
 };
@@ -200,5 +200,5 @@ struct lvk_shader_module {
 
 
 struct lvk_sampler {
-	HANDLE_DEF(VkSampler, _sampler)
+	LVK_HANDLE_DEF(VkSampler, _sampler)
 };
