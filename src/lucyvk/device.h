@@ -1,7 +1,11 @@
 #pragma once
 
+#include <optional>
+#include <deque>
+
+#include "lucyvk/define.h"
 #include "lucyvk/handles.h"
-#include "lucyvk/types.h"
+// #include "lucyvk/types.h"
 #include "lucyvk/command.h"
 #include "lucyvk/config.h"
 
@@ -15,15 +19,7 @@
 struct lvk_device {
 	HANDLE_DEF(VkDevice, _device)
 	
-	// VkQueue _present_queue;
-	// VkQueue _compute_queue;
-	// VkQueue _transfer_queue;
-	// VkQueue _graphics_queue;
-
-
 	std::vector<const char*> extensions;
-	std::vector<const char*> layers;
-
 
 	struct {
 		struct {

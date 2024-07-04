@@ -1,13 +1,13 @@
 #pragma once
 
-#include "lucyvk/types.h"
+// #include "lucyvk/types.h"
+#include <functional>
 #include "lucyvk/handles.h"
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
 namespace lvk {
 	typedef std::function<VkPhysicalDevice(const std::vector<VkPhysicalDevice>&, const lvk_instance* instance)> SelectPhysicalDevice_F;
-
 
 	// VkSurfaceFormatKHR get_swapchain_surface_format(const std::vector<VkSurfaceFormatKHR>& format_array);
 	// lvk::swapchain_support_details query_swapchain_support_details(VkPhysicalDevice physical_device, VkSurfaceKHR surface);

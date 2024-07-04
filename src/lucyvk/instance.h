@@ -1,5 +1,7 @@
 #pragma once
 
+#include <SDL2/SDL.h>
+
 #include "lucyvk/config.h"
 #include "lucyvk/handles.h"
 #include "lucyvk/functions.h"

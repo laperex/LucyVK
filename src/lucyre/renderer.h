@@ -10,7 +10,7 @@
 #include "lucyvk/functions.h"
 // #include "lucyvk/memory.h"
 // #include "lucyvk/synchronization.h"
-#include "lucyvk/types.h"
+// #include "lucyvk/types.h"
 #include <vector>
 // #include "lucyvk/render_pass.h"
 // #include "lucyvk/swapchain.h"
@@ -19,6 +19,8 @@
 
 namespace lre {
 	class renderer {
+
+		lvk_command_pool command_pool;
 		struct {
 			lvk_fence render_fence;
 
@@ -31,10 +33,8 @@ namespace lre {
 		} frame_array[FRAMES_IN_FLIGHT];
 
 
-		lvk_command_pool command_pool;
 
 		lvk_instance instance;
-		// lvk_physical_device physical_device;
 		lvk_device device;
 
 		lvk_swapchain swapchain;
@@ -51,13 +51,8 @@ namespace lre {
 		lvk_image_view load_image_view;
 
 		lvk_sampler sampler;
-		// lvk_descriptor_set_layout texture_descriptor_set_layout;
 
-		// lvk_pipeline compute_pipeline;
-		// lvk_pipeline_layout compute_pipeline_layout;
-		// // lvk_descriptor_set compute_descriptor;
-		// // lvk_descriptor_set_layout compute_descriptor_set_layout;
-		
+
 		lvk_render_pass render_pass;
 		std::vector<lvk_framebuffer> framebuffer_array;
 

@@ -1,10 +1,8 @@
 #pragma once
 
 #include "vk_mem_alloc.h"
-#include <memory>
 #include <vulkan/vulkan.h>
-
-#define HANDLE_DEF(h_type, h_name) h_type h_name; operator decltype(h_name)() const { return h_name; }
+#include "lucyvk/define.h"
 
 struct lvk_device;
 

@@ -2,17 +2,14 @@
 
 #include "lucytl/registry.h"
 
-namespace lucy {
-	struct engine {
-		ltl::registry registry;
-		
-		engine();
-	
-		static void initialize();
-		static void mainloop();
+namespace lucy {	
+	template <typename T> T& static_store() { static T v = { }; return v; }
 
-		static void destroy();
-		
-		static ltl::registry& get_registry();
+	namespace engine {
+		void initialize();
+
+		void mainloop();
+
+		void destroy();
 	};
 }

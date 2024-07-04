@@ -336,9 +336,6 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 		.queueCreateInfoCount = static_cast<uint32_t>(unique_queue_indices.size()),
 		.pQueueCreateInfos = queue_create_info_array,
 		
-		// .enabledLayerCount = static_cast<uint32_t>(std::size(device.layers)),
-		// .ppEnabledLayerNames = device.layers.data(),
-		
 		.enabledExtensionCount = static_cast<uint32_t>(std::size(device.extensions)),
 		.ppEnabledExtensionNames = device.extensions.data(),
 		

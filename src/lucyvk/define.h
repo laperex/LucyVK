@@ -5,3 +5,5 @@
 		throw std::runtime_error(message);
 
 #define LVK_TIMEOUT 1000000000
+
+#define HANDLE_DEF(h_type, h_name) h_type h_name; operator decltype(h_name)() const { return h_name; }
