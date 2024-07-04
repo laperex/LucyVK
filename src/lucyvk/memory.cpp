@@ -26,9 +26,10 @@ lvk_buffer lvk_allocator::create_buffer(const VkBufferUsageFlags buffer_usage, V
 		._buffer = VK_NULL_HANDLE,
 		._allocation = VK_NULL_HANDLE,
 		._allocated_size = size,
-		// ._usage = buffer_usage,
+		._buffer_usage = buffer_usage,
+		._memory_usage = memory_usage,
 		// .allocator = this
-		._is_static = memory_usage == VMA_MEMORY_USAGE_GPU_ONLY ? VK_TRUE: VK_FALSE
+		// ._is_static = memory_usage == VMA_MEMORY_USAGE_GPU_ONLY ? VK_TRUE: VK_FALSE
 	};
 	
 	VkBufferCreateInfo bufferInfo = {
@@ -98,8 +99,8 @@ void lvk_allocator::upload(const lvk_buffer& buffer, const VkDeviceSize size, co
 	if (size > buffer._allocated_size) {
 		throw std::runtime_error("required size is greater than allocated size!");
 	}
-	
-	if (buffer._is_static == VK_TRUE) {
+
+	if (buffer._memory_usage == VMA_MEMORY_USAGE_GPU_ONLY) {
 		throw std::runtime_error("unable to directly write to a static buffer!");
 	}
 

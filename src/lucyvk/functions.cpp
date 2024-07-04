@@ -203,29 +203,29 @@ const char* lvk::to_string(const VkBufferUsageFlagBits usage) {
 	return "";
 }
 
-VkPipelineColorBlendAttachmentState lvk::color_blend_attachment() {
-	return {
-		.blendEnable = VK_FALSE,
-		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
-	};
-}
+// VkPipelineColorBlendAttachmentState lvk::color_blend_attachment() {
+// 	return {
+// 		.blendEnable = VK_FALSE,
+// 		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+// 	};
+// }
 
-VkDescriptorSetLayoutBinding lvk::descriptor_set_layout_binding(uint32_t binding, VkShaderStageFlags shader_stage_flags, VkDescriptorType descriptor_type, uint32_t descriptor_count) {
-	return {
-		.binding = binding,
-		.descriptorType = descriptor_type,
-		.descriptorCount = descriptor_count,
-		.stageFlags = shader_stage_flags,
-	};
-}
+// VkDescriptorSetLayoutBinding lvk::descriptor_set_layout_binding(uint32_t binding, VkShaderStageFlags shader_stage_flags, VkDescriptorType descriptor_type, uint32_t descriptor_count) {
+// 	return {
+// 		.binding = binding,
+// 		.descriptorType = descriptor_type,
+// 		.descriptorCount = descriptor_count,
+// 		.stageFlags = shader_stage_flags,
+// 	};
+// }
 
-VkImageSubresourceRange lvk::image_subresource_range(VkImageAspectFlags aspect_mask) {
-	return {
-		.aspectMask = aspect_mask,
-		.baseMipLevel = 0,
-		.levelCount = VK_REMAINING_MIP_LEVELS,
-		.baseArrayLayer = 0,
-		.layerCount = VK_REMAINING_ARRAY_LAYERS,
-	};
-}
+// VkImageSubresourceRange lvk::image_subresource_range(VkImageAspectFlags aspect_mask) {
+// 	return {
+// 		.aspectMask = aspect_mask,
+// 		.baseMipLevel = 0,
+// 		.levelCount = VK_REMAINING_MIP_LEVELS,
+// 		.baseArrayLayer = 0,
+// 		.layerCount = VK_REMAINING_ARRAY_LAYERS,
+// 	};
+// }
 

@@ -89,7 +89,7 @@ struct lvk_device {
 	
 	// lvk_immediate_command create_immediate_command();
 	VkResult imm_submit(std::function<void(const VkCommandBuffer)> function);
-	// VkResult imm_buffer_upload(const lvk_buffer& buffer);
+	VkResult imm_buffer_copy(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkDeviceSize size);
 	// VkResult 
 
 

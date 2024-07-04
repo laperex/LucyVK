@@ -26,6 +26,8 @@ namespace lvk::info {
 	VkPipelineMultisampleStateCreateInfo multisample_state_create_info(VkSampleCountFlagBits rasterization_sample, bool sample_shading, float min_sample_shading = 1.0, const VkSampleMask* sample_mask = VK_NULL_HANDLE, bool alpha_to_coverage = false, bool alpha_to_one = false);
 	VkPipelineMultisampleStateCreateInfo multisample_state();
 
+	VkPipelineColorBlendAttachmentState color_blend_attachment();
+
 	VkPipelineColorBlendStateCreateInfo color_blend_state(const VkPipelineColorBlendAttachmentState* attachments = nullptr, const uint32_t attachment_count = 0, const bool logic_op_enable = false, const VkLogicOp logic_op = VK_LOGIC_OP_COPY);
 	template <std::size_t _pcbas_N>  [[nodiscard, __gnu__::__always_inline__]]
 	constexpr VkPipelineColorBlendStateCreateInfo color_blend_state(const VkPipelineColorBlendAttachmentState (&attachments)[_pcbas_N], const bool logic_op_enable = false, const VkLogicOp logic_op = VK_LOGIC_OP_COPY) noexcept {
@@ -71,4 +73,6 @@ namespace lvk::info {
 	
 	VkImageMemoryBarrier image_memory_barrier(const VkImage image, VkAccessFlags src_access, VkAccessFlags dst_access, VkImageLayout old_layout, VkImageLayout new_layout, uint32_t src_queue_index, uint32_t dst_queue_index, VkImageSubresourceRange subresource_range);
 	VkImageMemoryBarrier image_memory_barrier(const VkImage image, VkAccessFlags src_access, VkAccessFlags dst_access, VkImageLayout old_layout, VkImageLayout new_layout, VkImageSubresourceRange subresource_range);
+
+	VkDescriptorSetLayoutBinding descriptor_set_layout_binding(uint32_t binding, VkShaderStageFlags shader_stage_flags, VkDescriptorType descriptor_type, uint32_t descriptor_count);
 }

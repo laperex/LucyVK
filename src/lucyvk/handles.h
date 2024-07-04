@@ -152,9 +152,9 @@ struct lvk_buffer {
 	VmaAllocation _allocation;
 	std::size_t _allocated_size;
 
-	// VkBufferUsageFlagBits _buffer_usage;
-	// VmaMemoryUsage _memory_usage;
-	VkBool32 _is_static = VK_FALSE;
+	VkBufferUsageFlags _buffer_usage;
+	VmaMemoryUsage _memory_usage;
+	// VkBool32 _is_static = VK_FALSE;
 };
 
 

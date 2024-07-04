@@ -342,6 +342,20 @@ VkResult lvk_device::imm_submit(std::function<void(const VkCommandBuffer)> funct
 	return result;
 }
 
+VkResult lvk_device::imm_buffer_copy(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkDeviceSize size) {
+	this->imm_submit([&](VkCommandBuffer cmd) {
+		lvk_command_buffer command_buffer = static_cast<lvk_command_buffer>(cmd);
+		
+		command_buffer.copy_buffer_to_buffer(src_buffer, dst_buffer, {
+			{
+				.srcOffset = 0,
+				.dstOffset = 0,
+				.size = size
+			}
+		});
+	});
+}
+
 // VkResult lvk_device::imm_buffer_upload(const lvk_buffer& buffer) {
 	
 // }

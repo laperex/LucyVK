@@ -125,6 +125,13 @@ VkPipelineMultisampleStateCreateInfo lvk::info::multisample_state() {
 	return multisample_state_create_info(VK_SAMPLE_COUNT_1_BIT, false);
 }
 
+VkPipelineColorBlendAttachmentState lvk::info::color_blend_attachment() {
+	return {
+		.blendEnable = VK_FALSE,
+		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+	};
+}
+
 VkPipelineColorBlendStateCreateInfo lvk::info::color_blend_state(const VkPipelineColorBlendAttachmentState* attachments, const uint32_t attachment_count, const bool logic_op_enable, const VkLogicOp logic_op) {
 	return {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
@@ -239,6 +246,15 @@ VkImageMemoryBarrier lvk::info::image_memory_barrier(const VkImage image, VkAcce
 
 VkImageMemoryBarrier lvk::info::image_memory_barrier(const VkImage image, VkAccessFlags src_access, VkAccessFlags dst_access, VkImageLayout old_layout, VkImageLayout new_layout, VkImageSubresourceRange subresource_range) {
 	return image_memory_barrier(image, src_access, dst_access, old_layout, new_layout, 0, 0, subresource_range);
+}
+
+VkDescriptorSetLayoutBinding lvk::info::descriptor_set_layout_binding(uint32_t binding, VkShaderStageFlags shader_stage_flags, VkDescriptorType descriptor_type, uint32_t descriptor_count) {
+	return {
+		.binding = binding,
+		.descriptorType = descriptor_type,
+		.descriptorCount = descriptor_count,
+		.stageFlags = shader_stage_flags,
+	};
 }
 
 VkCommandBufferSubmitInfo lvk::info::command_buffer_submit(const lvk_command_buffer* command_buffer) {
