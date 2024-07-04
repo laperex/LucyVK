@@ -68,22 +68,24 @@ lvk_instance::~lvk_instance()
 	// dloggln("-- Instance Destructor\n", i++);
 }
 
-lvk_instance lvk_instance::init(const lvk::config::instance* config, SDL_Window* sdl_window) {
-	lvk_instance instance = {};
-	
-	VkApplicationInfo appInfo = {
-		VK_STRUCTURE_TYPE_APPLICATION_INFO,
-		nullptr,
-		config->name,
-		VK_MAKE_VERSION(0, 0, 8),
-		config->name,
-		VK_MAKE_VERSION(1, 1, 7),
-		VK_API_VERSION_1_3
+lvk_instance lvk_instance::initialize(const char* name, SDL_Window* sdl_window, bool enable_validation_layers, std::vector<const char*> layers, std::vector<const char*> extensions) {
+	lvk_instance instance = {
+		._instance = VK_NULL_HANDLE,
+		._surfaceKHR = VK_NULL_HANDLE,
+		._debug_messenger = VK_NULL_HANDLE,
 	};
 	
-    VkInstanceCreateInfo createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.pApplicationInfo = &appInfo;
+	VkApplicationInfo app_info = {
+		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+		
+		.pApplicationName = name,
+		.applicationVersion = VK_MAKE_VERSION(1, 0, 1),
+		
+		.pEngineName = name,
+		.engineVersion = VK_MAKE_VERSION(1, 1, 7),
+		
+		.apiVersion = VK_API_VERSION_1_3
+	};
 
 	uint32_t requiredExtensionCount = 0;
 	SDL_Vulkan_GetInstanceExtensions(sdl_window, &requiredExtensionCount, nullptr);
@@ -95,7 +97,7 @@ lvk_instance lvk_instance::init(const lvk::config::instance* config, SDL_Window*
     std::vector<VkExtensionProperties> availableExtensionArray(extensionCount);
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensionArray.data());
 	
-	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {
+	VkDebugUtilsMessengerCreateInfoEXT debug_create_info = {
 		VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
 		nullptr,
 		0,
@@ -108,16 +110,21 @@ lvk_instance lvk_instance::init(const lvk::config::instance* config, SDL_Window*
 		nullptr
 	};
 	
-	instance.layers = config->layers;
+	// instance.layers = config->layers;
+	
+	VkInstanceCreateInfo create_info = {
+    	.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+    	.pApplicationInfo = &app_info,
+	};
 
-	if (config->enable_validation_layers) {
+	if (enable_validation_layers) {
 		if (!CheckValidationLayerSupport()) {
 			throw std::runtime_error("validation layers requested, but not available!");
 		}
 
-		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+		create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debug_create_info;
 		
-		instance.layers.push_back("VK_LAYER_KHRONOS_validation");
+		layers.push_back("VK_LAYER_KHRONOS_validation");
 
 		requiredExtensionArray.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
@@ -143,25 +150,25 @@ lvk_instance lvk_instance::init(const lvk::config::instance* config, SDL_Window*
 		}
     }
 
-	createInfo.enabledLayerCount = std::size(instance.layers);
-	createInfo.ppEnabledLayerNames = instance.layers.data();
+	create_info.enabledLayerCount = std::size(layers);
+	create_info.ppEnabledLayerNames = layers.data();
 
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(requiredExtensionArray.size());
-	createInfo.ppEnabledExtensionNames = requiredExtensionArray.data();
+	create_info.enabledExtensionCount = static_cast<uint32_t>(requiredExtensionArray.size());
+	create_info.ppEnabledExtensionNames = requiredExtensionArray.data();
 
-	if (vkCreateInstance(&createInfo, nullptr, &instance._instance) != VK_SUCCESS) {
+	if (vkCreateInstance(&create_info, VK_NULL_HANDLE, &instance._instance) != VK_SUCCESS) {
         throw std::runtime_error("failed to create instance!");
     }
 	dloggln("Instance Created");
 
-	if (config->enable_validation_layers) {
-		if (CreateDebugUtilsMessengerEXT(instance._instance, &debugCreateInfo, nullptr, &instance._debug_messenger) != VK_SUCCESS) {
+	if (enable_validation_layers) {
+		if (CreateDebugUtilsMessengerEXT(instance, &debug_create_info, VK_NULL_HANDLE, &instance._debug_messenger) != VK_SUCCESS) {
 			throw std::runtime_error("debug messenger creation failed!");
 		}
 		dloggln("Debug Messenger Created");
 	}
 
-	if (SDL_Vulkan_CreateSurface(sdl_window, instance._instance, &instance._surfaceKHR)) {
+	if (SDL_Vulkan_CreateSurface(sdl_window, instance, &instance._surfaceKHR)) {
 		dloggln("Surface Created");
 	}
 
@@ -186,12 +193,11 @@ bool lvk_instance::is_debug_enable() {
 	return (_debug_messenger != VK_NULL_HANDLE);
 }
 
-lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std::vector<const char*> layers, lvk::SelectPhysicalDevice_F function) {
+lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk::SelectPhysicalDevice_F function) {
 	lvk_device device = {
 		._device = VK_NULL_HANDLE,
 
 		.extensions = extensions,
-		.layers = layers,
 
 		._queue = {
 			.graphics = {
@@ -330,8 +336,8 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std:
 		.queueCreateInfoCount = static_cast<uint32_t>(unique_queue_indices.size()),
 		.pQueueCreateInfos = queue_create_info_array,
 		
-		.enabledLayerCount = static_cast<uint32_t>(std::size(device.layers)),
-		.ppEnabledLayerNames = device.layers.data(),
+		// .enabledLayerCount = static_cast<uint32_t>(std::size(device.layers)),
+		// .ppEnabledLayerNames = device.layers.data(),
 		
 		.enabledExtensionCount = static_cast<uint32_t>(std::size(device.extensions)),
 		.ppEnabledExtensionNames = device.extensions.data(),

@@ -213,7 +213,7 @@ void lvk_device::reset_command_pool(const lvk_command_pool& command_pool) {
 	vkResetCommandPool(_device, command_pool._command_pool, 0);
 }
 
-lvk_command_buffer lvk_device::allocate_command_buffer_unique(const lvk_command_pool& command_pool, VkCommandBufferLevel level) {
+lvk_command_buffer lvk_device::create_command_buffer_unique(const lvk_command_pool& command_pool, VkCommandBufferLevel level) {
 	lvk_command_buffer command_buffer = {
 		._command_buffer = VK_NULL_HANDLE
 	};
@@ -240,7 +240,7 @@ lvk_command_buffer lvk_device::allocate_command_buffer_unique(const lvk_command_
 	return command_buffer;
 }
 
-std::vector<lvk_command_buffer> lvk_device::allocate_command_buffers(const lvk_command_pool& command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level) {
+std::vector<lvk_command_buffer> lvk_device::create_command_buffers(const lvk_command_pool& command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level) {
 	const std::vector<lvk_command_buffer> command_buffer_array(command_buffer_count);
 
 	VkCommandBufferAllocateInfo allocate_info = {

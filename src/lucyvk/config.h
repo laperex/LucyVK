@@ -21,24 +21,6 @@ namespace lvk::config {
 		VkPipelineRenderingCreateInfo rendering_info;
 	};
 	
-	struct instance {
-		const char* name;
-
-		std::vector<const char*> layers;
-		std::vector<const char*> extensions;
-
-		bool enable_validation_layers;
-	};
-
-	struct device {
-		const char* name;
-
-		std::vector<const char*> layers;
-		std::vector<const char*> extensions;
-
-		bool enable_validation_layers;
-	};
-	
 	struct pipeline_layout {
 		const VkPushConstantRange* push_constant_ranges;
 		uint32_t push_constant_range_count;

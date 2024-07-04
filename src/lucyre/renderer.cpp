@@ -153,12 +153,7 @@ void lre::renderer::descriptor_set_init() {
 }
 
 void lre::renderer::init(SDL_Window* window) {
-	lvk::config::instance instance_config = {
-		.name = "Lucy Framework v7",
-		.enable_validation_layers = true
-	};
-
-	instance = lvk_instance::init(&instance_config, window);
+	instance = lvk_instance::initialize("Lucy Framework v17", window, true);
 	device = instance.create_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME });
 
 	mvp_uniform_buffer = device.create_uniform_buffer<mvp_matrix>();
@@ -166,7 +161,7 @@ void lre::renderer::init(SDL_Window* window) {
 	command_pool = device.create_graphics_command_pool();
 
 	for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
-		frame_array[i].command_buffer = device.allocate_command_buffer_unique(command_pool);
+		frame_array[i].command_buffer = device.create_command_buffer_unique(command_pool);
 
 		frame_array[i].render_fence = device.create_fence();
 		frame_array[i].render_semaphore = device.create_semaphore();

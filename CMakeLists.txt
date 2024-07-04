@@ -13,13 +13,13 @@ add_executable(main ${TARGET_SRC})
 
 cmake_minimum_required(VERSION 3.7)
 
-find_package(SDL2 REQUIRED)
-# include_directories(${SDL2_INCLUDE_DIRS})
-target_link_libraries(main ${SDL2_LIBRARIES})
-
 include_directories(${Vulkan_INCLUDE_DIRS})
 find_package(Vulkan REQUIRED COMPONENTS glslc)
 target_link_libraries(main ${Vulkan_LIBRARIES})
+
+find_package(SDL2 REQUIRED)
+# include_directories(${SDL2_INCLUDE_DIRS})
+target_link_libraries(main ${SDL2_LIBRARIES})
 
 find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
 

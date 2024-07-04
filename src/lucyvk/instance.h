@@ -15,15 +15,15 @@ struct lvk_instance {
 	VkSurfaceKHR _surfaceKHR;
 	VkDebugUtilsMessengerEXT _debug_messenger;
 
-	std::vector<const char*> layers = {};
+	// std::vector<const char*> layers = {};
 
 	~lvk_instance();
 
-	static lvk_instance init(const lvk::config::instance* config, SDL_Window* sdl_window);
+	static lvk_instance initialize(const char* name, SDL_Window* sdl_window, bool enable_validation_layers, std::vector<const char*> layers = {}, std::vector<const char*> extensions = {});
 	
 	bool is_debug_enable();
 
-	lvk_device create_device(std::vector<const char*> extensions, std::vector<const char*> layers = { VK_KHR_SWAPCHAIN_EXTENSION_NAME }, lvk::SelectPhysicalDevice_F function = nullptr);
+	lvk_device create_device(std::vector<const char*> extensions, lvk::SelectPhysicalDevice_F function = nullptr);
 
 	void destroy();
 };
