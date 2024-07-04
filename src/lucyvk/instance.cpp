@@ -190,13 +190,23 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std:
 	lvk_device device = {
 		._device = VK_NULL_HANDLE,
 
-		._present_queue = VK_NULL_HANDLE,
-		._compute_queue = VK_NULL_HANDLE,
-		._transfer_queue = VK_NULL_HANDLE,
-		._graphics_queue = VK_NULL_HANDLE,
-		
 		.extensions = extensions,
 		.layers = layers,
+
+		._queue = {
+			.graphics = {
+				.handle = VK_NULL_HANDLE
+			},
+			.present = {
+				.handle = VK_NULL_HANDLE
+			},
+			.compute = {
+				.handle = VK_NULL_HANDLE
+			},
+			.transfer = {
+				.handle = VK_NULL_HANDLE
+			},
+		},
 
 		.physical_device = {
 			._physical_device = VK_NULL_HANDLE,
@@ -204,9 +214,8 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std:
 		.allocator = {
 			._allocator = VK_NULL_HANDLE
 		},
-		.deletion_queue = {
-			.deletion_queue = {}
-		},
+
+		.deletion_queue = {},
 
 		._surfaceKHR = _surfaceKHR,
 	};
@@ -238,19 +247,19 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std:
 				vkGetPhysicalDeviceSurfaceSupportKHR(device.physical_device, i, _surfaceKHR, &presentSupport);
 
 				if (queue_families[i].queueCount > 0 && presentSupport) {
-					device._queue.present = i;
+					device._queue.present.index = i;
 				}
 				
 				if (queue_families[i].queueCount > 0 && queue_families[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
-					device._queue.compute = i;
+					device._queue.compute.index = i;
 				}
 
 				if (queue_families[i].queueCount > 0 && queue_families[i].queueFlags & VK_QUEUE_TRANSFER_BIT) {
-					device._queue.transfer = i;
+					device._queue.transfer.index = i;
 				}
 
 				if (queue_families[i].queueCount > 0 && queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-					device._queue.graphics = i;
+					device._queue.graphics.index = i;
 				}
 			}
 		}
@@ -283,10 +292,10 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std:
 	
 	
 	std::set<uint32_t> unique_queue_indices = {
-		device._queue.graphics.value(),
-		device._queue.present.value(),
-		device._queue.compute.value(),
-		device._queue.transfer.value(),
+		device._queue.graphics.index.value(),
+		device._queue.present.index.value(),
+		device._queue.compute.index.value(),
+		device._queue.transfer.index.value(),
 	};
 
 	VkDeviceQueueCreateInfo* queue_create_info_array = new VkDeviceQueueCreateInfo[unique_queue_indices.size()];
@@ -340,20 +349,20 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std:
 		VkQueue queue;
     	vkGetDeviceQueue(device._device, index, 0, &queue);
 
-		if (index == device._queue.graphics.value()) {
-			device._graphics_queue = queue;
+		if (index == device._queue.graphics.index.value()) {
+			device._queue.graphics.handle = queue;
 			dloggln("Graphics Queue Created");
 		}
-		if (index == device._queue.present.value()) {
-			device._present_queue = queue;
+		if (index == device._queue.present.index.value()) {
+			device._queue.present.handle = queue;
 			dloggln("Present Queue Created");
 		}
-		if (index == device._queue.compute.value()) {
-			device._compute_queue = queue;
+		if (index == device._queue.compute.index.value()) {
+			device._queue.compute.handle = queue;
 			dloggln("Compute Queue Created");
 		}
-		if (index == device._queue.transfer.value()) {
-			device._transfer_queue = queue;
+		if (index == device._queue.transfer.index.value()) {
+			device._queue.transfer.handle = queue;
 			dloggln("Transfer Queue Created");
 		}
 	}

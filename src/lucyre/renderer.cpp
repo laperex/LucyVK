@@ -294,7 +294,7 @@ void lre::renderer::submit(uint32_t frame_number) {
 	vkWaitForFences(device._device, 1, &frame.render_fence._fence, false, LVK_TIMEOUT);
 	vkResetFences(device._device, 1, &frame.render_fence._fence);
 
-	VkPresentInfoKHR present_info = {
+	device.present({
 		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 		
 		.waitSemaphoreCount = 1,
@@ -304,9 +304,7 @@ void lre::renderer::submit(uint32_t frame_number) {
 		.pSwapchains = &swapchain._swapchain,
 		
 		.pImageIndices = &frame.image_index,
-	};
-
-	device.present(&present_info);
+	});
 }
 
 void lre::renderer::update() {

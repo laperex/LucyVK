@@ -39,19 +39,19 @@ void lvk_device::wait_idle() const {
 }
 
 VkResult lvk_device::submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const VkFence fence, uint64_t timeout) const {
-	return vkQueueSubmit(_graphics_queue, 1, submit_info, fence);
+	return vkQueueSubmit(_queue.graphics, 1, submit_info, fence);
 }
 
 // VkResult lvk_device::submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const VkFence fence, uint64_t timeout) const {
-// 	return vkQueueSubmit(_graphics_queue, 1, submit_info, fence);
+// 	return vkQueueSubmit(_queue.graphics, 1, submit_info, fence);
 // }
 
 VkResult lvk_device::submit2(const VkSubmitInfo2* submit_info2, const uint32_t submit_info2_count, const VkFence fence) const {
-	return vkQueueSubmit2(_graphics_queue, submit_info2_count, submit_info2, fence);
+	return vkQueueSubmit2(_queue.graphics, submit_info2_count, submit_info2, fence);
 }
 
-VkResult lvk_device::present(const VkPresentInfoKHR* present_info) const {
-	return vkQueuePresentKHR(_present_queue, present_info);
+VkResult lvk_device::present(const VkPresentInfoKHR present_info) const {
+	return vkQueuePresentKHR(_queue.present, &present_info);
 }
 
 void lvk_device::destroy_device() {
@@ -172,7 +172,7 @@ void lvk_device::reset_fences(const lvk_fence* fence, uint32_t fence_count) cons
 
 
 lvk_command_pool lvk_device::create_graphics_command_pool() {
-	return create_command_pool(_queue.graphics.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+	return create_command_pool(_queue.graphics.index.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 }
 
 // lvk_immediate_command lvk_device::create_immediate_command() {
@@ -277,7 +277,7 @@ VkResult lvk_device::imm_submit(std::function<void(const VkCommandBuffer)> funct
 		VkCommandPoolCreateInfo create_info = {
 			.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 			.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-			.queueFamilyIndex = _queue.graphics.value(),
+			.queueFamilyIndex = _queue.graphics.index.value(),
 		};
 
 		if (vkCreateCommandPool(_device, &create_info, VK_NULL_HANDLE, &immediate_command._command_pool) != VK_SUCCESS) {
@@ -337,7 +337,7 @@ VkResult lvk_device::imm_submit(std::function<void(const VkCommandBuffer)> funct
 		.pCommandBuffers = &immediate_command._command_buffer,
 	};
 	
-	VkResult result = vkQueueSubmit(_graphics_queue, 1, &submit_info, immediate_command._fence);
+	VkResult result = vkQueueSubmit(_queue.graphics, 1, &submit_info, immediate_command._fence);
 	
 	vkWaitForFences(_device, 1, &immediate_command._fence, true, LVK_TIMEOUT);
 	vkResetFences(_device, 1, &immediate_command._fence);
@@ -475,8 +475,8 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, ui
 	
 	// TODO: better approach
 	uint32_t queue_family_indices[] = {
-		this->_queue.graphics.value(),
-		this->_queue.present.value()
+		this->_queue.graphics.index.value(),
+		this->_queue.present.index.value()
 	};
 
 	// TODO: Sharing Mode is always exclusive in lvk_buffer. Therefore only one queue is possible

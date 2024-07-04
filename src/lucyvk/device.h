@@ -15,10 +15,10 @@
 struct lvk_device {
 	HANDLE_DEF(VkDevice, _device)
 	
-	VkQueue _present_queue;
-	VkQueue _compute_queue;
-	VkQueue _transfer_queue;
-	VkQueue _graphics_queue;
+	// VkQueue _present_queue;
+	// VkQueue _compute_queue;
+	// VkQueue _transfer_queue;
+	// VkQueue _graphics_queue;
 
 
 	std::vector<const char*> extensions;
@@ -26,13 +26,13 @@ struct lvk_device {
 
 
 	struct {
-		std::optional<uint32_t> graphics;
-		std::optional<uint32_t> present;
-		std::optional<uint32_t> compute;
-		std::optional<uint32_t> transfer;
+		struct {
+			HANDLE_DEF(VkQueue, handle)
+			std::optional<uint32_t> index;
+		} graphics, present, compute, transfer;
 
 		operator bool() const {
-			return graphics.has_value() && present.has_value() && compute.has_value() && transfer.has_value();
+			return graphics.index.has_value() && present.index.has_value() && compute.index.has_value() && transfer.index.has_value();
 		}
 	} _queue;
 
@@ -374,7 +374,7 @@ struct lvk_device {
 		return submit2(submit_info2, _si2_N, fence);
 	}
 
-	VkResult present(const VkPresentInfoKHR* present_info) const;
+	VkResult present(const VkPresentInfoKHR present_info) const;
 
 
 
