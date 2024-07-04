@@ -148,13 +148,11 @@ struct lvk_render_pass {
 
 struct lvk_buffer {
 	HANDLE_DEF(VkBuffer, _buffer)
-
 	VmaAllocation _allocation;
-	std::size_t _allocated_size;
 
-	VkBufferUsageFlags _buffer_usage;
+	VkDeviceSize _allocated_size;
+	VkBufferUsageFlags _usage;
 	VmaMemoryUsage _memory_usage;
-	// VkBool32 _is_static = VK_FALSE;
 };
 
 
@@ -172,6 +170,7 @@ struct lvk_image {
 	VkImageType _image_type;
 	VkExtent3D _extent;
 	VkImageUsageFlags _usage;
+	VmaMemoryUsage _memory_usage;
 };
 
 

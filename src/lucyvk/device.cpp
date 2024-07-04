@@ -54,7 +54,7 @@ VkResult lvk_device::present(const VkPresentInfoKHR* present_info) const {
 	return vkQueuePresentKHR(_present_queue, present_info);
 }
 
-void lvk_device::destroy() {
+void lvk_device::destroy_device() {
 	deletion_queue.flush();
 
 	vmaDestroyAllocator(allocator);
@@ -172,7 +172,7 @@ void lvk_device::reset_fences(const lvk_fence* fence, uint32_t fence_count) cons
 
 
 lvk_command_pool lvk_device::create_graphics_command_pool() {
-	return create_command_pool(physical_device._queue_family_indices.graphics.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+	return create_command_pool(_queue.graphics.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 }
 
 // lvk_immediate_command lvk_device::create_immediate_command() {
@@ -277,7 +277,7 @@ VkResult lvk_device::imm_submit(std::function<void(const VkCommandBuffer)> funct
 		VkCommandPoolCreateInfo create_info = {
 			.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 			.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-			.queueFamilyIndex = physical_device._queue_family_indices.graphics.value(),
+			.queueFamilyIndex = _queue.graphics.value(),
 		};
 
 		if (vkCreateCommandPool(_device, &create_info, VK_NULL_HANDLE, &immediate_command._command_pool) != VK_SUCCESS) {
@@ -347,19 +347,19 @@ VkResult lvk_device::imm_submit(std::function<void(const VkCommandBuffer)> funct
 	return result;
 }
 
-VkResult lvk_device::imm_buffer_copy(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkDeviceSize size) {
-	this->imm_submit([&](VkCommandBuffer cmd) {
-		lvk_command_buffer command_buffer = static_cast<lvk_command_buffer>(cmd);
+// VkResult lvk_device::imm_buffer_copy(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkDeviceSize size) {
+// 	return this->imm_submit([&](VkCommandBuffer cmd) {
+// 		lvk_command_buffer command_buffer = static_cast<lvk_command_buffer>(cmd);
 		
-		command_buffer.copy_buffer_to_buffer(src_buffer, dst_buffer, {
-			{
-				.srcOffset = 0,
-				.dstOffset = 0,
-				.size = size
-			}
-		});
-	});
-}
+// 		command_buffer.copy_buffer_to_buffer(src_buffer, dst_buffer, {
+// 			{
+// 				.srcOffset = 0,
+// 				.dstOffset = 0,
+// 				.size = size
+// 			}
+// 		});
+// 	});
+// }
 
 // VkResult lvk_device::imm_buffer_upload(const lvk_buffer& buffer) {
 	
@@ -372,8 +372,8 @@ VkResult lvk_device::imm_buffer_copy(const VkBuffer src_buffer, const VkBuffer d
 
 
 lvk_swapchain lvk_device::create_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format) {
-	const auto& capabilities = physical_device._swapchain_support_details.capabilities;
-	// physical_device._swapchain_support_details.capabilities;
+	const auto& capabilities = _swapchain_support_details.capabilities;
+	// _swapchain_support_details.capabilities;
 
 	lvk_swapchain swapchain = {
 		._swapchain = VK_NULL_HANDLE,
@@ -394,7 +394,7 @@ lvk_swapchain lvk_device::create_swapchain(uint32_t width, uint32_t height, VkIm
 	// * VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR
 	// * VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR
 
-	for (const auto& availablePresentMode: physical_device._swapchain_support_details.present_modes) {
+	for (const auto& availablePresentMode: _swapchain_support_details.present_modes) {
 		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
 			swapchain._present_mode = availablePresentMode;
 			break;
@@ -440,8 +440,8 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, ui
 	swapchain._extent.width = width;
 	swapchain._extent.height = height;
 	
-	const auto& present_modes = this->physical_device._swapchain_support_details.present_modes;
-	const auto& capabilities = this->physical_device._swapchain_support_details.capabilities;
+	const auto& present_modes = this->_swapchain_support_details.present_modes;
+	const auto& capabilities = this->_swapchain_support_details.capabilities;
 	
 	VkSwapchainCreateInfoKHR create_info = {
 		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -475,12 +475,12 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, ui
 	
 	// TODO: better approach
 	uint32_t queue_family_indices[] = {
-		this->physical_device._queue_family_indices.graphics.value(),
-		this->physical_device._queue_family_indices.present.value()
+		this->_queue.graphics.value(),
+		this->_queue.present.value()
 	};
 
 	// TODO: Sharing Mode is always exclusive in lvk_buffer. Therefore only one queue is possible
-	if (this->physical_device._queue_family_indices.present == this->physical_device._queue_family_indices.graphics) {
+	if (this->_queue.present == this->_queue.graphics) {
 		create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		create_info.queueFamilyIndexCount = 0;
 		create_info.pQueueFamilyIndices = nullptr;
@@ -673,12 +673,22 @@ lvk_pipeline lvk_device::create_compute_pipeline(const VkPipelineLayout pipeline
 // |--------------------------------------------------
 
 
+void lvk_device::upload(const VmaAllocation allocation, const VkDeviceSize size, const void* data = nullptr) const {
+	void* _data = nullptr;
+	vmaMapMemory(this->allocator, allocation, &_data);
+	
+	memcpy(_data, data, size);
+	
+	vmaUnmapMemory(this->allocator, allocation);
+}
+
+
 lvk_buffer lvk_device::create_buffer(const VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, const VkDeviceSize size, const void* data) {
 	lvk_buffer buffer = {
 		._buffer = VK_NULL_HANDLE,
 		._allocation = VK_NULL_HANDLE,
 		._allocated_size = size,
-		._buffer_usage = buffer_usage,
+		._usage = buffer_usage,
 		._memory_usage = memory_usage,
 		// .allocator = this
 		// ._is_static = memory_usage == VMA_MEMORY_USAGE_GPU_ONLY ? VK_TRUE: VK_FALSE
@@ -727,42 +737,54 @@ lvk_buffer lvk_device::create_index_buffer(const VkDeviceSize size, const void* 
 	return create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, size, data);
 }
 
-lvk_buffer lvk_device::create_index_buffer_static() {
-	return create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0, nullptr);
+lvk_buffer lvk_device::create_index_buffer_static(const VkDeviceSize size, const void* data) {
+	return create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, size, data);
 }
 
 lvk_buffer lvk_device::create_vertex_buffer(const VkDeviceSize size, const void* data) {
 	return create_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, size, data);
 }
 
-lvk_buffer lvk_device::create_vertex_buffer_static() {
-	return create_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0, nullptr);
+lvk_buffer lvk_device::create_vertex_buffer_static(const VkDeviceSize size, const void* data) {
+	return create_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, size, data);
 }
 
 lvk_buffer lvk_device::create_uniform_buffer(const VkDeviceSize size, const void* data) {
 	return create_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, size, data);
 }
 
-lvk_buffer lvk_device::create_uniform_buffer_static() {
-	return create_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, 0, nullptr);
+lvk_buffer lvk_device::create_uniform_buffer_static(const VkDeviceSize size, const void* data) {
+	return create_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, size, data);
 }
 
-void lvk_device::upload(const lvk_buffer& buffer, const VkDeviceSize size, const void* data) const {
+void lvk_device::upload(const lvk_buffer& buffer, const VkDeviceSize size, const void* data, lvk_buffer staging_buffer) {
 	if (size > buffer._allocated_size) {
-		throw std::runtime_error("required size is greater than allocated size!");
+		throw std::runtime_error("ERROR: required size is greater than allocated size!");
 	}
 
 	if (buffer._memory_usage == VMA_MEMORY_USAGE_GPU_ONLY) {
-		throw std::runtime_error("unable to directly write to a static buffer!");
-	}
+		// throw std::runtime_error("ERROR: unable to directly write to a static buffer!");
 
-	void* _data = nullptr;
-	
-	vmaMapMemory(this->allocator, buffer._allocation, &_data);
-	
-	memcpy(_data, data, size);
-	
-	vmaUnmapMemory(this->allocator, buffer._allocation);
+		if (staging_buffer._buffer == VK_NULL_HANDLE) {
+			staging_buffer = this->create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, size, data);
+		} else {
+			if (staging_buffer._allocated_size < buffer._allocated_size) {
+				throw std::runtime_error("ERROR: staging buffer allocated size does not match the data size!");
+			}
+		}
+
+		this->imm_submit([&](VkCommandBuffer cmd) {
+			static_cast<lvk_command_buffer>(cmd).copy_buffer_to_buffer(staging_buffer, buffer, {
+				{
+					.srcOffset = 0,
+					.dstOffset = 0,
+					.size = size
+				}
+			});
+		});
+	} else {
+		upload(buffer._allocation, size, data);
+	}
 }
 
 
@@ -771,7 +793,7 @@ void lvk_device::upload(const lvk_buffer& buffer, const VkDeviceSize size, const
 // |--------------------------------------------------
 
 
-lvk_image lvk_device::create_image(VkFormat format, VkImageUsageFlags usage, VkExtent3D extent, VkImageType image_type) {
+lvk_image lvk_device::create_image(VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memory_usage, VkExtent3D extent, VkImageType image_type) {
 	lvk_image image = {
 		._image = VK_NULL_HANDLE,
 		._allocation = VK_NULL_HANDLE,
@@ -780,10 +802,12 @@ lvk_image lvk_device::create_image(VkFormat format, VkImageUsageFlags usage, VkE
 		._image_type = image_type,
 		._extent = extent,
 		._usage = usage,
+		._memory_usage = memory_usage,
 	};
 
 	VkImageCreateInfo createInfo = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+
 		.imageType = image_type,
 		.format = format,
 		.extent = extent,
@@ -806,7 +830,7 @@ lvk_image lvk_device::create_image(VkFormat format, VkImageUsageFlags usage, VkE
 	};
 
 	VmaAllocationCreateInfo allocationInfo = {
-		.usage = VMA_MEMORY_USAGE_GPU_ONLY,
+		.usage = memory_usage,
 		.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 	};
 

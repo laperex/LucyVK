@@ -20,20 +20,33 @@ struct lvk_device {
 	VkQueue _transfer_queue;
 	VkQueue _graphics_queue;
 
+
 	std::vector<const char*> extensions;
 	std::vector<const char*> layers;
 
-	// lvk_device() {}
-	// lvk_device(lvk_instance* _instance, std::vector<const char*> extensions, std::vector<const char*> layers, lvk::SelectPhysicalDevice_F function);
+
+	struct {
+		std::optional<uint32_t> graphics;
+		std::optional<uint32_t> present;
+		std::optional<uint32_t> compute;
+		std::optional<uint32_t> transfer;
+
+		operator bool() const {
+			return graphics.has_value() && present.has_value() && compute.has_value() && transfer.has_value();
+		}
+	} _queue;
+
+	struct {
+		VkSurfaceCapabilitiesKHR capabilities;
+		std::vector<VkSurfaceFormatKHR> formats;
+		std::vector<VkPresentModeKHR> present_modes;
+	} _swapchain_support_details;
 
 	struct {
 		HANDLE_DEF(VkPhysicalDevice, _physical_device)
 
 		VkPhysicalDeviceFeatures _features;
 		VkPhysicalDeviceProperties _properties;
-
-		lvk::queue_family_indices _queue_family_indices;
-		lvk::swapchain_support_details _swapchain_support_details;
 
 		const VkFormat find_supported_format(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 		const uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags property_flags) const;
@@ -52,6 +65,11 @@ struct lvk_device {
 			}
 		}
 
+		void pop() {
+			(*deletion_queue.rend())();
+			deletion_queue.pop_back();
+		}
+
 		void push(std::function<void()>&& function) {
 			deletion_queue.push_back(function);
 		}
@@ -62,7 +80,7 @@ struct lvk_device {
 	// VkInstance _instance;
 
 
-	void destroy();
+	void destroy_device();
 
 
 	// ~lvk_device();
@@ -106,7 +124,7 @@ struct lvk_device {
 	
 	// lvk_immediate_command create_immediate_command();
 	VkResult imm_submit(std::function<void(const VkCommandBuffer)> function);
-	VkResult imm_buffer_copy(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkDeviceSize size);
+	// VkResult imm_buffer_copy(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkDeviceSize size);
 	// VkResult 
 
 
@@ -200,6 +218,9 @@ struct lvk_device {
 	
 
 	// BUFFER	---------- ---------- ---------- ----------
+	
+	
+	void upload(const VmaAllocation allocation, const VkDeviceSize size, const void* data) const;
 
 	
 	lvk_buffer create_buffer(const VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, const VkDeviceSize size, const void* data = nullptr);
@@ -209,7 +230,7 @@ struct lvk_device {
 	
 	
 	lvk_buffer create_index_buffer(const VkDeviceSize size, const void* data = nullptr);
-	lvk_buffer create_index_buffer_static();
+	lvk_buffer create_index_buffer_static(const VkDeviceSize size, const void* data);
 
 	template <typename T>
 	lvk_buffer create_index_buffer(const std::vector<T>& data) {
@@ -218,7 +239,7 @@ struct lvk_device {
 	
 	
 	lvk_buffer create_vertex_buffer(const VkDeviceSize size, const void* data = nullptr);
-	lvk_buffer create_vertex_buffer_static();
+	lvk_buffer create_vertex_buffer_static(const VkDeviceSize size, const void* data);
 
 	template <typename T>
 	lvk_buffer create_vertex_buffer(const std::vector<T>& data) {
@@ -232,22 +253,22 @@ struct lvk_device {
 
 
 	lvk_buffer create_uniform_buffer(const VkDeviceSize size, const void* data = nullptr);
-	lvk_buffer create_uniform_buffer_static();
+	lvk_buffer create_uniform_buffer_static(const VkDeviceSize size, const void* data);
 
 	template <typename T> [[nodiscard, __gnu__::__always_inline__]]
 	constexpr lvk_buffer create_uniform_buffer(const T* data = nullptr) noexcept {
 		return create_uniform_buffer(sizeof(T), data);
 	}
 
-	void upload(const lvk_buffer& buffer, const VkDeviceSize size, const void* data = nullptr) const;
+	void upload(const lvk_buffer& buffer, const VkDeviceSize size, const void* data = nullptr, lvk_buffer staging_buffer = {});
 	template <typename T>
-	inline void upload(const lvk_buffer& buffer, const T& data) const {
+	inline void upload(const lvk_buffer& buffer, const T& data) {
 		upload(buffer, sizeof(T), &data);
 	}
 
 	// IMAGE
 
-	lvk_image create_image(VkFormat format, VkImageUsageFlags usage, VkExtent3D extent, VkImageType image_type);
+	lvk_image create_image(VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memory_usage, VkExtent3D extent, VkImageType image_type);
 	
 
 	// IMAGE_VIEW	---------- ---------- ---------- ----------

@@ -25,20 +25,20 @@ namespace lvk {
 	// 	}
 	// };
 
-	struct queue_family_indices {
-		std::optional<uint32_t> graphics;
-		std::optional<uint32_t> present;
-		std::optional<uint32_t> compute;
-		std::optional<uint32_t> transfer;
+	// struct queue_family_indices {
+	// 	std::optional<uint32_t> graphics;
+	// 	std::optional<uint32_t> present;
+	// 	std::optional<uint32_t> compute;
+	// 	std::optional<uint32_t> transfer;
 
-		operator bool() const {
-			return graphics.has_value() && present.has_value() && compute.has_value() && transfer.has_value();
-		}
-	};
+	// 	operator bool() const {
+	// 		return graphics.has_value() && present.has_value() && compute.has_value() && transfer.has_value();
+	// 	}
+	// };
 
-	struct swapchain_support_details {
-		VkSurfaceCapabilitiesKHR capabilities;
-		std::vector<VkSurfaceFormatKHR> formats;
-		std::vector<VkPresentModeKHR> present_modes;
-	};
+	// struct swapchain_support_details {
+	// 	VkSurfaceCapabilitiesKHR capabilities;
+	// 	std::vector<VkSurfaceFormatKHR> formats;
+	// 	std::vector<VkPresentModeKHR> present_modes;
+	// };
 }

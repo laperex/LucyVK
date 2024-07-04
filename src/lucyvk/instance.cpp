@@ -212,22 +212,68 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std:
 	};
 
 	{
-		uint32_t availableDeviceCount = 0;
-
-		vkEnumeratePhysicalDevices(this->_instance, &availableDeviceCount, VK_NULL_HANDLE);
-		std::vector<VkPhysicalDevice> availableDevices(availableDeviceCount);
-		vkEnumeratePhysicalDevices(this->_instance, &availableDeviceCount, availableDevices.data());
+		uint32_t available_device_count = 0;
+		vkEnumeratePhysicalDevices(this->_instance, &available_device_count, VK_NULL_HANDLE);
+		std::vector<VkPhysicalDevice> available_devices(available_device_count);
+		vkEnumeratePhysicalDevices(this->_instance, &available_device_count, available_devices.data());
 
 		device.physical_device._physical_device = (function == nullptr) ?
-			lvk::default_physical_device(availableDevices, this):
-			function(availableDevices, this);
+			lvk::default_physical_device(available_devices, this):
+			function(available_devices, this);
 		
 		if (device.physical_device._physical_device == nullptr) {
 			throw std::runtime_error("failed to find suitable PhysicalDevice!");
 		}
 
-		device.physical_device._queue_family_indices = lvk::query_queue_family_indices(device.physical_device._physical_device, this->_surfaceKHR);
-		device.physical_device._swapchain_support_details = lvk::query_swapchain_support_details(device.physical_device._physical_device, this->_surfaceKHR);
+		// device._queue_family_indices = lvk::query_queue_family_indices(device.physical_device._physical_device, this->_surfaceKHR);
+		// queue indices initialization
+		{
+			uint32_t queue_family_count = 0;
+			vkGetPhysicalDeviceQueueFamilyProperties(device.physical_device, &queue_family_count, VK_NULL_HANDLE);
+			std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+			vkGetPhysicalDeviceQueueFamilyProperties(device.physical_device, &queue_family_count, queue_families.data());
+			
+			for (int i = 0; i < queue_families.size() && device._queue == false; i++) {
+				VkBool32 presentSupport = false;
+				vkGetPhysicalDeviceSurfaceSupportKHR(device.physical_device, i, _surfaceKHR, &presentSupport);
+
+				if (queue_families[i].queueCount > 0 && presentSupport) {
+					device._queue.present = i;
+				}
+				
+				if (queue_families[i].queueCount > 0 && queue_families[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
+					device._queue.compute = i;
+				}
+
+				if (queue_families[i].queueCount > 0 && queue_families[i].queueFlags & VK_QUEUE_TRANSFER_BIT) {
+					device._queue.transfer = i;
+				}
+
+				if (queue_families[i].queueCount > 0 && queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+					device._queue.graphics = i;
+				}
+			}
+		}
+		
+		// device._swapchain_support_details = lvk::query_swapchain_support_details(device.physical_device._physical_device, this->_surfaceKHR);
+		{
+			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device.physical_device, _surfaceKHR, &device._swapchain_support_details.capabilities);
+			uint32_t format_count;
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device.physical_device, _surfaceKHR, &format_count, VK_NULL_HANDLE);
+
+			if (format_count != 0) {
+				device._swapchain_support_details.formats.resize(format_count);
+				vkGetPhysicalDeviceSurfaceFormatsKHR(device.physical_device, _surfaceKHR, &format_count, device._swapchain_support_details.formats.data());
+			}
+
+			uint32_t present_mode_count;
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device.physical_device, _surfaceKHR, &present_mode_count, VK_NULL_HANDLE);
+
+			if (present_mode_count != 0) {
+				device._swapchain_support_details.present_modes.resize(present_mode_count);
+				vkGetPhysicalDeviceSurfacePresentModesKHR(device.physical_device, _surfaceKHR, &present_mode_count, device._swapchain_support_details.present_modes.data());
+			}
+		}
 
 		vkGetPhysicalDeviceFeatures(device.physical_device._physical_device, &device.physical_device._features);
 		vkGetPhysicalDeviceProperties(device.physical_device._physical_device, &device.physical_device._properties);
@@ -237,10 +283,10 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std:
 	
 	
 	std::set<uint32_t> unique_queue_indices = {
-		device.physical_device._queue_family_indices.graphics.value(),
-		device.physical_device._queue_family_indices.present.value(),
-		device.physical_device._queue_family_indices.compute.value(),
-		device.physical_device._queue_family_indices.transfer.value(),
+		device._queue.graphics.value(),
+		device._queue.present.value(),
+		device._queue.compute.value(),
+		device._queue.transfer.value(),
 	};
 
 	VkDeviceQueueCreateInfo* queue_create_info_array = new VkDeviceQueueCreateInfo[unique_queue_indices.size()];
@@ -294,19 +340,19 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, std:
 		VkQueue queue;
     	vkGetDeviceQueue(device._device, index, 0, &queue);
 
-		if (index == device.physical_device._queue_family_indices.graphics.value()) {
+		if (index == device._queue.graphics.value()) {
 			device._graphics_queue = queue;
 			dloggln("Graphics Queue Created");
 		}
-		if (index == device.physical_device._queue_family_indices.present.value()) {
+		if (index == device._queue.present.value()) {
 			device._present_queue = queue;
 			dloggln("Present Queue Created");
 		}
-		if (index == device.physical_device._queue_family_indices.compute.value()) {
+		if (index == device._queue.compute.value()) {
 			device._compute_queue = queue;
 			dloggln("Compute Queue Created");
 		}
-		if (index == device.physical_device._queue_family_indices.transfer.value()) {
+		if (index == device._queue.transfer.value()) {
 			device._transfer_queue = queue;
 			dloggln("Transfer Queue Created");
 		}
