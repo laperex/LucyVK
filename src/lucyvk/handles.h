@@ -205,15 +205,3 @@ struct lvk_shader_module {
 struct lvk_sampler {
 	HANDLE_DEF(VkSampler, _sampler)
 };
-
-
-// // |--------------------------------------------------
-// // ----------------> COMMAND BUFFER IMMEDIATE
-// // |--------------------------------------------------
-
-
-// struct lvk_immediate_command {
-// 	HANDLE_DEF(VkCommandPool, _command_pool)
-// 	HANDLE_DEF(VkCommandBuffer, _command_buffer)
-// 	HANDLE_DEF(VkFence, _fence)
-// };

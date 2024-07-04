@@ -260,7 +260,7 @@ std::vector<lvk_command_buffer> lvk_device::allocate_command_buffers(const lvk_c
 }
 
 
-VkResult lvk_device::immediate_submit(std::function<void(const VkCommandBuffer)> function) {
+VkResult lvk_device::imm_submit(std::function<void(const VkCommandBuffer)> function) {
 	static struct {
 		VkCommandPool _command_pool = VK_NULL_HANDLE;
 		VkCommandBuffer _command_buffer = VK_NULL_HANDLE;
@@ -341,6 +341,10 @@ VkResult lvk_device::immediate_submit(std::function<void(const VkCommandBuffer)>
 	
 	return result;
 }
+
+// VkResult lvk_device::imm_buffer_upload(const lvk_buffer& buffer) {
+	
+// }
 
 
 // |--------------------------------------------------

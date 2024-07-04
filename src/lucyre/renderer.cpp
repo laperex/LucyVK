@@ -31,9 +31,9 @@ void lre::renderer::upload_mesh(Mesh& mesh) {
 lvk_image lre::renderer::load_image_from_file(const char* filename) {
 	int width, height, channels;
 
-	stbi_uc* pixels = stbi_load(filename, &width, &height, &channels, STBI_rgb_alpha);
+	stbi_uc* image_data = stbi_load(filename, &width, &height, &channels, STBI_rgb_alpha);
 
-	if (!pixels) {
+	if (!image_data) {
 		dloggln("Failed to load texture file ", filename);
 		return { ._image = VK_NULL_HANDLE };
 	}
@@ -46,11 +46,11 @@ lvk_image lre::renderer::load_image_from_file(const char* filename) {
 		.depth = 1,
 	};
 
-	lvk_buffer staging_buffer = this->allocator.create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, image_size, pixels);
+	lvk_buffer staging_buffer = this->allocator.create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, image_size, image_data);
 
 	lvk_image image = this->allocator.create_image(image_format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, image_extent, VK_IMAGE_TYPE_2D);
 
-	this->device.immediate_submit([&](VkCommandBuffer cmd) {
+	this->device.imm_submit([&](VkCommandBuffer cmd) {
 		lvk_command_buffer command_buffer = static_cast<lvk_command_buffer>(cmd);
 
 		VkImageMemoryBarrier image_barrier = lvk::info::image_memory_barrier(image, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, lvk::info::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT));
@@ -67,7 +67,7 @@ lvk_image lre::renderer::load_image_from_file(const char* filename) {
 		command_buffer.pipeline_barrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, image_barrier);
 	});
 
-	stbi_image_free(pixels);
+	stbi_image_free(image_data);
 
 	return image;
 }
@@ -184,8 +184,7 @@ void lre::renderer::init(SDL_Window* window) {
 	
 	mesh.indices = { 0,1,2, 2,3,0 };
 	
-	mesh.index_buffer = allocator.create_index_buffer(mesh.indices);
-	
+	mesh.index_buffer = allocator.create_index_buffer(mesh.indices);	
 	mesh.vertex_buffer = allocator.create_vertex_buffer(mesh.vertices);
 
 

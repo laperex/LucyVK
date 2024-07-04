@@ -88,7 +88,9 @@ struct lvk_device {
 	std::vector<lvk_command_buffer> allocate_command_buffers(const lvk_command_pool& command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	
 	// lvk_immediate_command create_immediate_command();
-	VkResult immediate_submit(std::function<void(const VkCommandBuffer)> function);
+	VkResult imm_submit(std::function<void(const VkCommandBuffer)> function);
+	// VkResult imm_buffer_upload(const lvk_buffer& buffer);
+	// VkResult 
 
 
 	// SWAPCHAIN 	---------- ---------- ---------- ----------
