@@ -16,6 +16,8 @@ void lucy::events::initialize() {
 
 void lucy::events::update() {
 	SDL_Event event;
+	
+	is_resized = false;
 
 	for (int i = 0; i < SDL_PollEvent(&event); i++) {
 		for (auto& function: event_function_array) {
@@ -66,6 +68,13 @@ void lucy::events::update() {
 				}
 				key_chord.clear();
 				keyboard_pressed.erase(event.key.keysym.scancode);
+				break;
+			
+			case SDL_WINDOWEVENT:
+				switch (event.window.event) {
+					case SDL_WINDOWEVENT_RESIZED:
+						is_resized = true;
+				}
 				break;
 		}
 	}

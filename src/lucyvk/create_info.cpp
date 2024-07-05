@@ -257,6 +257,49 @@ VkDescriptorSetLayoutBinding lvk::info::descriptor_set_layout_binding(uint32_t b
 	};
 }
 
+VkAttachmentReference lvk::info::attachment_reference(uint32_t attachment, VkImageLayout layout) {
+	return {
+		.attachment = attachment,
+		.layout = layout
+	};
+}
+
+VkVertexInputBindingDescription lvk::info::vertex_input_description(uint32_t binding, uint32_t stride, VkVertexInputRate input_rate) {
+	return {
+		.binding = binding,
+		.stride = stride,
+		.inputRate = input_rate
+	};
+}
+
+VkVertexInputAttributeDescription lvk::info::vertex_input_attribute_description(uint32_t binding, uint32_t location, VkFormat format, uint32_t offset) {
+	return {
+		.location = location,
+		.binding = binding,
+		.format = format,
+		.offset = offset
+	};
+}
+
+VkSubpassDescription lvk::info::subpass_description(VkSubpassDescriptionFlags flags, VkPipelineBindPoint pipelineBindPoint, uint32_t inputAttachmentCount, const VkAttachmentReference* pInputAttachments, uint32_t colorAttachmentCount, const VkAttachmentReference* pColorAttachments, const VkAttachmentReference* pResolveAttachments, const VkAttachmentReference* pDepthStencilAttachment, uint32_t preserveAttachmentCount, const uint32_t* pPreserveAttachments) {
+	return {
+		.flags = flags,
+		.pipelineBindPoint = pipelineBindPoint,
+
+		.inputAttachmentCount = inputAttachmentCount,
+		.pInputAttachments = pInputAttachments,
+
+		.colorAttachmentCount = colorAttachmentCount,
+		.pColorAttachments = pColorAttachments,
+
+		.pResolveAttachments = pResolveAttachments,
+		.pDepthStencilAttachment = pDepthStencilAttachment,
+
+		.preserveAttachmentCount = preserveAttachmentCount,
+		.pPreserveAttachments = pPreserveAttachments,
+	};
+}
+
 VkCommandBufferSubmitInfo lvk::info::command_buffer_submit(const lvk_command_buffer* command_buffer) {
 	return {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,

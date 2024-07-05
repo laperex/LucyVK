@@ -1,20 +1,41 @@
 #pragma once
 
 #include "vk_mem_alloc.h"
+#include <vector>
 #include <vulkan/vulkan.h>
 #include "lucyvk/define.h"
 
-struct lvk_device;
 
+
+void lvk_destroy(VkDevice device);
+void lvk_destroy(VkDevice device, VkCommandPool command_pool);
+void lvk_destroy(VkDevice device, VkPipelineLayout pipeline_layout);
+void lvk_destroy(VkDevice device, VkPipeline pipeline);
+void lvk_destroy(VkDevice device, VkSwapchainKHR swapchain);
+void lvk_destroy(VkDevice device, VkSemaphore semaphore);
+void lvk_destroy(VkDevice device, VkFence fence);
+void lvk_destroy(VkDevice device, VkDescriptorSetLayout descriptor_set_layout);
+void lvk_destroy(VkDevice device, VkDescriptorPool descriptor_pool);
+void lvk_destroy(VkDevice device, VkFramebuffer framebuffer);
+void lvk_destroy(VkDevice device, VkRenderPass render_pass);
+void lvk_destroy(VkDevice device, VkImageView image_view);
+void lvk_destroy(VkDevice device, VkShaderModule shader_module);
+void lvk_destroy(VkDevice device, VkSampler sampler);
+
+void lvk_destroy(VkDevice device, VkCommandBuffer command_buffer, VkCommandPool command_pool);
+void lvk_destroy(VkDevice device, VkCommandBuffer* command_buffer, uint32_t command_buffer_count, VkCommandPool command_pool);
+void lvk_destroy(VkDevice device, VkDescriptorSet descriptor_set, VkDescriptorPool descriptor_pool);
+void lvk_destroy(VkDevice device, VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool);
+
+void lvk_destroy(VmaAllocator allocator, VkBuffer buffer, VmaAllocation allocation);
+void lvk_destroy(VmaAllocator allocator, VkImage buffer, VmaAllocation allocation);
+
+
+struct lvk_device;
 struct lvk_instance;
 
 
-struct lvk_queue;
-
 struct lvk_command_buffer;
-struct lvk_shader_module;
-
-struct lvk_allocator;
 
 
 // |--------------------------------------------------
@@ -63,8 +84,8 @@ struct lvk_swapchain {
 	VkImageUsageFlags _image_usage;
 
 	uint32_t _image_count;
-	VkImage* _images;
-	VkImageView* _image_views;
+	// VkImage* _images;
+	std::vector<VkImageView> _image_views;
 };
 
 

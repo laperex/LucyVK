@@ -76,27 +76,10 @@ void lre::renderer::texture_pipeline_init() {
 	lvk_shader_module vertex_shader = device.create_shader_module("./shaders/texture.vert.spv");
 	lvk_shader_module fragment_shader = device.create_shader_module("./shaders/texture.frag.spv");
 
-
-	VkViewport viewport[] = {
-		{
-			.x = 0.0f,
-			.y = 0.0f,
-
-			.width = static_cast<float>(swapchain._extent.width),
-			.height = static_cast<float>(swapchain._extent.height),
-
-			.minDepth = 0.0f,
-			.maxDepth = 1.0f
-		}
+	VkDynamicState state[] = {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR
 	};
-
-	VkRect2D scissor[] = {
-		{
-			.offset = { 0, 0 },
-			.extent = { static_cast<uint32_t>(swapchain._extent.width), static_cast<uint32_t>(swapchain._extent.height) }
-		}
-	};
-
 
 	VertexInputDescription vertex_description = Vertex::get_vertex_input_description();
 
@@ -111,7 +94,13 @@ void lre::renderer::texture_pipeline_init() {
 
 		.input_assembly_state = lvk::info::input_assembly_state(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE),
 
-		.viewport_state = lvk::info::viewport_state(viewport, scissor),
+		// .viewport_state = lvk::info::viewport_state(viewport, scissor),
+		.viewport_state = {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+			
+			.viewportCount = 1,
+			.scissorCount = 1
+		},
 		
 		.rasterization_state = lvk::info::rasterization_state(VK_POLYGON_MODE_FILL),
 
@@ -125,6 +114,12 @@ void lre::renderer::texture_pipeline_init() {
 				.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
 			}
 		}),
+		
+		.dynamic_state = {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+			.dynamicStateCount = std::size(state),
+			.pDynamicStates = state,
+		}
 	};
 
 	graphics_pipeline_layout = device.create_pipeline_layout({ descriptor_set_layout });
@@ -155,13 +150,15 @@ void lre::renderer::descriptor_set_init() {
 void lre::renderer::init(SDL_Window* window) {
 	instance = lvk_instance::initialize("Lucy Framework v17", window, true);
 	device = instance.create_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME });
+	
+	sdl_window = window;
 
 	mvp_uniform_buffer = device.create_uniform_buffer<mvp_matrix>();
 
-	command_pool = device.create_graphics_command_pool();
+	main_command_pool = device.create_graphics_command_pool();
 
 	for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
-		frame_array[i].command_buffer = device.create_command_buffer_unique(command_pool);
+		frame_array[i].command_buffer = device.create_command_buffer_unique(main_command_pool);
 
 		frame_array[i].render_fence = device.create_fence();
 		frame_array[i].render_semaphore = device.create_semaphore();
@@ -191,8 +188,8 @@ void lre::renderer::init(SDL_Window* window) {
 	});
 
 	descriptor_set_init();
-	
-	
+
+
 
 	// binding for uniform buffer
 	device.update_descriptor_set(descriptor_ubo, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
@@ -227,6 +224,28 @@ void lre::renderer::record(uint32_t frame_number) {
 	// swapchain.acquire_next_image(&frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE);
 	device.swapchain_acquire_next_image(swapchain, &frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE);
 
+	VkViewport viewport[] = {
+		{
+			.x = 0.0f,
+			.y = 0.0f,
+
+			.width = static_cast<float>(swapchain._extent.width),
+			.height = static_cast<float>(swapchain._extent.height),
+
+			.minDepth = 0.0f,
+			.maxDepth = 1.0f
+		}
+	};
+
+	VkRect2D scissor[] = {
+		{
+			.offset = { 0, 0 },
+			.extent = { static_cast<uint32_t>(swapchain._extent.width), static_cast<uint32_t>(swapchain._extent.height) }
+		}
+	};
+	
+	// dloggln(swapchain._extent.width);
+
 	// draw.extent = *(const VkExtent2D*)&draw.image._extent;
 
 	glm::vec3 cam_pos = { 0.f, 0.f, -10 };
@@ -234,7 +253,9 @@ void lre::renderer::record(uint32_t frame_number) {
 	mvp_matrix mvp = {
 		.projection = glm::perspective(glm::radians(70.f), float(swapchain._extent.width) / float(swapchain._extent.height), 0.1f, 200.0f),
 		.view = glm::translate(glm::mat4(1.f), cam_pos),
-		.model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0, 1, 0)),
+		.model = glm::rotate(glm::mat4(1.0f), glm::radians(frame_number * 0.4f), glm::vec3(0, 1, 0)),
+
+		// .model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0, 1, 0)),
 		.color = { 0, 1, 0, 1},
 	};
 
@@ -244,20 +265,22 @@ void lre::renderer::record(uint32_t frame_number) {
 
 
 	cmd.reset();
-
 	cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	
+	cmd.set_viewport(0, viewport);
+	cmd.set_scissor(0, scissor);
 
 	cmd.begin_render_pass(render_pass, framebuffer_array[frame.image_index], swapchain, VK_SUBPASS_CONTENTS_INLINE, clear_value);
 	
 	cmd.bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
+	
+	// cmd.set
 
-	cmd.bind_vertex_buffers({ mesh.vertex_buffer._buffer }, { 0 }, 0);
+	cmd.bind_vertex_buffers({ mesh.vertex_buffer }, { 0 });
 	cmd.bind_index_buffer(mesh.index_buffer, VK_INDEX_TYPE_UINT32);
 	cmd.bind_descriptor_set(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout, { descriptor_ubo });
 
-
 	vkCmdDrawIndexed(cmd, mesh.indices.size(), 1, 0, 0, 0);
-
 
 	cmd.end_render_pass();
 
@@ -302,8 +325,25 @@ void lre::renderer::submit(uint32_t frame_number) {
 	});
 }
 
-void lre::renderer::update() {
+void lre::renderer::update(const bool& is_resized) {
 	static uint32_t frame_number = 0;
+	
+	if (is_resized) {
+		int width, height;
+		SDL_GetWindowSize(sdl_window, &width, &height);
+		device.swapchain_recreate(swapchain, width, height);
+		
+		dloggln(swapchain._extent.width, swapchain._extent.height);
+		
+		depth_image = device.create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
+		depth_image_view = device.create_image_view(depth_image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+		
+		for (int i = 0; i < swapchain._image_count; i++) {
+			framebuffer_array[i] = device.create_framebuffer(render_pass, swapchain._extent, { swapchain._image_views[i], depth_image_view });
+		}
+		
+		// exit(0);
+	}
 
 	record(frame_number);
 
@@ -320,7 +360,7 @@ void lre::renderer::update() {
 
 void lre::renderer::destroy() {
 	device.wait_idle();
-	
+
 	// deletion_queue.flush(device._device);
 	
 	// vkDestroySemaphore(device._device, sema)

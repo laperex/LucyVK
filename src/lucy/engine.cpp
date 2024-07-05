@@ -30,7 +30,7 @@ void lucy::engine::mainloop() {
 			_events.quit() = true;
 		}
 
-		_renderer.update();
+		_renderer.update(_events.resized());
 
 		const auto& end_time = std::chrono::high_resolution_clock::now();
 		dt = std::chrono::duration<double, std::ratio<1, 60>>(end_time - start_time).count();

@@ -121,7 +121,7 @@ struct lvk_device {
 
 
 	lvk_swapchain create_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format);
-	void swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, uint32_t height) const;
+	void swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, uint32_t height);
 	VkResult swapchain_acquire_next_image(const lvk_swapchain& swapchain, uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT) const;
 	
 	
@@ -262,6 +262,7 @@ struct lvk_device {
 
 	// IMAGE_VIEW	---------- ---------- ---------- ----------
 	
+	lvk_image_view create_image_view(const VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType image_view_type);
 	lvk_image_view create_image_view(const lvk_image& image, VkImageAspectFlags aspect_flag, VkImageViewType image_view_type);
 
 
@@ -295,7 +296,7 @@ struct lvk_device {
 	}
 
 	void clear_descriptor_pool(const lvk_descriptor_pool& descriptor_pool) const;
-	void destroy_descriptor_pool(const lvk_descriptor_pool& descriptor_pool) const;
+	// void destroy_descriptor_pool(const lvk_descriptor_pool& descriptor_pool) const;
 
 
 	// RENDERPASS	---------- ---------- ---------- ----------

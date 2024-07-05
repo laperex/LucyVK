@@ -17,28 +17,29 @@
 
 #define FRAMES_IN_FLIGHT 2
 
+
+struct lre_frame {
+	lvk_fence render_fence;
+
+	lvk_semaphore present_semaphore;
+	lvk_semaphore render_semaphore;
+
+	lvk_command_buffer command_buffer;
+
+	uint32_t image_index;
+};
+
+
 namespace lre {
 	class renderer {
-
-		lvk_command_pool command_pool;
-		struct {
-			lvk_fence render_fence;
-
-			lvk_semaphore present_semaphore;
-			lvk_semaphore render_semaphore;
-
-			lvk_command_buffer command_buffer;
-
-			uint32_t image_index;
-		} frame_array[FRAMES_IN_FLIGHT];
-
-
+		lvk_command_pool main_command_pool;
+		lre_frame frame_array[FRAMES_IN_FLIGHT];
 
 		lvk_instance instance;
 		lvk_device device;
-
 		lvk_swapchain swapchain;
-		
+
+
 		lvk_descriptor_pool descriptor_pool;
 
 		lvk_pipeline graphics_pipeline;
@@ -92,7 +93,7 @@ namespace lre {
 
 		renderer();
 	
-		void init(SDL_Window*);
+		void init(SDL_Window* window);
 
 
 		void record(uint32_t frame_number);
@@ -101,7 +102,7 @@ namespace lre {
 		void begin();
 		void end();
 
-		void update();
+		void update(const bool& is_resized);
 		
 		void destroy();
 	};

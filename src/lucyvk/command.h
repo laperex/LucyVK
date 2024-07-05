@@ -21,7 +21,19 @@ struct lvk_command_buffer {
 	void begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info = VK_NULL_HANDLE) const;
 
 	void blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size) const;
-	
+
+	void set_viewport(const uint32_t first, const VkViewport* viewports, const uint32_t count) const;
+	template <std::size_t _v_N>  [[__gnu__::__always_inline__]]
+	constexpr void set_viewport(const uint32_t first, const VkViewport (&viewports)[_v_N]) const noexcept {
+		set_viewport(first, viewports, _v_N);
+	}
+
+	void set_scissor(const uint32_t first, const VkRect2D* scissors, const uint32_t count) const;
+	template <std::size_t _v_N>  [[__gnu__::__always_inline__]]
+	constexpr void set_scissor(const uint32_t first, const VkRect2D (&scissors)[_v_N]) const noexcept {
+		set_scissor(first, scissors, _v_N);
+	}
+
 	void bind_pipeline(const VkPipelineBindPoint pipeline_bind_point, const VkPipeline pipeline) const;
 
 	void bind_descriptor_set(const VkPipelineBindPoint pipeline_bind_point, const VkPipelineLayout pipeline_layout, const lvk_descriptor_set* descriptor_set, const uint32_t descriptor_set_count, uint32_t first_set = 0) const;
@@ -35,7 +47,7 @@ struct lvk_command_buffer {
 	
 	void bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding = 0) const;
 	template <std::size_t _b_m> [[__gnu__::__always_inline__]]
-    constexpr void bind_vertex_buffers(const VkBuffer (&vertex_buffers)[_b_m], const VkDeviceSize (&offset_array)[_b_m], const uint32_t first_binding = 0) const noexcept {
+    constexpr void bind_vertex_buffers(const VkBuffer (&vertex_buffers)[_b_m], const VkDeviceSize (&offset_array)[_b_m] = {}, const uint32_t first_binding = 0) const noexcept {
 		bind_vertex_buffers(vertex_buffers, offset_array, _b_m, first_binding);
 	}
 	

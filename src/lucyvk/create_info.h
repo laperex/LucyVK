@@ -77,4 +77,16 @@ namespace lvk::info {
 	VkImageMemoryBarrier image_memory_barrier(const VkImage image, VkAccessFlags src_access, VkAccessFlags dst_access, VkImageLayout old_layout, VkImageLayout new_layout, VkImageSubresourceRange subresource_range);
 
 	VkDescriptorSetLayoutBinding descriptor_set_layout_binding(uint32_t binding, VkShaderStageFlags shader_stage_flags, VkDescriptorType descriptor_type, uint32_t descriptor_count);
+	
+	VkAttachmentReference attachment_reference(uint32_t attachment, VkImageLayout layout);
+	
+	VkVertexInputBindingDescription vertex_input_description(uint32_t binding, uint32_t stride, VkVertexInputRate input_rate);
+	template <typename T>
+	VkVertexInputBindingDescription vertex_input_description(uint32_t binding, VkVertexInputRate input_rate) {
+		return vertex_input_description(binding, sizeof(T), input_rate);
+	}
+	
+	VkVertexInputAttributeDescription vertex_input_attribute_description(uint32_t binding, uint32_t location, VkFormat format, uint32_t offset);
+	
+	VkSubpassDescription subpass_description(VkSubpassDescriptionFlags flags, VkPipelineBindPoint pipelineBindPoint, uint32_t inputAttachmentCount, const VkAttachmentReference* pInputAttachments, uint32_t colorAttachmentCount, const VkAttachmentReference* pColorAttachments, const VkAttachmentReference* pResolveAttachments, const VkAttachmentReference* pDepthStencilAttachment, uint32_t preserveAttachmentCount, const uint32_t* pPreserveAttachments);
 }

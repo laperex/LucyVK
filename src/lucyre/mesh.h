@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lucylm/math.hpp"
+#include "lucyvk/create_info.h"
 #include "lucyvk/device.h"
 // #include "lucyvk/memory.h"
 
@@ -23,32 +24,13 @@ namespace lre {
 		static VertexInputDescription get_vertex_input_description() {
 			return {
 				.bindings = {
-					VkVertexInputBindingDescription {
-						.binding = 0,
-						.stride = sizeof(Vertex),
-						.inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
-					}
+					lvk::info::vertex_input_description<Vertex>(0, VK_VERTEX_INPUT_RATE_VERTEX)
 				},
 
 				.attributes = {
-					VkVertexInputAttributeDescription {
-						.location = 0,
-						.binding = 0,
-						.format = VK_FORMAT_R32G32B32_SFLOAT,
-						.offset = offsetof(Vertex, position),
-					},
-					VkVertexInputAttributeDescription {
-						.location = 1,
-						.binding = 0,
-						.format = VK_FORMAT_R32G32B32_SFLOAT,
-						.offset = offsetof(Vertex, normal),
-					},
-					VkVertexInputAttributeDescription {
-						.location = 2,
-						.binding = 0,
-						.format = VK_FORMAT_R32G32B32_SFLOAT,
-						.offset = offsetof(Vertex, uv),
-					},
+					lvk::info::vertex_input_attribute_description(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)),
+					lvk::info::vertex_input_attribute_description(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)),
+					lvk::info::vertex_input_attribute_description(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, uv)),
 				},
 
 				.flags = 0

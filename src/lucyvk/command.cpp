@@ -214,6 +214,14 @@ void lvk_command_buffer::blit_image_to_image(VkImage source, VkImage destination
 	vkCmdBlitImage2(_command_buffer, &blit_info);
 }
 
+void lvk_command_buffer::set_viewport(const uint32_t first, const VkViewport* viewports, const uint32_t count) const {
+	vkCmdSetViewport(_command_buffer, first, count, viewports);
+}
+
+void lvk_command_buffer::set_scissor(const uint32_t first, const VkRect2D* scissors, const uint32_t count) const {
+	vkCmdSetScissor(_command_buffer, first, count, scissors);
+}
+
 void lvk_command_buffer::end() const {
 	vkEndCommandBuffer(_command_buffer);
 }

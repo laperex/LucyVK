@@ -58,10 +58,12 @@ namespace util {
 
 	template <typename T>
 	inline void print(T a) {
+		std::clog << a;
 		std::cout << a;
 	}
 	template <typename T>
 	inline void println(T a) {
+		std::clog << a;
 		std::cout << a;
 	}
 
