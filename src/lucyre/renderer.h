@@ -37,8 +37,12 @@ namespace lre {
 
 		lvk_instance instance;
 		lvk_device device;
-		lvk_swapchain swapchain;
 
+		lvk_swapchain swapchain;
+		// std::vector<lvk_framebuffer> framebuffer_array;
+
+		// lvk_image depth_image;
+		// lvk_image_view depth_image_view;
 
 		lvk_descriptor_pool descriptor_pool;
 
@@ -56,10 +60,6 @@ namespace lre {
 
 
 		lvk_render_pass render_pass;
-		std::vector<lvk_framebuffer> framebuffer_array;
-
-		lvk_image depth_image;
-		lvk_image_view depth_image_view;
 		
 		lvk_buffer mvp_uniform_buffer;
 		

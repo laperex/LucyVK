@@ -120,8 +120,8 @@ struct lvk_device {
 	// SWAPCHAIN 	---------- ---------- ---------- ----------
 
 
-	lvk_swapchain create_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format);
-	void swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, uint32_t height);
+	lvk_swapchain create_swapchain(VkRenderPass render_pass, uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format);
+	void swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass render_pass, uint32_t width, uint32_t height);
 	VkResult swapchain_acquire_next_image(const lvk_swapchain& swapchain, uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT) const;
 	
 	
@@ -314,10 +314,10 @@ struct lvk_device {
 	// FRAMEBUFFER	---------- ---------- ---------- ----------
 	
 	
-	lvk_framebuffer create_framebuffer(const lvk_render_pass& render_pass, const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count);
+	lvk_framebuffer create_framebuffer(const VkRenderPass render_pass, const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count);
 	
 	template <std::size_t _iv_N> [[nodiscard, __gnu__::__always_inline__]]
-	constexpr lvk_framebuffer create_framebuffer(const lvk_render_pass& render_pass, const VkExtent2D extent, const VkImageView (&image_views)[_iv_N]) noexcept {
+	constexpr lvk_framebuffer create_framebuffer(const VkRenderPass render_pass, const VkExtent2D extent, const VkImageView (&image_views)[_iv_N]) noexcept {
 		return create_framebuffer(render_pass, extent, image_views, _iv_N);
 	}
 

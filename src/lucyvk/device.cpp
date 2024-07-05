@@ -376,7 +376,7 @@ VkResult lvk_device::imm_submit(std::function<void(const VkCommandBuffer)> funct
 // |--------------------------------------------------
 
 
-lvk_swapchain lvk_device::create_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format) {
+lvk_swapchain lvk_device::create_swapchain(VkRenderPass render_pass, uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format) {
 	const auto& capabilities = _swapchain_support_details.capabilities;
 	// _swapchain_support_details.capabilities;
 
@@ -410,7 +410,7 @@ lvk_swapchain lvk_device::create_swapchain(uint32_t width, uint32_t height, VkIm
 		}
 	}
 
-	swapchain_recreate(swapchain, width, height);
+	swapchain_recreate(swapchain, render_pass, width, height);
 	
 	deletion_queue.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, swapchain);
@@ -420,11 +420,19 @@ lvk_swapchain lvk_device::create_swapchain(uint32_t width, uint32_t height, VkIm
 }
 
 
-void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, uint32_t height) {
+void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass render_pass, uint32_t width, uint32_t height) {
+	static lvk_image depth_image;
+
 	if (swapchain._image_count) {
+		// lvk_destroy(_device, swapchain);
+		lvk_destroy(_device, swapchain._depth_image_view);
+
 		for (int i = 0; i < swapchain._image_count; i++) {
 			lvk_destroy(_device, swapchain._image_views[i]);
+			lvk_destroy(_device, swapchain._framebuffers[i]);
 		}
+		
+		lvk_destroy(allocator, depth_image, depth_image._allocation);
 	}
 
 	// if (swapchain._swapchain != VK_NULL_HANDLE) {
@@ -487,10 +495,12 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, ui
 		create_info.pQueueFamilyIndices = queue_family_indices;
 	}
 	
-	if (vkCreateSwapchainKHR(this->_device, &create_info, VK_NULL_HANDLE, &swapchain._swapchain) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create swapchain!");
+	auto result = vkCreateSwapchainKHR(this->_device, &create_info, VK_NULL_HANDLE, &swapchain._swapchain);
+	
+	if (result != VK_SUCCESS) {
+		throw std::runtime_error("failed to create swapchain!" + std::to_string((int)result));
 	}
-	dloggln("Created: ", swapchain, "\t Swapchain");
+	dloggln("Created: ", swapchain, "\t [Swapchain]");
 
 	// ImageViews
 	
@@ -499,8 +509,17 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, ui
 	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, _images);
 
 	swapchain._image_views.resize(swapchain._image_count);
+	swapchain._framebuffers.resize(swapchain._image_count);
+	
+	depth_image = create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
+	swapchain._depth_image_view = create_image_view(depth_image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+
 	for (size_t i = 0; i < swapchain._image_count; i++) {
 		swapchain._image_views[i] = create_image_view(_images[i], swapchain._surface_format.format, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+		swapchain._framebuffers[i] = create_framebuffer(render_pass, swapchain._extent, {
+			swapchain._image_views[i],
+			swapchain._depth_image_view
+		});
 	}
 	dloggln("Created: ", "[Swapchain ImageViews]");
 	
@@ -1109,7 +1128,7 @@ lvk_render_pass lvk_device::create_render_pass(const VkAttachmentDescription* at
 // |--------------------------------------------------
 
 
-lvk_framebuffer lvk_device::create_framebuffer(const lvk_render_pass& render_pass, const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count) {
+lvk_framebuffer lvk_device::create_framebuffer(const VkRenderPass render_pass, const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count) {
 	lvk_framebuffer framebuffer = {
 		._framebuffer = VK_NULL_HANDLE,
 		._extent = extent
@@ -1117,9 +1136,8 @@ lvk_framebuffer lvk_device::create_framebuffer(const lvk_render_pass& render_pas
 	
 	VkFramebufferCreateInfo create_info = {
 		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-		// .flags = ,
 		
-		.renderPass = render_pass._render_pass,
+		.renderPass = render_pass,
 		
 		.attachmentCount = image_views_count,
 		.pAttachments = image_views,

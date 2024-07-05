@@ -182,7 +182,8 @@ void lre::renderer::init(SDL_Window* window) {
 	glm::ivec2 size;
 	SDL_GetWindowSize(window, &size.x, &size.y);
 
-	swapchain = device.create_swapchain(size.x, size.y, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
+	render_pass = device.create_default_render_pass(VK_FORMAT_B8G8R8A8_UNORM);
+	swapchain = device.create_swapchain(render_pass, size.x, size.y, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
 		.format = VK_FORMAT_B8G8R8A8_UNORM,
 		.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 	});
@@ -195,15 +196,14 @@ void lre::renderer::init(SDL_Window* window) {
 	device.update_descriptor_set(descriptor_ubo, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
 
 
-	depth_image = device.create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
-	depth_image_view = device.create_image_view(depth_image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+	// depth_image = device.create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
+	// depth_image_view = device.create_image_view(depth_image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
 
-	render_pass = device.create_default_render_pass(swapchain._surface_format.format);
-	framebuffer_array.reserve(swapchain._image_count);
+	// framebuffer_array.reserve(swapchain._image_count);
 
-	for (int i = 0; i < swapchain._image_count; i++) {
-		framebuffer_array[i] = device.create_framebuffer(render_pass, swapchain._extent, { swapchain._image_views[i], depth_image_view._image_view });
-	}
+	// for (int i = 0; i < swapchain._image_count; i++) {
+	// 	framebuffer_array[i] = device.create_framebuffer(render_pass, swapchain._extent, { swapchain._image_views[i], depth_image_view._image_view });
+	// }
 
 	texture_pipeline_init();
 
@@ -270,7 +270,7 @@ void lre::renderer::record(uint32_t frame_number) {
 	cmd.set_viewport(0, viewport);
 	cmd.set_scissor(0, scissor);
 
-	cmd.begin_render_pass(render_pass, framebuffer_array[frame.image_index], swapchain, VK_SUBPASS_CONTENTS_INLINE, clear_value);
+	cmd.begin_render_pass(render_pass, swapchain._framebuffers[frame.image_index], swapchain, VK_SUBPASS_CONTENTS_INLINE, clear_value);
 	
 	cmd.bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 	
@@ -331,26 +331,30 @@ void lre::renderer::update(const bool& is_resized) {
 	if (is_resized) {
 		int width, height;
 		SDL_GetWindowSize(sdl_window, &width, &height);
-		device.swapchain_recreate(swapchain, width, height);
+		device.swapchain_recreate(swapchain, render_pass, width, height);
 		
-		dloggln(swapchain._extent.width, swapchain._extent.height);
+		// dloggln(swapchain._extent.width, swapchain._extent.height);
 		
-		depth_image = device.create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
-		depth_image_view = device.create_image_view(depth_image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+		// depth_image = device.create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
+		// depth_image_view = device.create_image_view(depth_image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
 		
-		for (int i = 0; i < swapchain._image_count; i++) {
-			framebuffer_array[i] = device.create_framebuffer(render_pass, swapchain._extent, { swapchain._image_views[i], depth_image_view });
-		}
+		// for (int i = 0; i < swapchain._image_count; i++) {
+		// 	framebuffer_array[i] = device.create_framebuffer(render_pass, swapchain._extent, { swapchain._image_views[i], depth_image_view });
+		// }
 		
 		// exit(0);
+
+		frame_number++;
+
+		return;
 	}
 
 	record(frame_number);
 
-	if (frame_number > 0) {
+	// if (frame_number > 0) {
 		// dloggln(frame_number);
-		submit(frame_number - 1);
-	}
+		submit(frame_number);
+	// }
 	
 	frame_number++;
 	
