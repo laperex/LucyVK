@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <optional>
 #include <deque>
 
@@ -52,13 +53,17 @@ struct lvk_device {
 		LVK_HANDLE_DEF(VmaAllocator, _allocator)
 	} allocator;
 
-	struct destroyer {
-		std::deque<std::function<void()>> deletion_queue;
-		
+	// typedef void(*dq_device_delete)(void*);
+	// typedef void(*dq_allocator_delete)(VmaAllocator);
 
-		void flush() const;
-		void pop();
-		void push(std::function<void()>&& function);
+	struct {
+		std::deque<std::pair<std::size_t, std::function<void(void*)>>> handle;
+
+		template <typename T>
+		void push(std::function<void(void*)> function) {
+			handle.push_back(std::make_pair(typeid(T).hash_code(), function));
+		}
+	// std::map<VkCommandPool, std::vector<VkCommandBuffer>> command_buffers_map;
 	} deletion_queue;
 
 
