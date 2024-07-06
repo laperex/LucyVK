@@ -177,7 +177,7 @@ void lre::renderer::init(SDL_Window* window) {
 	
 	mesh.indices = { 0,1,2, 2,3,0 };
 	
-	mesh.index_buffer = device.create_index_buffer(mesh.indices);
+	mesh.index_buffer = device.create_index_buffer_static(mesh.indices);
 	mesh.vertex_buffer = device.create_vertex_buffer(mesh.vertices);
 
 

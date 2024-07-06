@@ -21,7 +21,6 @@ void _push(lvk_destroyer* destroyer, T data) {
 		"Error, Invalid Type!"
 	);
 
-	destroyer->data_map[(void*)data] = destroyer->delete_queue.size();
 	destroyer->delete_queue.push_back({
 		.data = { data },
 		.type = typeid(T).hash_code()
@@ -42,14 +41,11 @@ void _push(lvk_destroyer* destroyer, T data, VmaAllocation allocation) {
 		.type = typeid(T).hash_code()
 	});
 
-	destroyer->data_map[(void*)data] = destroyer->delete_queue.size();
 }
 
 
 void lvk_destroyer::delete_insert(void* key) {
-	if (data_map.contains(key)) {
-		deleted_indices_set.insert(data_map[key]);
-	}
+	deleted_handles_set.insert(key);
 }
 
 
@@ -68,7 +64,6 @@ void lvk_destroyer::push(VkCommandBuffer* command_buffers, uint32_t command_buff
 	element.data.push_back(command_pool);
 	delete_queue.push_back(element);
 
-	data_map[(void*)command_buffers] = delete_queue.size();
 }
 
 
@@ -76,8 +71,16 @@ void lvk_destroyer::push(VkBuffer buffer, VmaAllocation allocation) {
 	_push(this, buffer, allocation);
 }
 
+void lvk_destroyer::push(const lvk_buffer& buffer) {
+	_push(this, buffer._buffer, buffer._allocation);
+}
+
 void lvk_destroyer::push(VkImage image, VmaAllocation allocation) {
 	_push(this, image, allocation);
+}
+
+void lvk_destroyer::push(const lvk_image& image) {
+	_push(this, image._image, image._allocation);
 }
 
 void lvk_destroyer::push(VkCommandPool command_pool) {

@@ -232,11 +232,15 @@ struct lvk_device {
 	
 	
 	lvk_buffer create_index_buffer(const VkDeviceSize size, const void* data = nullptr);
-	lvk_buffer create_index_buffer_static(const VkDeviceSize size, const void* data);
+	lvk_buffer create_index_buffer_static(const VkDeviceSize size, const void* data = nullptr);
 
 	template <typename T>
 	lvk_buffer create_index_buffer(const std::vector<T>& data) {
 		return create_index_buffer(data.size() * sizeof(T), data.data());
+	}
+	template <typename T>
+	lvk_buffer create_index_buffer_static(const std::vector<T>& data) {
+		return create_index_buffer_static(data.size() * sizeof(T), data.data());
 	}
 	
 	

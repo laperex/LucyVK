@@ -8,6 +8,7 @@
 #include <typeinfo>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include "lucyvk/handles.h"
 #include "vk_mem_alloc.h"
 
 
@@ -19,9 +20,9 @@ struct lvk_destroyer {
 
 	bool flush = false;
 
-	std::map<void*, uint32_t> data_map;
+	// std::map<void*, uint32_t> data_map;
 	std::deque<delete_element> delete_queue;
-	std::set<uint32_t> deleted_indices_set;
+	std::set<void*> deleted_handles_set;
 	
 	void push(VkCommandPool command_pool);
 	void push(VkPipelineLayout pipeline_layout);
@@ -37,8 +38,11 @@ struct lvk_destroyer {
 	void push(VkShaderModule shader_module);
 	void push(VkSampler sampler);
 	void push(VkCommandBuffer* command_buffers, uint32_t command_buffer_count, VkCommandPool command_pool);
+
 	void push(VkBuffer buffer, VmaAllocation allocation);
+	void push(const lvk_buffer& buffer);
 	void push(VkImage buffer, VmaAllocation allocation);
+	void push(const lvk_image& image);
 
 	void delete_insert(void* key);
 };
