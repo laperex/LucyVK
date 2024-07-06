@@ -79,10 +79,13 @@ struct lvk_device {
 	void destroy(VkShaderModule shader_module);
 	void destroy(VkSampler sampler);
 	
-	void destroy(VkCommandBuffer command_buffer, VkCommandPool command_pool);
+	// void destroy(VkCommandBuffer command_buffer, VkCommandPool command_pool);
 	void destroy(VkCommandBuffer* command_buffer, uint32_t command_buffer_count, VkCommandPool command_pool);
-	void destroy(VkDescriptorSet descriptor_set, VkDescriptorPool descriptor_pool);
-	void destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool);
+	// void destroy(VkDescriptorSet descriptor_set, VkDescriptorPool descriptor_pool);
+	// void destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool);
+
+	void destroy(VkBuffer buffer, VmaAllocation allocation);
+	void destroy(VkImage image, VmaAllocation allocation);
 
 
 	// SYNCHRONIZATION 		---------- ---------- ---------- ----------
@@ -118,7 +121,7 @@ struct lvk_device {
 	lvk_command_pool create_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
 	void reset_command_pool(const lvk_command_pool& command_pool);
 
-	lvk_command_buffer create_command_buffer_unique(const lvk_command_pool& command_pool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	lvk_command_buffer create_command_buffer_unique(const VkCommandPool command_pool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	std::vector<lvk_command_buffer> create_command_buffers(const lvk_command_pool& command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	
 	// lvk_immediate_command create_immediate_command();
