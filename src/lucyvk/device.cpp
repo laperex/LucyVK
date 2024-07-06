@@ -55,6 +55,24 @@ VkResult lvk_device::present(const VkPresentInfoKHR present_info) const {
 	return vkQueuePresentKHR(_queue.present, &present_info);
 }
 
+VkResult lvk_device::present(const uint32_t image_index, const VkSwapchainKHR* swapchains, const uint32_t swapchain_count, const VkSemaphore* semaphores, const uint32_t semaphore_count) const {
+	return present({
+		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+		
+		.waitSemaphoreCount = semaphore_count,
+		.pWaitSemaphores = semaphores,
+		
+		.swapchainCount = swapchain_count,
+		.pSwapchains = swapchains,
+
+		.pImageIndices = &image_index,
+	});
+}
+
+VkResult lvk_device::present(const uint32_t image_index, const VkSwapchainKHR swapchain, const VkSemaphore semaphore) const {
+	return present(image_index, &swapchain, 1, &semaphore, 1);
+}
+
 void lvk_device::destroy_device() {
 	for (auto function = deletion_queue.handle.rbegin(); function != deletion_queue.handle.rend(); function++) {
 		if (function->first == typeid(VkDevice).hash_code()) {

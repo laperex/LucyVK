@@ -52,9 +52,10 @@ struct lvk_device {
 	struct {
 		LVK_HANDLE_DEF(VmaAllocator, _allocator)
 	} allocator;
-
-	// typedef void(*dq_device_delete)(void*);
-	// typedef void(*dq_allocator_delete)(VmaAllocator);
+	
+	struct element {
+		
+	};
 
 	struct {
 		std::deque<std::pair<std::size_t, std::function<void(void*)>>> handle;
@@ -63,7 +64,7 @@ struct lvk_device {
 		void push(std::function<void(void*)> function) {
 			handle.push_back(std::make_pair(typeid(T).hash_code(), function));
 		}
-	// std::map<VkCommandPool, std::vector<VkCommandBuffer>> command_buffers_map;
+		// std::map<VkCommandPool, std::vector<VkCommandBuffer>> command_buffers_map;
 	} deletion_queue;
 
 
@@ -358,15 +359,16 @@ struct lvk_device {
 	// VkResult submit(const VkSubmitInfo* submit_info, uint32_t submit_count, const VkFence fence, uint64_t timeout = LVK_TIMEOUT) const;
 
 	VkResult submit2(const VkSubmitInfo2* submit_info2, const uint32_t submit_info2_count, const VkFence fence) const;
-	
 	template <std::size_t _si2_N> [[nodiscard, __gnu__::__always_inline__]]
 	constexpr VkResult submit2(const VkSubmitInfo2 (&submit_info2)[_si2_N], const lvk_fence* fence) noexcept {
 		return submit2(submit_info2, _si2_N, fence);
 	}
 
 	VkResult present(const VkPresentInfoKHR present_info) const;
-
-
-
-	// VkSemaphore* create_semaphore();
+	VkResult present(const uint32_t image_index, const VkSwapchainKHR* swapchains, const uint32_t swapchain_count, const VkSemaphore* semaphores, const uint32_t semaphore_count) const;
+	VkResult present(const uint32_t image_index, const VkSwapchainKHR swapchain, const VkSemaphore semaphore) const;
+	template <std::size_t _skhr_N, std::size_t _s_N> [[nodiscard, __gnu__::__always_inline__]]
+	constexpr VkResult present(const uint32_t image_index, const VkSwapchainKHR (&swapchains)[_skhr_N], const VkSemaphore (&semaphores)[_s_N]) const noexcept {
+		return present(image_index, swapchains, _skhr_N, semaphores, _s_N);
+	}
 };

@@ -52,19 +52,16 @@ namespace lre {
 		lvk_descriptor_set descriptor_ubo;
 		lvk_descriptor_set_layout descriptor_set_layout;
 		
-		lvk_image load_image;
-		lvk_image_view load_image_view;
+		// lvk_image load_image;
+		// lvk_image_view load_image_view;
 
 
-		lvk_sampler sampler;
+		// lvk_sampler sampler;
 
 
 		lvk_render_pass render_pass;
 		
 		lvk_buffer mvp_uniform_buffer;
-		
-		lvk_image_view compute_image_view;
-		// lvk_image compute_image;
 		
 		Mesh mesh;
 		
@@ -96,8 +93,8 @@ namespace lre {
 		void init(SDL_Window* window);
 
 
-		void record(uint32_t frame_number);
-		void submit(uint32_t frame_number);
+		void record(lre_frame& frame);
+		void submit(const lre_frame& frame);
 
 		void begin();
 		void end();

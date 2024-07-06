@@ -27,11 +27,19 @@ struct lvk_command_buffer {
 	constexpr void set_viewport(const uint32_t first, const VkViewport (&viewports)[_v_N]) const noexcept {
 		set_viewport(first, viewports, _v_N);
 	}
+	template <std::size_t _v_N>  [[__gnu__::__always_inline__]]
+	constexpr void set_viewport(const VkViewport (&viewports)[_v_N]) const noexcept {
+		set_viewport(0, viewports, _v_N);
+	}
 
 	void set_scissor(const uint32_t first, const VkRect2D* scissors, const uint32_t count) const;
 	template <std::size_t _v_N>  [[__gnu__::__always_inline__]]
 	constexpr void set_scissor(const uint32_t first, const VkRect2D (&scissors)[_v_N]) const noexcept {
 		set_scissor(first, scissors, _v_N);
+	}
+	template <std::size_t _v_N>  [[__gnu__::__always_inline__]]
+	constexpr void set_scissor(const VkRect2D (&scissors)[_v_N]) const noexcept {
+		set_scissor(0, scissors, _v_N);
 	}
 
 	void bind_pipeline(const VkPipelineBindPoint pipeline_bind_point, const VkPipeline pipeline) const;

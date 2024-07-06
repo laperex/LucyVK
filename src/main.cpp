@@ -3,8 +3,12 @@
 #include <stdio.h>
 
 
-// TODO: dynamic viewport
+// // TODO: dynamic viewport
 // TODO: renderer restructuring
+	// TODO: semaphore unsignaling
+	// TODO: mesh loading
+	// TODO: material management
+	// TODO: shader management
 // TODO: render_pass restructuring
 // // TODO: Implement Better Destruction -
 // TODO: Implement Image Loading

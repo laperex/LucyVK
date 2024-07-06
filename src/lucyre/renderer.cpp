@@ -47,6 +47,8 @@ lvk_image lre::renderer::load_image_from_file(const char* filename) {
 	};
 
 	lvk_buffer staging_buffer = this->device.create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, image_size, image_data);
+	
+	// device
 
 	lvk_image image = this->device.create_image(image_format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, image_extent, VK_IMAGE_TYPE_2D);
 
@@ -190,36 +192,20 @@ void lre::renderer::init(SDL_Window* window) {
 
 	descriptor_set_init();
 
-
-
-	// binding for uniform buffer
-	device.update_descriptor_set(descriptor_ubo, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
-
-
-	// depth_image = device.create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
-	// depth_image_view = device.create_image_view(depth_image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
-
-	// framebuffer_array.reserve(swapchain._image_count);
-
-	// for (int i = 0; i < swapchain._image_count; i++) {
-	// 	framebuffer_array[i] = device.create_framebuffer(render_pass, swapchain._extent, { swapchain._image_views[i], depth_image_view._image_view });
-	// }
-
 	texture_pipeline_init();
 
-	// immediate_command = device.create_immediate_command();
-
-	load_image = load_image_from_file("/home/laperex/Programming/C++/LucyVK/assets/buff einstein.jpg");
-
-	load_image_view = device.create_image_view(load_image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
-	sampler = device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+	lvk_image load_image = load_image_from_file("/home/laperex/Programming/C++/LucyVK/assets/buff einstein.jpg");
+	lvk_image_view load_image_view = device.create_image_view(load_image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+	lvk_sampler sampler = device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 
 	device.update_descriptor_set(descriptor_ubo, 2, &load_image_view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);
+
+	device.update_descriptor_set(descriptor_ubo, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
 }
 
-void lre::renderer::record(uint32_t frame_number) {
-	auto& frame = frame_array[frame_number % FRAMES_IN_FLIGHT];
-	auto& cmd = frame.command_buffer;
+void lre::renderer::record(lre_frame& frame) {
+	// auto& frame = frame_array[frame_number % FRAMES_IN_FLIGHT];
+	const auto& cmd = frame.command_buffer;
 
 	// swapchain.acquire_next_image(&frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE);
 	device.swapchain_acquire_next_image(swapchain, &frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE);
@@ -249,11 +235,14 @@ void lre::renderer::record(uint32_t frame_number) {
 	// draw.extent = *(const VkExtent2D*)&draw.image._extent;
 
 	glm::vec3 cam_pos = { 0.f, 0.f, -10 };
+	
+	static uint32_t frame_count = 0;
+	frame_count++;
 
 	mvp_matrix mvp = {
 		.projection = glm::perspective(glm::radians(70.f), float(swapchain._extent.width) / float(swapchain._extent.height), 0.1f, 200.0f),
 		.view = glm::translate(glm::mat4(1.f), cam_pos),
-		.model = glm::rotate(glm::mat4(1.0f), glm::radians(frame_number * 0.4f), glm::vec3(0, 1, 0)),
+		.model = glm::rotate(glm::mat4(1.0f), glm::radians(frame_count * 0.4f), glm::vec3(0, 1, 0)),
 
 		// .model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0, 1, 0)),
 		.color = { 0, 1, 0, 1},
@@ -263,12 +252,11 @@ void lre::renderer::record(uint32_t frame_number) {
 
 	device.upload(mvp_uniform_buffer, mvp);
 
-
 	cmd.reset();
 	cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 	
-	cmd.set_viewport(0, viewport);
-	cmd.set_scissor(0, scissor);
+	cmd.set_viewport(viewport);
+	cmd.set_scissor(scissor);
 
 	cmd.begin_render_pass(render_pass, swapchain._framebuffers[frame.image_index], swapchain, VK_SUBPASS_CONTENTS_INLINE, clear_value);
 	
@@ -287,9 +275,7 @@ void lre::renderer::record(uint32_t frame_number) {
 	cmd.end();
 }
 
-void lre::renderer::submit(uint32_t frame_number) {
-	auto& frame = frame_array[frame_number % FRAMES_IN_FLIGHT];
-
+void lre::renderer::submit(const lre_frame& frame) {
 	VkPipelineStageFlags wait_dest = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 	VkSubmitInfo submit_info = {
@@ -312,62 +298,35 @@ void lre::renderer::submit(uint32_t frame_number) {
 	vkWaitForFences(device._device, 1, &frame.render_fence._fence, false, LVK_TIMEOUT);
 	vkResetFences(device._device, 1, &frame.render_fence._fence);
 
-	device.present({
-		.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-		
-		.waitSemaphoreCount = 1,
-		.pWaitSemaphores = &frame.render_semaphore._semaphore,
-		
-		.swapchainCount = 1,
-		.pSwapchains = &swapchain._swapchain,
-		
-		.pImageIndices = &frame.image_index,
-	});
+	device.present(frame.image_index, swapchain, frame.render_semaphore);
 }
 
 void lre::renderer::update(const bool& is_resized) {
 	static uint32_t frame_number = 0;
+
+	if (frame_number > 0) {
+		submit(frame_array[(frame_number - 1) % FRAMES_IN_FLIGHT]);
+	}
 	
 	if (is_resized) {
 		int width, height;
 		SDL_GetWindowSize(sdl_window, &width, &height);
 		device.swapchain_recreate(swapchain, render_pass, width, height);
 		
-		// dloggln(swapchain._extent.width, swapchain._extent.height);
-		
-		// depth_image = device.create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
-		// depth_image_view = device.create_image_view(depth_image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
-		
-		// for (int i = 0; i < swapchain._image_count; i++) {
-		// 	framebuffer_array[i] = device.create_framebuffer(render_pass, swapchain._extent, { swapchain._image_views[i], depth_image_view });
-		// }
-		
-		// exit(0);
-
-		frame_number++;
-
+		frame_number = 0;
 		return;
 	}
 
-	record(frame_number);
+	record(frame_array[frame_number % FRAMES_IN_FLIGHT]);
 
-	// if (frame_number > 0) {
-		// dloggln(frame_number);
-		submit(frame_number);
-	// }
-	
 	frame_number++;
-	
+
 	// if (frame_number == 2)
 	// 	exit(0);
 }
 
 void lre::renderer::destroy() {
 	device.wait_idle();
-
-	// deletion_queue.flush(device._device);
-	
-	// vkDestroySemaphore(device._device, sema)
 
 	device.destroy_device();
 	instance.destroy();
