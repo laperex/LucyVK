@@ -1,6 +1,7 @@
 #include "destroyer.h"
 #include "lucyio/logger.h"
 #include <cassert>
+#include <cstring>
 
 template <typename T>
 void _push(lvk_destroyer* destroyer, T data) {
@@ -57,13 +58,10 @@ void lvk_destroyer::push(VkCommandBuffer* command_buffers, uint32_t command_buff
 		.type = typeid(VkCommandBuffer).hash_code()
 	};
 
-	for (int i = 0; i < command_buffer_count; i++) {
-		element.data.push_back(command_buffers[i]);
-	}
+	std::memcpy(element.data.data(), command_buffers, command_buffer_count * sizeof(VkCommandBuffer));
+	element.data[command_buffer_count] = command_pool;
 
-	element.data.push_back(command_pool);
 	delete_queue.push_back(element);
-
 }
 
 
