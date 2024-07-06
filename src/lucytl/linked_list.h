@@ -31,6 +31,8 @@ namespace ltl {
 			} else {
 				begin = _node->next;
 			}
+			
+			size--;
 
 			delete _node;
 		}

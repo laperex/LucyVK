@@ -22,7 +22,7 @@ void _push(lvk_destroyer* destroyer, T data) {
 		"Error, Invalid Type!"
 	);
 
-	destroyer->data_map[data] = destroyer->delete_queue.insert(destroyer->delete_queue.end(), {
+	destroyer->data_map[data] = destroyer->delete_queue.push_back({
 		.data = { data },
 		.type = typeid(T).hash_code()
 	});
@@ -37,7 +37,7 @@ void _push(lvk_destroyer* destroyer, T data, VmaAllocation allocation) {
 		"Error, Invalid Type!"
 	);
 
-	destroyer->data_map[data] = destroyer->delete_queue.insert(destroyer->delete_queue.end(), {
+	destroyer->data_map[data] = destroyer->delete_queue.push_back({
 		.data = { data, allocation },
 		.type = typeid(T).hash_code()
 	});
@@ -45,8 +45,11 @@ void _push(lvk_destroyer* destroyer, T data, VmaAllocation allocation) {
 
 
 void lvk_destroyer::delete_insert(void* key) {
+	if (flush) return;
+	
 	deleted_handles_set.insert(key);
-	// delete_queue.erase(data_map[key]);
+	delete_queue.erase(data_map[key]);
+	data_map[key]->data.type = 0;
 	// delete_queue.erase()
 }
 
@@ -62,7 +65,7 @@ void lvk_destroyer::push(VkCommandBuffer* command_buffers, uint32_t command_buff
 	std::memcpy(element.data.data(), command_buffers, command_buffer_count * sizeof(VkCommandBuffer));
 	element.data[command_buffer_count] = command_pool;
 
-	data_map[command_buffers] = delete_queue.insert(delete_queue.end(), element);
+	data_map[command_buffers[0]] = delete_queue.push_back(element);
 }
 
 

@@ -11,7 +11,7 @@
 #include <vulkan/vulkan_core.h>
 #include "lucyvk/handles.h"
 #include "vk_mem_alloc.h"
-// #include "lucytl/link
+#include "lucytl/linked_list.h"
 
 
 struct lvk_destroyer {
@@ -22,10 +22,10 @@ struct lvk_destroyer {
 
 	bool flush = false;
 
-	std::map<void*, std::list<delete_element>::iterator> data_map;
-	std::list<delete_element> delete_queue;
+	std::map<void*, ltl::linked_list<delete_element>::node*> data_map;
+	ltl::linked_list<delete_element> delete_queue;
 	std::set<void*> deleted_handles_set;
-	
+
 	void push(VkCommandPool command_pool);
 	void push(VkPipelineLayout pipeline_layout);
 	void push(VkPipeline pipeline);
