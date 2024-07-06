@@ -5,6 +5,7 @@
 #include <deque>
 
 #include "lucyvk/define.h"
+#include "lucyvk/destroyer.h"
 #include "lucyvk/handles.h"
 // #include "lucyvk/types.h"
 #include "lucyvk/command.h"
@@ -52,21 +53,8 @@ struct lvk_device {
 	struct {
 		LVK_HANDLE_DEF(VmaAllocator, _allocator)
 	} allocator;
-	
-	struct element {
-		
-	};
 
-	struct {
-		std::deque<std::pair<std::size_t, std::function<void(void*)>>> handle;
-
-		template <typename T>
-		void push(std::function<void(void*)> function) {
-			handle.push_back(std::make_pair(typeid(T).hash_code(), function));
-		}
-		// std::map<VkCommandPool, std::vector<VkCommandBuffer>> command_buffers_map;
-	} deletion_queue;
-
+	lvk_destroyer destroyer;
 
 	VkSurfaceKHR _surfaceKHR;
 
@@ -74,6 +62,27 @@ struct lvk_device {
 
 
 	// ~lvk_device();
+	
+	// DESTROYER 		---------- ---------- ---------- ----------
+	
+	void destroy(VkCommandPool command_pool);
+	void destroy(VkPipelineLayout pipeline_layout);
+	void destroy(VkPipeline pipeline);
+	void destroy(VkSwapchainKHR swapchain);
+	void destroy(VkSemaphore semaphore);
+	void destroy(VkFence fence);
+	void destroy(VkDescriptorSetLayout descriptor_set_layout);
+	void destroy(VkDescriptorPool descriptor_pool);
+	void destroy(VkFramebuffer framebuffer);
+	void destroy(VkRenderPass render_pass);
+	void destroy(VkImageView image_view);
+	void destroy(VkShaderModule shader_module);
+	void destroy(VkSampler sampler);
+	
+	void destroy(VkCommandBuffer command_buffer, VkCommandPool command_pool);
+	void destroy(VkCommandBuffer* command_buffer, uint32_t command_buffer_count, VkCommandPool command_pool);
+	void destroy(VkDescriptorSet descriptor_set, VkDescriptorPool descriptor_pool);
+	void destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool);
 
 
 	// SYNCHRONIZATION 		---------- ---------- ---------- ----------

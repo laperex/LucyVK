@@ -73,46 +73,168 @@ VkResult lvk_device::present(const uint32_t image_index, const VkSwapchainKHR sw
 	return present(image_index, &swapchain, 1, &semaphore, 1);
 }
 
+
+void lvk_device::destroy(VkCommandPool command_pool) {
+	vkDestroyCommandPool(_device, command_pool, VK_NULL_HANDLE);
+	dloggln("Destroyed: ", command_pool, "\t [CommandPool]");
+}
+
+
+void lvk_device::destroy(VkPipelineLayout pipeline_layout) {
+	vkDestroyPipelineLayout(_device, pipeline_layout, VK_NULL_HANDLE);
+	dloggln("Destroyed: ", pipeline_layout, "\t [PipelineLayout]");
+}
+
+
+void lvk_device::destroy(VkPipeline pipeline) {
+	vkDestroyPipeline(_device, pipeline, VK_NULL_HANDLE);
+	dloggln("Destroyed: ", pipeline, "\t [Pipeline]");
+}
+
+
+void lvk_device::destroy(VkSwapchainKHR swapchain) {
+	vkDestroySwapchainKHR(_device, swapchain, VK_NULL_HANDLE);
+	dloggln("Destroyed: ", swapchain, "\t [SwapchainKHR]");
+}
+
+
+void lvk_device::destroy(VkSemaphore semaphore) {
+	vkDestroySemaphore(_device, semaphore, VK_NULL_HANDLE);
+	dloggln("Destroyed: ", semaphore, "\t [Semaphore]");
+}
+
+
+void lvk_device::destroy(VkFence fence) {
+	vkDestroyFence(_device, fence, VK_NULL_HANDLE);
+	dloggln("Destroyed: ", fence, "\t [Fence]");
+}
+
+
+void lvk_device::destroy(VkDescriptorSetLayout descriptor_set_layout) {
+	vkDestroyDescriptorSetLayout(_device, descriptor_set_layout, VK_NULL_HANDLE);
+	dloggln("Destroyed: ", descriptor_set_layout, "\t [DescriptorSetLayout]");
+}
+
+
+void lvk_device::destroy(VkDescriptorPool descriptor_pool) {
+	vkDestroyDescriptorPool(_device, descriptor_pool, VK_NULL_HANDLE);
+	dloggln("Destroyed: ", descriptor_pool, "\t [DescriptorPool]");
+}
+
+
+void lvk_device::destroy(VkFramebuffer framebuffer) {
+	vkDestroyFramebuffer(_device, framebuffer, VK_NULL_HANDLE);
+	dloggln("Destroyed: ", framebuffer, "\t [Framebuffer]");
+}
+
+
+void lvk_device::destroy(VkRenderPass render_pass) {
+	vkDestroyRenderPass(_device, render_pass, VK_NULL_HANDLE);
+	dloggln("Destroyed: ", render_pass, "\t [RenderPass]");
+}
+
+
+void lvk_device::destroy(VkImageView image_view) {
+	if (image_view == VK_NULL_HANDLE) { return; }
+
+	vkDestroyImageView(_device, image_view, VK_NULL_HANDLE);
+	dloggln("Destroyed: ", image_view, "\t [ImageView]");
+}
+
+
+void lvk_device::destroy(VkShaderModule shader_module) {
+	vkDestroyShaderModule(_device, shader_module, VK_NULL_HANDLE);
+	dloggln("Destroyed: ", shader_module, "\t [ShaderModule]");
+}
+
+
+void lvk_device::destroy(VkSampler sampler) {
+	vkDestroySampler(_device, sampler, VK_NULL_HANDLE);
+	dloggln("Destroyed: ", sampler, "\t [Sampler]");
+}
+
+
+void lvk_device::destroy(VkCommandBuffer command_buffer, VkCommandPool command_pool) {
+	vkFreeCommandBuffers(_device, command_pool, 1, &command_buffer);
+	dloggln("Destroyed: ", command_buffer, "\t [CommandBuffer]");
+}
+
+void lvk_device::destroy(VkCommandBuffer* command_buffer, uint32_t command_buffer_count, VkCommandPool command_pool) {
+	assert(command_buffer_count);
+
+	vkFreeCommandBuffers(_device, command_pool, command_buffer_count, command_buffer);
+	dloggln("Destroyed: ", command_buffer[0], "\t [CommandBuffer]");
+}
+
+
+void lvk_device::destroy(VkDescriptorSet descriptor_set, VkDescriptorPool descriptor_pool) {
+	vkFreeDescriptorSets(_device, descriptor_pool, 1, &descriptor_set);
+	dloggln("Destroyed: ", descriptor_set, "\t [DescriptionSet]");
+}
+
+void lvk_device::destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool) {
+	assert(descriptor_set_count);
+
+	vkFreeDescriptorSets(_device, descriptor_pool, descriptor_set_count, descriptor_set);
+	dloggln("Destroyed: ", descriptor_set[0], "\t [DescriptionSet]");
+}
+
 void lvk_device::destroy_device() {
-	for (auto function = deletion_queue.handle.rbegin(); function != deletion_queue.handle.rend(); function++) {
-		if (function->first == typeid(VkDevice).hash_code()) {
-			function->second(_device);
+	uint32_t idx = 0;
+	for (const auto& element: destroyer.delete_queue) {
+		if (destroyer.deleted_indices_set.contains(idx)) continue;
+
+		if (element.type == typeid(VkCommandPool).hash_code()) {
+			destroy(static_cast<VkCommandPool>(element.data[0]));
 		}
-		
-		if (function->first == typeid(VmaAllocator).hash_code()) {
-			function->second(allocator);
+		if (element.type == typeid(VkPipelineLayout).hash_code()) {
+			destroy(static_cast<VkPipelineLayout>(element.data[0]));
+		}
+		if (element.type == typeid(VkPipeline).hash_code()) {
+			destroy(static_cast<VkPipeline>(element.data[0]));
+		}
+		if (element.type == typeid(VkSwapchainKHR).hash_code()) {
+			destroy(static_cast<VkSwapchainKHR>(element.data[0]));
+		}
+		if (element.type == typeid(VkSemaphore).hash_code()) {
+			destroy(static_cast<VkSemaphore>(element.data[0]));
+		}
+		if (element.type == typeid(VkFence).hash_code()) {
+			destroy(static_cast<VkFence>(element.data[0]));
+		}
+		if (element.type == typeid(VkDescriptorSetLayout).hash_code()) {
+			destroy(static_cast<VkDescriptorSetLayout>(element.data[0]));
+		}
+		if (element.type == typeid(VkDescriptorPool).hash_code()) {
+			destroy(static_cast<VkDescriptorPool>(element.data[0]));
+		}
+		if (element.type == typeid(VkFramebuffer).hash_code()) {
+			destroy(static_cast<VkFramebuffer>(element.data[0]));
+		}
+		if (element.type == typeid(VkRenderPass).hash_code()) {
+			destroy(static_cast<VkRenderPass>(element.data[0]));
+		}
+		if (element.type == typeid(VkImageView).hash_code()) {
+			destroy(static_cast<VkImageView>(element.data[0]));
+		}
+		if (element.type == typeid(VkShaderModule).hash_code()) {
+			destroy(static_cast<VkShaderModule>(element.data[0]));
+		}
+		if (element.type == typeid(VkSampler).hash_code()) {
+			destroy(static_cast<VkSampler>(element.data[0]));
 		}
 	}
 
 	vmaDestroyAllocator(allocator);
 	dloggln("Allocator Destroyed");
 
-	lvk_destroy(_device);
+	vkDestroyDevice(_device, VK_NULL_HANDLE);
+	dloggln("Destroyed: ", _device, "\t [LogicalDevice]");
 }
 
-// lvk_device::~lvk_device() {
-// 	dloggln("-- Device Destructor");
-// }
-
-// void lvk_device::allocate_command_buffers(const VkCommandPool command_pool, VkCommandBufferLevel level, lvk_command_buffer* command_buffers, uint32_t command_buffers_count) {
-// 	// lvk_command_buffer command_buffer = {
-// 	// 	._command_buffer = VK_NULL_HANDLE,
-// 	// };
-
-// 	VkCommandBufferAllocateInfo allocate_info = {
-// 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-
-// 		.commandPool = command_pool,
-// 		.level = level,
-// 		.commandBufferCount = 1,
-// 	};
-
-// 	if (vkAllocateCommandBuffers(device->_device, &allocate_info, &command_buffer._command_buffer) != VK_SUCCESS) {
-// 		throw std::runtime_error("command buffer allocation failed!");
-// 	}
-// 	dloggln("Command Buffer Allocated: ", &command_buffer._command_buffer);
-// }
-
+void lvk_device::destroy(VkCommandPool command_pool) {
+	
+}
 
 
 // |--------------------------------------------------
@@ -136,7 +258,7 @@ lvk_semaphore lvk_device::create_semaphore() {
 	}
 	dloggln("Created: ", semaphore._semaphore, "\t [Semaphore]");
 	
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, semaphore);
 	});
 
@@ -165,7 +287,7 @@ lvk_fence lvk_device::create_fence(VkFenceCreateFlags flags) {
 	}
 	dloggln("Created: ", fence._fence, "\t [Fence]");
 	
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, fence._fence);
 	});
 	
@@ -226,7 +348,7 @@ lvk_command_pool lvk_device::create_command_pool(uint32_t queue_family_index, Vk
     }
 	dloggln("Created: ", command_pool._command_pool, "\t [CommandPool]");
 	
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, command_pool);
 	});
 
@@ -256,7 +378,7 @@ lvk_command_buffer lvk_device::create_command_buffer_unique(const lvk_command_po
 	dloggln("Allocated: ", command_buffer._command_buffer, "\t [CommandBuffer]");
 	
 	
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, command_buffer, command_pool);
 	});
 	
@@ -279,7 +401,7 @@ std::vector<lvk_command_buffer> lvk_device::create_command_buffers(const lvk_com
 	}
 	dloggln("Allocated: ", command_buffer_array[0]._command_buffer, "\t [CommandBufferArray]");
 	
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, (VkCommandBuffer*)command_buffer_array.data()->_command_buffer, command_buffer_count, command_pool);
 	});
 	
@@ -332,7 +454,7 @@ VkResult lvk_device::imm_submit(std::function<void(const VkCommandBuffer)> funct
 			throw std::runtime_error("fence creation failed");
 		}
 		
-		deletion_queue.push<VkDevice>([=](void* _){
+		destroyer.push<VkDevice>([=](void* _){
 			lvk_destroy((VkDevice)_, immediate_command._fence);
 			lvk_destroy((VkDevice)_, immediate_command._command_buffer, immediate_command._command_pool);
 			lvk_destroy((VkDevice)_, immediate_command._command_pool);
@@ -430,7 +552,7 @@ lvk_swapchain lvk_device::create_swapchain(VkRenderPass render_pass, uint32_t wi
 
 	swapchain_recreate(swapchain, render_pass, width, height);
 	
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, swapchain);
 	});
 
@@ -574,7 +696,7 @@ lvk_pipeline_layout lvk_device::create_pipeline_layout(const VkPushConstantRange
 	}
 	dloggln("Created: ", pipeline_layout._pipeline_layout, "\t [Pipeline Layout]");
 	
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, pipeline_layout);
 	});
 	
@@ -604,7 +726,7 @@ lvk_shader_module lvk_device::create_shader_module(const char* filename) {
 	}
 	dloggln("Created: ", shader_module._shader_module, "\t [Shader Module] - ", filename);
 	
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, shader_module._shader_module);
 	});
 
@@ -649,7 +771,7 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipelin
 	}
 	dloggln("Created: ", pipeline._pipeline, "\t [Graphics Pipeline]");
 
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, pipeline._pipeline);
 	});
 	
@@ -673,7 +795,7 @@ lvk_pipeline lvk_device::create_compute_pipeline(const VkPipelineLayout pipeline
 	}
 	dloggln("Created: ", pipeline._pipeline, "\t [Compute Pipeline]");
 	
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, pipeline);
 	});
 	
@@ -734,7 +856,7 @@ lvk_buffer lvk_device::create_buffer(const VkBufferUsageFlags buffer_usage, VmaM
 		upload(buffer, size, data);
 	}
 
-	deletion_queue.push<VmaAllocator>([=](void* _){
+	destroyer.push<VmaAllocator>([=](void* _){
 		lvk_destroy((VmaAllocator)_, buffer, buffer._allocation);
 	});
 
@@ -853,7 +975,7 @@ lvk_image lvk_device::create_image(VkFormat format, VkImageUsageFlags usage, Vma
 	}
 	dloggln("Created: ", image._image, "\t [Image]");
 
-	deletion_queue.push<VmaAllocator>([=](void* _){
+	destroyer.push<VmaAllocator>([=](void* _){
 		lvk_destroy((VmaAllocator)_, image._image, image._allocation);
 	});
 
@@ -880,7 +1002,7 @@ lvk_image_view lvk_device::create_image_view(const VkImage image, VkFormat forma
 	}
 	dloggln("Created: ", image_view._image_view, "\t [ImageView]");
 
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, image_view);
 	});
 
@@ -914,7 +1036,7 @@ lvk_descriptor_set_layout lvk_device::create_descriptor_set_layout(const VkDescr
 	}
 	dloggln("Created: ", descriptor_set_layout._descriptor_set_layout, "\t [DescriptorSetLayout]");
 
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, descriptor_set_layout._descriptor_set_layout);
 	});
 
@@ -1013,7 +1135,7 @@ lvk_descriptor_pool lvk_device::create_descriptor_pool(const uint32_t max_descri
 	}
 	dloggln("Created: ", descriptor_pool, "\t [DescriptorPool]");
 
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, descriptor_pool._descriptor_pool);
 	});
 
@@ -1133,7 +1255,7 @@ lvk_render_pass lvk_device::create_render_pass(const VkAttachmentDescription* at
 	}
 	dloggln("Created: ", render_pass, "\t [RenderPass]");
 	
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, render_pass._render_pass);
 	});
 
@@ -1171,7 +1293,7 @@ lvk_framebuffer lvk_device::create_framebuffer(const VkRenderPass render_pass, c
 	}
 	dloggln("Created: ", framebuffer, "\t [Framebuffer]");
 	
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, framebuffer._framebuffer);
 	});
 
@@ -1205,7 +1327,7 @@ lvk_sampler lvk_device::create_sampler(VkFilter min_filter, VkFilter mag_filter,
 	}
 	dloggln("Created: ", sampler, "\t [Sampler]");
 	
-	deletion_queue.push<VkDevice>([=](void* _){
+	destroyer.push<VkDevice>([=](void* _){
 		lvk_destroy((VkDevice)_, sampler._sampler);
 	});
 

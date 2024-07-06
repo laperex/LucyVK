@@ -1,6 +1,8 @@
 // #include "lucy/engine.h"
+#include "lucyio/logger.h"
 #include <lucy/engine.h>
 #include <stdio.h>
+#include <vulkan/vulkan_core.h>
 
 
 // // TODO: dynamic viewport
@@ -17,7 +19,18 @@
 
 int main(int count, char** args) {
 	freopen("output.log", "w", stdout);
-	// freopen("output.log", "a", stderr);
+	
+	// std::vector<void*> data = {};
+	
+	// VkBuffer bffer;
+	// VkSwapchainKHR swakp;
+	
+	// data.push_back(swakp);
+	// data.push_back(bffer);
+	
+	// dloggln(sizeof(VkBuffer));
+	// exit(0);
+	// VkBuffer
 
 	lucy::engine::initialize();
 	lucy::engine::mainloop();

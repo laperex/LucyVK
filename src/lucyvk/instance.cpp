@@ -221,7 +221,7 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 			._allocator = VK_NULL_HANDLE
 		},
 
-		.deletion_queue = {},
+		.destroyer = {},
 
 		._surfaceKHR = _surfaceKHR,
 	};
