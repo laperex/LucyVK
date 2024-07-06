@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <vulkan/vulkan_core.h>
 
+#include "lucytl/linked_list.h"
+
 
 // // TODO: dynamic viewport
 // TODO: renderer restructuring
@@ -20,19 +22,27 @@
 int main(int count, char** args) {
 	freopen("output.log", "w", stdout);
 	
-	// std::vector<void*> data = {};
+	ltl::linked_list<int> list = {};
+	auto* a = list.push_back(10);
+	list.push_back(2);
+	list.push_back(3);
+	auto* b = list.push_back(4);
+	list.push_back(3);
 	
-	// VkBuffer bffer;
-	// VkSwapchainKHR swakp;
+	for (ltl::linked_list<int>::node* _node = list.begin; _node != nullptr; _node = _node->next) {
+		dloggln(_node->data);
+	}
 	
-	// data.push_back(swakp);
-	// data.push_back(bffer);
+	list.erase(a);
+	list.erase(b);
 	
-	// dloggln(sizeof(VkBuffer));
-	// exit(0);
-	// VkBuffer
-
-	lucy::engine::initialize();
-	lucy::engine::mainloop();
-	lucy::engine::destroy();
+	dloggln("after");
+	
+	for (ltl::linked_list<int>::node* _node = list.begin; _node != nullptr; _node = _node->next) {
+		dloggln(_node->data);
+	}
+	
+	// lucy::engine::initialize();
+	// lucy::engine::mainloop();
+	// lucy::engine::destroy();
 }
