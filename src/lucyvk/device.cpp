@@ -273,6 +273,8 @@ void lvk_device::destroy_device() {
 
 	vkDestroyDevice(_device, VK_NULL_HANDLE);
 	dloggln("Destroyed: ", _device, "\t [LogicalDevice]");
+	
+	dloggln(destroyer.delete_queue.size());
 }
 
 

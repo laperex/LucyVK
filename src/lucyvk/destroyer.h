@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <list>
 #include <map>
 #include <set>
 #include <typeinfo>
@@ -10,6 +11,7 @@
 #include <vulkan/vulkan_core.h>
 #include "lucyvk/handles.h"
 #include "vk_mem_alloc.h"
+// #include "lucytl/link
 
 
 struct lvk_destroyer {
@@ -20,8 +22,8 @@ struct lvk_destroyer {
 
 	bool flush = false;
 
-	// std::map<void*, uint32_t> data_map;
-	std::deque<delete_element> delete_queue;
+	std::map<void*, std::list<delete_element>::iterator> data_map;
+	std::list<delete_element> delete_queue;
 	std::set<void*> deleted_handles_set;
 	
 	void push(VkCommandPool command_pool);
