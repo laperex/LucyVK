@@ -308,11 +308,7 @@ void lre::renderer::submit(const lre_frame& frame) {
 void lre::renderer::update(const bool& is_resized) {
 	static uint32_t frame_number = 0;
 
-	if (frame_number > 0) {
-		submit(frame_array[(frame_number - 1) % FRAMES_IN_FLIGHT]);
-	}
-
-	if (is_resized) {
+	if (is_resized || resize_requested) {
 		device.wait_idle();
 		int width, height;
 		SDL_GetWindowSize(sdl_window, &width, &height);
@@ -321,6 +317,10 @@ void lre::renderer::update(const bool& is_resized) {
 		frame_number = 0;
 		resize_requested = false;
 		return;
+	}
+
+	if (frame_number > 0) {
+		submit(frame_array[(frame_number - 1) % FRAMES_IN_FLIGHT]);
 	}
 
 	record(frame_array[frame_number % FRAMES_IN_FLIGHT]);

@@ -2,7 +2,7 @@
 #include <stdexcept>
 
 void lucy::window::initialize(const char* name, const glm::ivec2 offset, const glm::ivec2 size) {
-	window = SDL_CreateWindow(name, offset.x, offset.y, size.x, size.y, SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
+	window = SDL_CreateWindow(name, offset.x, offset.y, size.x, size.y, SDL_WINDOW_VULKAN);
 
 	if (window == nullptr) {
 		throw std::runtime_error("sdl window creation failed");

@@ -21,7 +21,8 @@
 
 
 int main(int count, char** args) {
-	freopen("output.log", "w", stdout);
+	freopen("output.log", "w", stderr);
+	// freopen("outerror.log", "w", stderr);
 
 	std::vector<int> a = { 0 };
 	// ltl::linked_list<int> list = {};
