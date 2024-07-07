@@ -85,6 +85,7 @@ namespace lre {
 		void texture_pipeline_init();
 		void descriptor_set_init();
 		
+		bool resize_requested = false;
 
 	public:
 		lvk_image load_image_2D(const char* filename);

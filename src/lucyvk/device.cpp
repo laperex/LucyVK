@@ -587,9 +587,19 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass
 	const auto& present_modes = this->_swapchain_support_details.present_modes;
 	const auto& capabilities = this->_swapchain_support_details.capabilities;
 	
+	VkSwapchainPresentScalingCreateInfoEXT present_scaling {
+		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT,
+		
+		.pNext = VK_NULL_HANDLE,
+		
+		.scalingBehavior = VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT,
+		.presentGravityX = VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT,
+		.presentGravityY = VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT,
+	};
+	
 	VkSwapchainCreateInfoKHR create_info = {
 		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-		.pNext = nullptr,
+		.pNext = &present_scaling,
 		.flags = 0,
 		.surface = _surfaceKHR,
 
@@ -598,12 +608,13 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass
 
 		.imageFormat = swapchain._surface_format.format,
 		.imageColorSpace = swapchain._surface_format.colorSpace,
-		.imageExtent = (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) ?
-			capabilities.currentExtent:
-			VkExtent2D {
-				std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, swapchain._extent.width)),
-				std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, swapchain._extent.height))
-			},
+		.imageExtent = swapchain._extent,
+			// (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) ?
+			// capabilities.currentExtent:
+			// VkExtent2D {
+			// 	std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, swapchain._extent.width)),
+			// 	std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, swapchain._extent.height))
+			// },
 		.imageArrayLayers = 1,
 		.imageUsage = swapchain._image_usage,
 		.preTransform = capabilities.currentTransform,
@@ -643,6 +654,9 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass
 	}
 	dloggln("CREATED \t", swapchain, "\t [Swapchain]");
 
+	dloggln("INFO \t", "[", create_info.imageExtent.width, ", ", create_info.imageExtent.height, "]");
+	dloggln("INFO swapchain._extent \t", "[", swapchain._extent.width, ", ", swapchain._extent.height, "]");
+	
 	// ImageViews
 	
 	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, VK_NULL_HANDLE);
@@ -1260,6 +1274,8 @@ lvk_framebuffer lvk_device::create_framebuffer(const VkRenderPass render_pass, c
 	
 	VkFramebufferCreateInfo create_info = {
 		.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+		
+		// .flags = VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT,
 		
 		.renderPass = render_pass,
 		

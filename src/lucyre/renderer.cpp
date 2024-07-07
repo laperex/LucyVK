@@ -207,7 +207,10 @@ void lre::renderer::record(lre_frame& frame) {
 	const auto& cmd = frame.command_buffer;
 
 	// swapchain.acquire_next_image(&frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE);
-	device.swapchain_acquire_next_image(swapchain, &frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE);
+	if (device.swapchain_acquire_next_image(swapchain, &frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE) == VK_ERROR_OUT_OF_DATE_KHR) {
+		resize_requested = true;
+		return;
+	}
 
 	VkViewport viewport[] = {
 		{
@@ -297,7 +300,9 @@ void lre::renderer::submit(const lre_frame& frame) {
 	vkWaitForFences(device._device, 1, &frame.render_fence._fence, false, LVK_TIMEOUT);
 	vkResetFences(device._device, 1, &frame.render_fence._fence);
 
-	device.present(frame.image_index, swapchain, frame.render_semaphore);
+	if (device.present(frame.image_index, swapchain, frame.render_semaphore) == VK_ERROR_OUT_OF_DATE_KHR) {
+		resize_requested = true;
+	}
 }
 
 void lre::renderer::update(const bool& is_resized) {
@@ -306,13 +311,15 @@ void lre::renderer::update(const bool& is_resized) {
 	if (frame_number > 0) {
 		submit(frame_array[(frame_number - 1) % FRAMES_IN_FLIGHT]);
 	}
-	
+
 	if (is_resized) {
+		device.wait_idle();
 		int width, height;
 		SDL_GetWindowSize(sdl_window, &width, &height);
 		device.swapchain_recreate(swapchain, render_pass, width, height);
 		
 		frame_number = 0;
+		resize_requested = false;
 		return;
 	}
 
