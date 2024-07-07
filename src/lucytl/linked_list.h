@@ -6,54 +6,73 @@
 namespace ltl {
 	template <typename T>
 	class linked_list {
-	public:
+	public:	
 		struct node {
 			node* prev;
 			node* next;
 
-			T data;
+			T value;
 		};
-		
-		node* begin = nullptr;
-		node* end = nullptr;
-		
-		uint32_t size = 0;
 
+	private:
+		node* _begin = nullptr;
+		node* _end = nullptr;
+		
+		uint32_t _size = 0;
+
+
+	public:
 		void erase(node* _node) {
-			if (_node != end) {
+			if (_node != _end) {
 				_node->next->prev = _node->prev;
 			} else {
-				end = _node->prev;
+				_end = _node->prev;
 			}
 
-			if (_node != begin) {
+			if (_node != _begin) {
 				_node->prev->next = _node->next;
 			} else {
-				begin = _node->next;
+				_begin = _node->next;
 			}
 			
-			size--;
+			_size--;
 
 			delete _node;
 		}
 
-		node* push_back(const T& data) {
+		node* push_back(const T& value) {
 			node* new_node = new node {
-				.prev = end,
+				.prev = _end,
 				.next = nullptr,
-				.data = data
+				.value = value
 			};
 			
-			if (end != nullptr) {
-				end->next = new_node;
+			if (_end != nullptr) {
+				_end->next = new_node;
 			} else {
-				begin = new_node;
+				_begin = new_node;
 			}
-			end = new_node;
+			_end = new_node;
 			
-			size++;
+			_size++;
 			
-			return end;
+			return _end;
 		}
+		
+		uint32_t size() const {
+			return _size;
+		}
+		
+		node* begin() const {
+			return _begin;
+		}
+		
+		node* end() const {
+			return _end;
+		}
+		
+		// T& data() const {
+		// 	return _end;
+		// }
 	};
 }

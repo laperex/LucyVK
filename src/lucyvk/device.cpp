@@ -211,8 +211,8 @@ void lvk_device::destroy_device() {
 	destroyer.flush = true;
 	
 	int i = 0;
-	for (auto* _node = destroyer.delete_queue.end; _node != nullptr; _node = _node->prev) {
-		const auto& element = _node->data;
+	for (auto* _node = destroyer.delete_queue.end(); _node != nullptr; _node = _node->prev) {
+		const auto& element = _node->value;
 
 		if (element.type == typeid(VkCommandPool).hash_code()) {
 			destroy(static_cast<VkCommandPool>(element.data[0]));
@@ -274,7 +274,7 @@ void lvk_device::destroy_device() {
 	vkDestroyDevice(_device, VK_NULL_HANDLE);
 	dloggln("Destroyed: ", _device, "\t [LogicalDevice]");
 
-	dloggln(destroyer.delete_queue.size);
+	dloggln(destroyer.delete_queue.size());
 }
 
 

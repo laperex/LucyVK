@@ -2,7 +2,7 @@
 
 #include "lucytl/registry.h"
 
-namespace lucy {	
+namespace lucy {
 	template <typename T> T& static_store() { static T v = { }; return v; }
 
 	namespace engine {

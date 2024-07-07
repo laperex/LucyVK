@@ -1,13 +1,15 @@
 #pragma once
 
+#include "lucy/system.h"
 #include "lucy/engine.h"
 #include "lucyre/renderer.h"
 #include "lucy/events.h"
 #include "voxel/camera.h"
 
 namespace lucy {
-	struct world {
-		static void initialize();
-		static void update(double dt);
+	class world: public system_template {
+		void initialization();
+		void update();
+		void destroy();
 	};
 }

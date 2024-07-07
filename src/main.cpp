@@ -9,10 +9,11 @@
 
 // // TODO: dynamic viewport
 // TODO: renderer restructuring
-	// TODO: semaphore unsignaling
-	// TODO: mesh loading
+	// // TODO: semaphore unsignaling
+	//! TODO: mesh loading
 	// TODO: material management
 	// TODO: shader management
+// // TODO: memory handles
 // TODO: render_pass restructuring
 // // TODO: Implement Better Destruction -
 // TODO: Implement Image Loading
