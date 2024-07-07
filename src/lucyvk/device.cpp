@@ -183,7 +183,7 @@ void lvk_device::destroy(VkCommandBuffer* command_buffer, uint32_t command_buffe
 }
 
 void lvk_device::destroy(VkBuffer buffer, VmaAllocation allocation) {
-	vmaDestroyBuffer(allocator, buffer, allocation);
+	vmaDestroyBuffer(_allocator, buffer, allocation);
 	dloggln("Destroyed: ", buffer, "\t [Buffer]");
 	destroyer.delete_insert(buffer);
 }
@@ -193,7 +193,7 @@ void lvk_device::destroy(const lvk_buffer& buffer) {
 }
 
 void lvk_device::destroy(VkImage image, VmaAllocation allocation) {
-	vmaDestroyImage(allocator, image, allocation);
+	vmaDestroyImage(_allocator, image, allocation);
 	dloggln("Destroyed: ", image, "\t [Image]");
 	destroyer.delete_insert(image);
 }
@@ -271,13 +271,12 @@ void lvk_device::destroy_device() {
 		}
 		
 		if (element.type == typeid(VkImage).hash_code()) {
-			dloggln(element.data, " = ", element.type);
 			destroy((VkImage)element.data[0], (VmaAllocation)element.data[1]);
 		}
 	}
 
-	vmaDestroyAllocator(allocator);
-	dloggln("Allocator Destroyed");
+	vmaDestroyAllocator(_allocator);
+	dloggln("Destroyed: ", _device, "\t [Allocator]");
 
 	vkDestroyDevice(_device, VK_NULL_HANDLE);
 	dloggln("Destroyed: ", _device, "\t [LogicalDevice]");
@@ -652,12 +651,12 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass
 	swapchain._framebuffers.resize(swapchain._image_count);
 	
 	depth_image = create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
-	swapchain._depth_image_view = create_image_view(depth_image, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D);
+	swapchain._depth_image_view = create_image_view(depth_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT);
 
 	destroyer.push(swapchain);
 
 	for (size_t i = 0; i < swapchain._image_count; i++) {
-		swapchain._image_views[i] = create_image_view(_images[i], swapchain._surface_format.format, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+		swapchain._image_views[i] = create_image_view(_images[i], swapchain._surface_format.format, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT);
 		swapchain._framebuffers[i] = create_framebuffer(render_pass, swapchain._extent, {
 			swapchain._image_views[i],
 			swapchain._depth_image_view
@@ -804,11 +803,11 @@ lvk_pipeline lvk_device::create_compute_pipeline(const VkPipelineLayout pipeline
 
 void lvk_device::upload(const VmaAllocation allocation, const VkDeviceSize size, const void* data = nullptr) const {
 	void* _data = nullptr;
-	vmaMapMemory(this->allocator, allocation, &_data);
+	vmaMapMemory(this->_allocator, allocation, &_data);
 	
 	memcpy(_data, data, size);
 	
-	vmaUnmapMemory(this->allocator, allocation);
+	vmaUnmapMemory(this->_allocator, allocation);
 }
 
 
@@ -819,7 +818,7 @@ lvk_buffer lvk_device::create_buffer(const VkBufferUsageFlags buffer_usage, VmaM
 		._allocated_size = size,
 		._usage = buffer_usage,
 		._memory_usage = memory_usage,
-		// .allocator = this
+		// ._allocator = this
 		// ._is_static = memory_usage == VMA_MEMORY_USAGE_GPU_ONLY ? VK_TRUE: VK_FALSE
 	};
 	
@@ -840,7 +839,7 @@ lvk_buffer lvk_device::create_buffer(const VkBufferUsageFlags buffer_usage, VmaM
 	};
 
 	//allocate the buffer
-	if (vmaCreateBuffer(allocator, &bufferInfo, &vmaallocInfo, &buffer._buffer, &buffer._allocation, nullptr) != VK_SUCCESS) {
+	if (vmaCreateBuffer(_allocator, &bufferInfo, &vmaallocInfo, &buffer._buffer, &buffer._allocation, nullptr) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create buffer!");
 	}
 
@@ -899,7 +898,7 @@ void lvk_device::upload(const lvk_buffer& buffer, const VkDeviceSize size, const
 		// 	}
 		// }
 
-		// lvk_destroy(allocator, staging_buffer._buffer, staging_buffer._allocation);
+		// lvk_destroy(_allocator, staging_buffer._buffer, staging_buffer._allocation);
 
 		this->imm_submit([&](VkCommandBuffer cmd) {
 			static_cast<lvk_command_buffer>(cmd).copy_buffer_to_buffer(staging_buffer, buffer, {
@@ -964,7 +963,7 @@ lvk_image lvk_device::create_image(VkFormat format, VkImageUsageFlags usage, Vma
 		.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 	};
 
-	if (vmaCreateImage(allocator, &create_info, &allocation_info, &image._image, &image._allocation, VK_NULL_HANDLE) != VK_SUCCESS) {
+	if (vmaCreateImage(_allocator, &create_info, &allocation_info, &image._image, &image._allocation, VK_NULL_HANDLE) != VK_SUCCESS) {
 		throw std::runtime_error("image creation failed!");
 	}
 	dloggln("Created: ", image._image, "\t [Image]");
@@ -982,7 +981,7 @@ lvk_image lvk_device::create_image(VkFormat format, VkImageUsageFlags usage, Vma
 // |--------------------------------------------------
 
 
-lvk_image_view lvk_device::create_image_view(const VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType image_view_type) {
+lvk_image_view lvk_device::create_image_view(const VkImage image, VkFormat format, VkImageViewType image_view_type, VkImageAspectFlags aspect_flag) {
 	lvk_image_view image_view = {
 		._image_view = VK_NULL_HANDLE,
 	};
@@ -999,8 +998,8 @@ lvk_image_view lvk_device::create_image_view(const VkImage image, VkFormat forma
 	return image_view;
 }
 
-lvk_image_view lvk_device::create_image_view(const lvk_image& image, VkImageAspectFlags aspect_flag, VkImageViewType image_view_type) {
-	return create_image_view(image._image, image._format, aspect_flag, image_view_type);
+lvk_image_view lvk_device::create_image_view(const lvk_image& image, VkImageViewType image_view_type, VkImageAspectFlags aspect_flag) {
+	return create_image_view(image._image, image._format, image_view_type, aspect_flag);
 }
 
 
@@ -1011,8 +1010,7 @@ lvk_image_view lvk_device::create_image_view(const lvk_image& image, VkImageAspe
 
 lvk_descriptor_set_layout lvk_device::create_descriptor_set_layout(const VkDescriptorSetLayoutBinding* bindings, const uint32_t binding_count) {
 	lvk_descriptor_set_layout descriptor_set_layout = {
-		._descriptor_set_layout = VK_NULL_HANDLE,
-		// .device = this
+		._descriptor_set_layout = VK_NULL_HANDLE
 	};
 
 	VkDescriptorSetLayoutCreateInfo set_info = {
@@ -1313,18 +1311,3 @@ lvk_sampler lvk_device::create_sampler(VkFilter min_filter, VkFilter mag_filter,
 
 	return sampler;
 }
-
-// void lvk_device::destroyer::flush() const {
-// 	for (auto function = deletion_queue.rbegin(); function != deletion_queue.rend(); function++) {
-// 		(*function)();
-// 	}
-// }
-
-// void lvk_device::destroyer::pop() {
-// 	(*deletion_queue.rend())();
-// 	deletion_queue.pop_back();
-// }
-
-// void lvk_device::destroyer::push(std::function<void()>&& function) {
-// 	deletion_queue.push(function);
-// }

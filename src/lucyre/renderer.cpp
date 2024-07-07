@@ -28,7 +28,7 @@ void lre::renderer::upload_mesh(Mesh& mesh) {
 	
 }
 
-lvk_image lre::renderer::load_image_from_file(const char* filename) {
+lvk_image lre::renderer::load_image_2D(const char* filename) {
 	int width, height, channels;
 
 	stbi_uc* image_data = stbi_load(filename, &width, &height, &channels, STBI_rgb_alpha);
@@ -47,8 +47,6 @@ lvk_image lre::renderer::load_image_from_file(const char* filename) {
 	};
 
 	lvk_buffer staging_buffer = this->device.create_staging_buffer(image_size, image_data);
-	
-	// device
 
 	lvk_image image = this->device.create_image(image_format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, image_extent, VK_IMAGE_TYPE_2D);
 
@@ -195,8 +193,8 @@ void lre::renderer::init(SDL_Window* window) {
 
 	texture_pipeline_init();
 
-	lvk_image load_image = load_image_from_file("/home/laperex/Programming/C++/LucyVK/assets/buff einstein.jpg");
-	lvk_image_view load_image_view = device.create_image_view(load_image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_2D);
+	lvk_image load_image = load_image_2D("/home/laperex/Programming/C++/LucyVK/assets/buff einstein.jpg");
+	lvk_image_view load_image_view = device.create_image_view(load_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT);
 	lvk_sampler sampler = device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 
 	device.update_descriptor_set(descriptor_ubo, 2, &load_image_view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);

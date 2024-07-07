@@ -20,8 +20,10 @@
 
 struct lvk_device {
 	LVK_HANDLE_DEF(VkDevice, _device)
-	
+	VmaAllocator _allocator;
+
 	std::vector<const char*> extensions;
+
 
 	struct {
 		struct {
@@ -49,10 +51,6 @@ struct lvk_device {
 		const VkFormat find_supported_format(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 		const uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags property_flags) const;
 	} physical_device;
-
-	struct {
-		LVK_HANDLE_DEF(VmaAllocator, _allocator)
-	} allocator;
 
 	lvk_destroyer destroyer;
 
@@ -281,8 +279,8 @@ struct lvk_device {
 
 	// IMAGE_VIEW	---------- ---------- ---------- ----------
 	
-	lvk_image_view create_image_view(const VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType image_view_type);
-	lvk_image_view create_image_view(const lvk_image& image, VkImageAspectFlags aspect_flag, VkImageViewType image_view_type);
+	lvk_image_view create_image_view(const VkImage image, VkFormat format, VkImageViewType image_view_type, VkImageAspectFlags aspect_flag);
+	lvk_image_view create_image_view(const lvk_image& image, VkImageViewType image_view_type, VkImageAspectFlags aspect_flag);
 
 
 	// DESCRIPTOR_SET_LAYOUT   ---------- ---------- ----------
