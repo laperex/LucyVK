@@ -17,14 +17,16 @@ namespace lucy {
 		glm::vec3 world_up = { 0.0, 1.0, 0.0 };
 		glm::vec3 up = world_up;
 
-		int width, height;
-		int posx, posy;
-		int lastx, lasty;
-		bool first_mouse = true;
+		glm::ivec2 prev_window_size = { 0, 0 };
+		glm::ivec2 window_size;
+		glm::ivec2 prev_cursor_pos;
+		
+		float scrollspeed = 0.75 * 3;
 		float fov = 45.0f;
 		float c_near = 0.01f, c_far = 1000.0f;
 		float sensitivity = 0.5f;
 
+		bool first_mouse = true;
 		bool enable = true;
 
 	public:

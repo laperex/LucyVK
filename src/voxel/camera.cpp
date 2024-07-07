@@ -1,7 +1,6 @@
 #include "camera.h"
 #include "lucyio/logger.h"
 
-glm::vec2 last_size = { 0, 0 };
 glm::vec2 last_pos = { 0, 0 };
 float scrollspeed = 0.75 * 3;
 bool toggle = false;
@@ -16,74 +15,68 @@ void lucy::camera::initialization() {
 }
 
 void lucy::camera::update(double dt) {
-	this->width = _window->size().x;
-	this->height = _window->size().y;
+	window_size = _window->size();
 	
-	if (this->width != last_size.x || this->height != last_size.y || this->posx != last_pos.x || this->posy != last_pos.y) {
-		last_size.x = this->width;
-		last_size.y = this->height;
-		last_pos.x = this->posx;
-		last_pos.y = this->posy;
+	if (window_size != prev_window_size) {
+		prev_window_size = window_size;
 
-		this->lastx = this->width / 2;
-		this->lasty = this->height / 2;
+		prev_cursor_pos = window_size / 2;
 
-		this->first_mouse = true;
+		first_mouse = true;
 
-		this->projection = glm::perspective(glm::radians(this->fov), (float)this->width / this->height, this->c_near, this->c_far);
+		projection = glm::perspective(glm::radians(fov), (float)window_size.x / window_size.y, c_near, c_far);
 	}
 
 	if (!enable) {
-		this->first_mouse = true;
+		first_mouse = true;
 		return;
 	}
 
-	auto norm_cursor_pos = _events->cursor_position_normalized(this->posx, this->posy, this->width, this->height);
+	auto norm_cursor_pos = _events->cursor_position_normalized(0, 0, window_size.x, window_size.y);
 	auto cursor_pos = _events->cursor_position();
 
 	if (_events->button_pressed(SDL_BUTTON_RIGHT)) {
-		if (this->first_mouse) {
-			this->lastx = cursor_pos.x;
-			this->lasty = cursor_pos.y;
-			this->first_mouse = false;
+		if (first_mouse) {
+			prev_cursor_pos = cursor_pos;
+			first_mouse = false;
 		}
 
-		this->rotation.y -= (cursor_pos.x - this->lastx) * this->sensitivity;
-		this->rotation.x += (this->lasty - cursor_pos.y) * this->sensitivity;
+		rotation.y -= (cursor_pos.x - prev_cursor_pos.x) * sensitivity;
+		rotation.x += (prev_cursor_pos.y - cursor_pos.y) * sensitivity;
 
-		this->lastx = cursor_pos.x;
-		this->lasty = cursor_pos.y;
+		prev_cursor_pos.x = cursor_pos.x;
+		prev_cursor_pos.y = cursor_pos.y;
 	} else {
-		this->first_mouse = true;
+		first_mouse = true;
 	}
 
-	const auto& quaternion = glm::quat(glm::radians(this->rotation));
+	const auto& quaternion = glm::quat(glm::radians(rotation));
 
-	this->front = glm::normalize(quaternion * this->world_front);
-	this->up = glm::normalize(quaternion * this->world_up);
+	front = glm::normalize(quaternion * world_front);
+	up = glm::normalize(quaternion * world_up);
+
 
 	if (_events->scroll_up())
-		this->position += this->front * float(scrollspeed * dt);
+		position += front * float(scrollspeed * dt);
 	if (_events->scroll_down())
-		this->position -= this->front * float(scrollspeed * dt);
+		position -= front * float(scrollspeed * dt);
 
-	dloggln(glm::to_string(position));
 
-	float distance = glm::length(this->position);
+	float distance = glm::length(position);
 	scrollspeed = distance / 10;
-	this->position = distance * -this->front;
+	position = distance * -front;
 
 	static bool click_toggle = true;
 	if (_events->button_pressed(SDL_BUTTON_LEFT) && _events->key_pressed(SDL_SCANCODE_LALT)/*  && click_toggle */) {
 		glm::vec4 ray_clip = glm::vec4(norm_cursor_pos.x, norm_cursor_pos.y, -1.0, 1.0);
-		glm::vec4 ray_eye = glm::inverse(this->projection) * ray_clip;
+		glm::vec4 ray_eye = glm::inverse(projection) * ray_clip;
 		ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
-		glm::vec3 ray_wor = glm::inverse(this->view) * ray_eye;
+		glm::vec3 ray_wor = glm::inverse(view) * ray_eye;
 		ray_wor = glm::normalize(ray_wor);
 
-		float denom = glm::dot(this->front, ray_wor);
-		float t = -glm::dot((this->front * distance), this->front) / denom;
-		glm::vec3 pos = ray_wor * t + (this->offset + this->position);
+		float denom = glm::dot(front, ray_wor);
+		float t = -glm::dot((front * distance), front) / denom;
+		glm::vec3 pos = ray_wor * t + (offset + position);
 
 		if (!toggle)
 			initpos = pos;
@@ -93,10 +86,10 @@ void lucy::camera::update(double dt) {
 	}
 	click_toggle = !_events->button_pressed(SDL_BUTTON_LEFT);
 
-	this->view = glm::lookAt(this->position + this->offset + delta, this->position + this->offset + delta + this->front, this->up);
+	view = glm::lookAt(position + offset + delta, position + offset + delta + front, up);
 
 	if (toggle && !_events->button_pressed(SDL_BUTTON_LEFT) && _events->key_pressed(SDL_SCANCODE_LALT)) {
-		this->offset += delta;
+		offset += delta;
 		toggle = false;
 		delta = glm::vec3();
 	}

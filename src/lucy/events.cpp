@@ -16,7 +16,7 @@ void lucy::events::initialize() {
 
 void lucy::events::update() {
 	SDL_Event event;
-	
+
 	is_resized = false;
 	mouse_wheel_scroll = 0;
 
