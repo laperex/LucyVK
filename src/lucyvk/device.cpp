@@ -76,70 +76,70 @@ VkResult lvk_device::present(const uint32_t image_index, const VkSwapchainKHR sw
 
 void lvk_device::destroy(VkCommandPool command_pool) {
 	vkDestroyCommandPool(_device, command_pool, VK_NULL_HANDLE);
-	dloggln("Destroyed: ", command_pool, "\t [CommandPool]");
+	dloggln("DESTROYED \t", command_pool, "\t [CommandPool]");
 	destroyer.delete_insert(command_pool);
 }
 
 
 void lvk_device::destroy(VkPipelineLayout pipeline_layout) {
 	vkDestroyPipelineLayout(_device, pipeline_layout, VK_NULL_HANDLE);
-	dloggln("Destroyed: ", pipeline_layout, "\t [PipelineLayout]");
+	dloggln("DESTROYED \t", pipeline_layout, "\t [PipelineLayout]");
 	destroyer.delete_insert(pipeline_layout);
 }
 
 
 void lvk_device::destroy(VkPipeline pipeline) {
 	vkDestroyPipeline(_device, pipeline, VK_NULL_HANDLE);
-	dloggln("Destroyed: ", pipeline, "\t [Pipeline]");
+	dloggln("DESTROYED \t", pipeline, "\t [Pipeline]");
 	destroyer.delete_insert(pipeline);
 }
 
 
 void lvk_device::destroy(VkSwapchainKHR swapchain) {
 	vkDestroySwapchainKHR(_device, swapchain, VK_NULL_HANDLE);
-	dloggln("Destroyed: ", swapchain, "\t [SwapchainKHR]");
+	dloggln("DESTROYED \t", swapchain, "\t [SwapchainKHR]");
 	destroyer.delete_insert(swapchain);
 }
 
 
 void lvk_device::destroy(VkSemaphore semaphore) {
 	vkDestroySemaphore(_device, semaphore, VK_NULL_HANDLE);
-	dloggln("Destroyed: ", semaphore, "\t [Semaphore]");
+	dloggln("DESTROYED \t", semaphore, "\t [Semaphore]");
 	destroyer.delete_insert(semaphore);
 }
 
 
 void lvk_device::destroy(VkFence fence) {
 	vkDestroyFence(_device, fence, VK_NULL_HANDLE);
-	dloggln("Destroyed: ", fence, "\t [Fence]");
+	dloggln("DESTROYED \t", fence, "\t [Fence]");
 	destroyer.delete_insert(fence);
 }
 
 
 void lvk_device::destroy(VkDescriptorSetLayout descriptor_set_layout) {
 	vkDestroyDescriptorSetLayout(_device, descriptor_set_layout, VK_NULL_HANDLE);
-	dloggln("Destroyed: ", descriptor_set_layout, "\t [DescriptorSetLayout]");
+	dloggln("DESTROYED \t", descriptor_set_layout, "\t [DescriptorSetLayout]");
 	destroyer.delete_insert(descriptor_set_layout);
 }
 
 
 void lvk_device::destroy(VkDescriptorPool descriptor_pool) {
 	vkDestroyDescriptorPool(_device, descriptor_pool, VK_NULL_HANDLE);
-	dloggln("Destroyed: ", descriptor_pool, "\t [DescriptorPool]");
+	dloggln("DESTROYED \t", descriptor_pool, "\t [DescriptorPool]");
 	destroyer.delete_insert(descriptor_pool);
 }
 
 
 void lvk_device::destroy(VkFramebuffer framebuffer) {
 	vkDestroyFramebuffer(_device, framebuffer, VK_NULL_HANDLE);
-	dloggln("Destroyed: ", framebuffer, "\t [Framebuffer]");
+	dloggln("DESTROYED \t", framebuffer, "\t [Framebuffer]");
 	destroyer.delete_insert(framebuffer);
 }
 
 
 void lvk_device::destroy(VkRenderPass render_pass) {
 	vkDestroyRenderPass(_device, render_pass, VK_NULL_HANDLE);
-	dloggln("Destroyed: ", render_pass, "\t [RenderPass]");
+	dloggln("DESTROYED \t", render_pass, "\t [RenderPass]");
 	destroyer.delete_insert(render_pass);
 }
 
@@ -149,27 +149,27 @@ void lvk_device::destroy(VkImageView image_view) {
 
 	destroyer.delete_insert(image_view);
 	vkDestroyImageView(_device, image_view, VK_NULL_HANDLE);
-	dloggln("Destroyed: ", image_view, "\t [ImageView]");
+	dloggln("DESTROYED \t", image_view, "\t [ImageView]");
 }
 
 
 void lvk_device::destroy(VkShaderModule shader_module) {
 	vkDestroyShaderModule(_device, shader_module, VK_NULL_HANDLE);
-	dloggln("Destroyed: ", shader_module, "\t [ShaderModule]");
+	dloggln("DESTROYED \t", shader_module, "\t [ShaderModule]");
 	destroyer.delete_insert(shader_module);
 }
 
 
 void lvk_device::destroy(VkSampler sampler) {
 	vkDestroySampler(_device, sampler, VK_NULL_HANDLE);
-	dloggln("Destroyed: ", sampler, "\t [Sampler]");
+	dloggln("DESTROYED \t", sampler, "\t [Sampler]");
 	destroyer.delete_insert(sampler);
 }
 
 
 // void lvk_device::destroy(VkCommandBuffer command_buffer, VkCommandPool command_pool) {
 // 	vkFreeCommandBuffers(_device, command_pool, 1, &command_buffer);
-// 	dloggln("Destroyed: ", command_buffer, "\t [CommandBuffer]");
+// 	dloggln("DESTROYED \t", command_buffer, "\t [CommandBuffer]");
 // }
 
 // 	destroyer.delete_insert(command_buffer);
@@ -178,13 +178,13 @@ void lvk_device::destroy(VkCommandBuffer* command_buffer, uint32_t command_buffe
 
 
 	vkFreeCommandBuffers(_device, command_pool, command_buffer_count, command_buffer);
-	dloggln("Destroyed: ", command_buffer, "\t [CommandBuffer]");
+	dloggln("DESTROYED \t", command_buffer[0], "\t [CommandBuffer]");
 	destroyer.delete_insert(command_buffer[0]);
 }
 
 void lvk_device::destroy(VkBuffer buffer, VmaAllocation allocation) {
 	vmaDestroyBuffer(_allocator, buffer, allocation);
-	dloggln("Destroyed: ", buffer, "\t [Buffer]");
+	dloggln("DESTROYED \t", buffer, "\t [Buffer]");
 	destroyer.delete_insert(buffer);
 }
 
@@ -194,7 +194,7 @@ void lvk_device::destroy(const lvk_buffer& buffer) {
 
 void lvk_device::destroy(VkImage image, VmaAllocation allocation) {
 	vmaDestroyImage(_allocator, image, allocation);
-	dloggln("Destroyed: ", image, "\t [Image]");
+	dloggln("DESTROYED \t", image, "\t [Image]");
 	destroyer.delete_insert(image);
 }
 
@@ -205,14 +205,14 @@ void lvk_device::destroy(const lvk_image& image) {
 
 // void lvk_device::destroy(VkDescriptorSet descriptor_set, VkDescriptorPool descriptor_pool) {
 // 	vkFreeDescriptorSets(_device, descriptor_pool, 1, &descriptor_set);
-// 	dloggln("Destroyed: ", descriptor_set, "\t [DescriptionSet]");
+// 	dloggln("DESTROYED \t", descriptor_set, "\t [DescriptionSet]");
 // }
 
 // void lvk_device::destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool) {
 // 	assert(descriptor_set_count);
 
 // 	vkFreeDescriptorSets(_device, descriptor_pool, descriptor_set_count, descriptor_set);
-// 	dloggln("Destroyed: ", descriptor_set[0], "\t [DescriptionSet]");
+// 	dloggln("DESTROYED \t", descriptor_set[0], "\t [DescriptionSet]");
 // }
 
 void lvk_device::destroy_device() {
@@ -276,10 +276,10 @@ void lvk_device::destroy_device() {
 	}
 
 	vmaDestroyAllocator(_allocator);
-	dloggln("Destroyed: ", _device, "\t [Allocator]");
+	dloggln("DESTROYED \t", _allocator, "\t [Allocator]");
 
 	vkDestroyDevice(_device, VK_NULL_HANDLE);
-	dloggln("Destroyed: ", _device, "\t [LogicalDevice]");
+	dloggln("DESTROYED \t", _device, "\t [LogicalDevice]");
 
 	dloggln(destroyer.delete_queue.size());
 }
@@ -304,7 +304,7 @@ lvk_semaphore lvk_device::create_semaphore() {
 	if (vkCreateSemaphore(this->_device, &create_info, VK_NULL_HANDLE, &semaphore._semaphore) != VK_SUCCESS) {
 		throw std::runtime_error("semaphore creation failed");
 	}
-	dloggln("Created: ", semaphore._semaphore, "\t [Semaphore]");
+	dloggln("CREATED \t", semaphore._semaphore, "\t [Semaphore]");
 	
 	destroyer.push(semaphore);
 
@@ -331,7 +331,7 @@ lvk_fence lvk_device::create_fence(VkFenceCreateFlags flags) {
 	if (vkCreateFence(this->_device, &create_info, VK_NULL_HANDLE, &fence._fence) != VK_SUCCESS) {
 		throw std::runtime_error("fence creation failed");
 	}
-	dloggln("Created: ", fence._fence, "\t [Fence]");
+	dloggln("CREATED \t", fence._fence, "\t [Fence]");
 	
 	destroyer.push(fence);
 
@@ -390,7 +390,7 @@ lvk_command_pool lvk_device::create_command_pool(uint32_t queue_family_index, Vk
     if (vkCreateCommandPool(_device, &create_info, VK_NULL_HANDLE, &command_pool._command_pool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create command pool!");
     }
-	dloggln("Created: ", command_pool._command_pool, "\t [CommandPool]");
+	dloggln("CREATED \t", command_pool._command_pool, "\t [CommandPool]");
 	
 	destroyer.push(command_pool);
 
@@ -417,7 +417,7 @@ lvk_command_buffer lvk_device::create_command_buffer_unique(const VkCommandPool 
 	if (vkAllocateCommandBuffers(this->_device, &allocate_info, &command_buffer._command_buffer) != VK_SUCCESS) {
 		throw std::runtime_error("command buffer allocation failed!");
 	}
-	dloggln("Allocated: ", command_buffer._command_buffer, "\t [CommandBuffer]");
+	dloggln("ALLOCATED \t", command_buffer._command_buffer, "\t [CommandBuffer]");
 	
 	// command_buffer._command_buffer
 	destroyer.push(&command_buffer._command_buffer, 1, command_pool);
@@ -439,7 +439,7 @@ std::vector<lvk_command_buffer> lvk_device::create_command_buffers(const lvk_com
 	if (vkAllocateCommandBuffers(this->_device, &allocate_info, (VkCommandBuffer*)command_buffer_array.data()->_command_buffer) != VK_SUCCESS) {
 		throw std::runtime_error("command buffers allocation failed!");
 	}
-	dloggln("Allocated: ", command_buffer_array[0]._command_buffer, "\t [CommandBufferArray]");
+	dloggln("ALLOCATED \t", command_buffer_array[0]._command_buffer, "\t [CommandBufferArray]");
 	
 	destroyer.push((VkCommandBuffer*)command_buffer_array.data()->_command_buffer, command_buffer_count, command_pool);
 	
@@ -459,7 +459,7 @@ VkResult lvk_device::imm_submit(std::function<void(lvk_command_buffer)> function
 		immediate_command._command_pool = create_command_pool(_queue.graphics.index.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 		immediate_command._command_buffer = create_command_buffer_unique(immediate_command._command_pool);
 
-		dloggln("Created: ", "[Immediate Commands]");
+		dloggln("CREATED \t", "[Immediate Commands]");
 	}
 
 	VkCommandBufferBeginInfo begin_info = {
@@ -550,6 +550,8 @@ lvk_swapchain lvk_device::create_swapchain(VkRenderPass render_pass, uint32_t wi
 			break;
 		}
 	}
+	
+	dloggln("INFO:\t", lvk::to_string(swapchain._present_mode), "\t [Swapchain PresentMode]");
 
 	swapchain_recreate(swapchain, render_pass, width, height);
 
@@ -639,7 +641,7 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass
 	if (result != VK_SUCCESS) {
 		throw std::runtime_error("failed to create swapchain!" + std::to_string((int)result));
 	}
-	dloggln("Created: ", swapchain, "\t [Swapchain]");
+	dloggln("CREATED \t", swapchain, "\t [Swapchain]");
 
 	// ImageViews
 	
@@ -662,7 +664,7 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass
 			swapchain._depth_image_view
 		});
 	}
-	dloggln("Created: ", "[Swapchain ImageViews]");
+	dloggln("CREATED \t", "[Swapchain ImageViews]");
 	
 	delete [] _images;
 }
@@ -695,7 +697,7 @@ lvk_pipeline_layout lvk_device::create_pipeline_layout(const VkPushConstantRange
 	if (vkCreatePipelineLayout(this->_device, &pipeline_layout_create_info, VK_NULL_HANDLE, &pipeline_layout._pipeline_layout) != VK_SUCCESS) {
 		throw std::runtime_error("pipeline layout creation failed!");
 	}
-	dloggln("Created: ", pipeline_layout._pipeline_layout, "\t [Pipeline Layout]");
+	dloggln("CREATED \t", pipeline_layout._pipeline_layout, "\t [Pipeline Layout]");
 	
 	destroyer.push(pipeline_layout);
 	
@@ -723,7 +725,7 @@ lvk_shader_module lvk_device::create_shader_module(const char* filename) {
 	if (vkCreateShaderModule(_device, &info, VK_NULL_HANDLE, &shader_module._shader_module) != VK_SUCCESS) {
 		throw std::runtime_error(std::string("failed to create shader module! -> ") + filename);
 	}
-	dloggln("Created: ", shader_module._shader_module, "\t [Shader Module] - ", filename);
+	dloggln("CREATED \t", shader_module._shader_module, "\t [Shader Module] - ", filename);
 
 	destroyer.push(shader_module);
 
@@ -766,7 +768,7 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipelin
 	if (vkCreateGraphicsPipelines(this->_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline._pipeline) != VK_SUCCESS) {
 		throw std::runtime_error("graphics pipeline creation failed!");
 	}
-	dloggln("Created: ", pipeline._pipeline, "\t [Graphics Pipeline]");
+	dloggln("CREATED \t", pipeline._pipeline, "\t [Graphics Pipeline]");
 
 	destroyer.push(pipeline);
 	
@@ -788,7 +790,7 @@ lvk_pipeline lvk_device::create_compute_pipeline(const VkPipelineLayout pipeline
 	if (vkCreateComputePipelines(this->_device, VK_NULL_HANDLE, 1, &pipeline_info, VK_NULL_HANDLE, &pipeline._pipeline) != VK_SUCCESS) {
 		throw std::runtime_error("compute pipeline creation failed!");
 	}
-	dloggln("Created: ", pipeline._pipeline, "\t [Compute Pipeline]");
+	dloggln("CREATED \t", pipeline._pipeline, "\t [Compute Pipeline]");
 	
 	destroyer.push(pipeline);
 
@@ -843,7 +845,7 @@ lvk_buffer lvk_device::create_buffer(const VkBufferUsageFlags buffer_usage, VmaM
 		throw std::runtime_error("failed to create buffer!");
 	}
 
-	dloggln("Created: ", buffer._buffer, "\t [Buffer]");
+	dloggln("CREATED \t", buffer._buffer, "\t [Buffer]");
 	
 	if (data != nullptr) {
 		upload(buffer, size, data);
@@ -966,7 +968,7 @@ lvk_image lvk_device::create_image(VkFormat format, VkImageUsageFlags usage, Vma
 	if (vmaCreateImage(_allocator, &create_info, &allocation_info, &image._image, &image._allocation, VK_NULL_HANDLE) != VK_SUCCESS) {
 		throw std::runtime_error("image creation failed!");
 	}
-	dloggln("Created: ", image._image, "\t [Image]");
+	dloggln("CREATED \t", image._image, "\t [Image]");
 
 	destroyer.push(image, image._allocation);
 
@@ -991,7 +993,7 @@ lvk_image_view lvk_device::create_image_view(const VkImage image, VkFormat forma
 	if (vkCreateImageView(this->_device, &create_info, VK_NULL_HANDLE, &image_view._image_view) != VK_SUCCESS) {
 		throw std::runtime_error("image_view creation failed!");
 	}
-	dloggln("Created: ", image_view._image_view, "\t [ImageView]");
+	dloggln("CREATED \t", image_view._image_view, "\t [ImageView]");
 
 	destroyer.push(image_view);
 
@@ -1022,7 +1024,7 @@ lvk_descriptor_set_layout lvk_device::create_descriptor_set_layout(const VkDescr
 	if (vkCreateDescriptorSetLayout(_device, &set_info, VK_NULL_HANDLE, &descriptor_set_layout._descriptor_set_layout) != VK_SUCCESS) {
 		throw std::runtime_error("descriptor_set_layout creation failed!");
 	}
-	dloggln("Created: ", descriptor_set_layout._descriptor_set_layout, "\t [DescriptorSetLayout]");
+	dloggln("CREATED \t", descriptor_set_layout._descriptor_set_layout, "\t [DescriptorSetLayout]");
 
 	destroyer.push(descriptor_set_layout);
 
@@ -1050,7 +1052,7 @@ lvk_descriptor_set lvk_device::create_descriptor_set(const lvk_descriptor_pool& 
 	if (vkAllocateDescriptorSets(this->_device, &allocate_info, &descriptor_set._descriptor_set) != VK_SUCCESS) {
 		throw std::runtime_error("descriptor_set allocation failed!");
 	}
-	dloggln("Allocated: ", descriptor_set._descriptor_set, "\t [Description Set]");
+	dloggln("ALLOCATED \t", descriptor_set._descriptor_set, "\t [Description Set]");
 	
 	// deletion_queue.push<VkDevice>([=](void* _){
 	// 	lvk_destroy((VkDevice)_, descriptor_set._descriptor_set, descriptor_pool);
@@ -1119,7 +1121,7 @@ lvk_descriptor_pool lvk_device::create_descriptor_pool(const uint32_t max_descri
 	if (vkCreateDescriptorPool(_device, &pool_info, VK_NULL_HANDLE, &descriptor_pool._descriptor_pool) != VK_SUCCESS) {
 		throw std::runtime_error("descriptor_pool creation failed");
 	}
-	dloggln("Created: ", descriptor_pool, "\t [DescriptorPool]");
+	dloggln("CREATED \t", descriptor_pool, "\t [DescriptorPool]");
 
 	destroyer.push(descriptor_pool);
 
@@ -1237,7 +1239,7 @@ lvk_render_pass lvk_device::create_render_pass(const VkAttachmentDescription* at
 	if (vkCreateRenderPass(_device, &create_info, VK_NULL_HANDLE, &render_pass._render_pass) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create renderpass!");
 	}
-	dloggln("Created: ", render_pass, "\t [RenderPass]");
+	dloggln("CREATED \t", render_pass, "\t [RenderPass]");
 	
 	destroyer.push(render_pass);
 
@@ -1273,7 +1275,7 @@ lvk_framebuffer lvk_device::create_framebuffer(const VkRenderPass render_pass, c
 	if (vkCreateFramebuffer(this->_device, &create_info, VK_NULL_HANDLE, &framebuffer._framebuffer) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create framebuffer");
 	}
-	dloggln("Created: ", framebuffer, "\t [Framebuffer]");
+	dloggln("CREATED \t", framebuffer, "\t [Framebuffer]");
 	
 	destroyer.push(framebuffer);
 
@@ -1305,7 +1307,7 @@ lvk_sampler lvk_device::create_sampler(VkFilter min_filter, VkFilter mag_filter,
 	if (vkCreateSampler(this->_device, &create_info, VK_NULL_HANDLE, &sampler._sampler) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create framebuffer");
 	}
-	dloggln("Created: ", sampler, "\t [Sampler]");
+	dloggln("CREATED \t", sampler, "\t [Sampler]");
 	
 	destroyer.push(sampler);
 

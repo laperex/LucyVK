@@ -196,6 +196,7 @@ bool lvk_instance::is_debug_enable() {
 lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk::SelectPhysicalDevice_F function) {
 	lvk_device device = {
 		._device = VK_NULL_HANDLE,
+		._allocator = VK_NULL_HANDLE,
 
 		.extensions = extensions,
 
@@ -216,9 +217,6 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 
 		.physical_device = {
 			._physical_device = VK_NULL_HANDLE,
-		},
-		.allocator = {
-			._allocator = VK_NULL_HANDLE
 		},
 
 		.destroyer = {},
@@ -293,7 +291,7 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 		vkGetPhysicalDeviceFeatures(device.physical_device._physical_device, &device.physical_device._features);
 		vkGetPhysicalDeviceProperties(device.physical_device._physical_device, &device.physical_device._properties);
 		
-		dloggln(device.physical_device._physical_device, " Physical Device - ", device.physical_device._properties.deviceName);
+		dloggln("Created:\t", device.physical_device._physical_device, "\t [Physical Device] - ", device.physical_device._properties.deviceName);
 	}
 	
 	
@@ -345,7 +343,7 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
     if (vkCreateDevice(device.physical_device._physical_device, &create_info, VK_NULL_HANDLE, &device._device) != VK_SUCCESS) {
         throw std::runtime_error("logical device creation failed!");
     }
-	dloggln("Logical Device Created");
+	dloggln("Created:\t", device._device, "\t [LogicalDevice]");
 
 
     for (uint32_t index: unique_queue_indices) {
@@ -354,19 +352,19 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 
 		if (index == device._queue.graphics.index.value()) {
 			device._queue.graphics.handle = queue;
-			dloggln("Graphics Queue Created");
+			dloggln("Created:\t", queue, "\t [Graphics Queue]");
 		}
 		if (index == device._queue.present.index.value()) {
 			device._queue.present.handle = queue;
-			dloggln("Present Queue Created");
+			dloggln("Created:\t", queue, "\t [Present Queue]");
 		}
 		if (index == device._queue.compute.index.value()) {
 			device._queue.compute.handle = queue;
-			dloggln("Compute Queue Created");
+			dloggln("Created:\t", queue, "\t [Compute Queue]");
 		}
 		if (index == device._queue.transfer.index.value()) {
 			device._queue.transfer.handle = queue;
-			dloggln("Transfer Queue Created");
+			dloggln("Created:\t", queue, "\t [Transfer Queue]");
 		}
 	}
 	
@@ -379,8 +377,8 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 		.instance = _instance,
 	};
 
-    vmaCreateAllocator(&allocator_create_info, &device.allocator._allocator);
-	dloggln("Allocator Created");
+    vmaCreateAllocator(&allocator_create_info, &device._allocator);
+	dloggln("Created:\t", device._allocator, "\t [Allocator]");
 	
 	return device;
 }

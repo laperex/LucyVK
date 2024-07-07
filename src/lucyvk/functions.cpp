@@ -41,40 +41,28 @@ VkPhysicalDevice lvk::default_physical_device(const std::vector<VkPhysicalDevice
 	dloggln("");
 	dloggln("Available GPUs:");
 	
+	
 	VkPhysicalDeviceProperties properties;
 	for (const auto& physical_device: physicalDeviceArray) {
 		vkGetPhysicalDeviceProperties(physical_device, &properties);
 		
-		dloggln(properties.deviceName);
-		
-		// for (const auto& mode: query_swapchain_support_details(physical_device, instance->instance->_surfaceKHR).present_modes) {
-		// 	switch (mode) {
-		// 		case VK_PRESENT_MODE_IMMEDIATE_KHR:
-		// 			dloggln("	VK_PRESENT_MODE_IMMEDIATE_KHR");
-		// 			break;
-		// 		case VK_PRESENT_MODE_MAILBOX_KHR:
-		// 			dloggln("	VK_PRESENT_MODE_MAILBOX_KHR");
-		// 			break;
-		// 		case VK_PRESENT_MODE_FIFO_KHR:
-		// 			dloggln("	VK_PRESENT_MODE_FIFO_KHR");
-		// 			break;
-		// 		case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
-		// 			dloggln("	VK_PRESENT_MODE_FIFO_RELAXED_KHR");
-		// 			break;
-		// 		case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:
-		// 			dloggln("	VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR");
-		// 			break;
-		// 		case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:
-		// 			dloggln("	VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR");
-		// 			break;
-		// 		case VK_PRESENT_MODE_MAX_ENUM_KHR:
-		// 			dloggln("	VK_PRESENT_MODE_MAX_ENUM_KHR");
-		// 			break;
-		// 	}
-		// }
+		dloggln("\t- ", properties.deviceName);
+
+		uint32_t present_mode_count;
+		vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, instance->_surfaceKHR, &present_mode_count, VK_NULL_HANDLE);
+		std::vector<VkPresentModeKHR> present_modes(present_mode_count);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, instance->_surfaceKHR, &present_mode_count, present_modes.data());
+
+		for (const auto& mode: present_modes) {
+			dloggln("\t\t- ", to_string(mode));
+		}
 	}
 
 	for (const auto& physical_device: physicalDeviceArray) {
+		static int i = 0;
+		
+		// if (i++ == 0) continue;
+
 		bool isRequiredDeviceExtensionsAvailable = false;
 		bool isIndicesComplete = false;
 		bool isSwapchainAdequate = false;
@@ -142,6 +130,25 @@ VkPhysicalDevice lvk::default_physical_device(const std::vector<VkPhysicalDevice
 	return VK_NULL_HANDLE;
 }
 
+const char* lvk::to_string(const VkPresentModeKHR mode) {
+	switch (mode) {
+		case VK_PRESENT_MODE_IMMEDIATE_KHR:
+			return "VK_PRESENT_MODE_IMMEDIATE_KHR";
+		case VK_PRESENT_MODE_MAILBOX_KHR:
+			return "VK_PRESENT_MODE_MAILBOX_KHR";
+		case VK_PRESENT_MODE_FIFO_KHR:
+			return "VK_PRESENT_MODE_FIFO_KHR";
+		case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
+			return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
+		case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:
+			return "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
+		case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:
+			return "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
+		case VK_PRESENT_MODE_MAX_ENUM_KHR:
+			return "VK_PRESENT_MODE_MAX_ENUM_KHR";
+	}
+}
+
 const char* lvk::to_string(const VkBufferUsageFlagBits usage) {
 	switch (usage) {
         case VK_BUFFER_USAGE_TRANSFER_SRC_BIT:
@@ -190,9 +197,16 @@ const char* lvk::to_string(const VkBufferUsageFlagBits usage) {
 			return "MICROMAP_BUILD_INPUT_READ_ONLY";
         case VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT:
 			return "MICROMAP_STORAGE";
-	}
-	
-	return "";
+        case VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR:
+			return "VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR";
+        case VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR:
+			return "VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR";
+        case VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM:
+			return "VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM";
+          break;
+        }
+
+        return "";
 }
 
 // VkPipelineColorBlendAttachmentState lvk::color_blend_attachment() {

@@ -15,4 +15,5 @@ namespace lvk {
 	VkPhysicalDevice default_physical_device(const std::vector<VkPhysicalDevice>& physicalDeviceArray, const lvk_instance* instance);
 
 	const char* to_string(const VkBufferUsageFlagBits usage);
+	const char* to_string(const VkPresentModeKHR mode);
 }
