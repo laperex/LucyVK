@@ -7,7 +7,7 @@
 
 #include "lucyio/logger.h"
 
-#include "lucyre/renderer.h"
+#include "renderer.h"
 
 
 struct mvp_matrix {
@@ -17,18 +17,18 @@ struct mvp_matrix {
 	glm::vec4 color;
 };
 
-lre::renderer::renderer()
+lucy::renderer::renderer()
 {
 	
 }
 
 
-void lre::renderer::upload_mesh(Mesh& mesh) {
+void lucy::renderer::upload_mesh(lvk::mesh& mesh) {
 	mesh.vertex_buffer = device.create_vertex_buffer(mesh.vertices.size(), mesh.vertices.data());
 	
 }
 
-lvk_image lre::renderer::load_image_2D(const char* filename) {
+lvk_image lucy::renderer::load_image_2D(const char* filename) {
 	int width, height, channels;
 
 	stbi_uc* image_data = stbi_load(filename, &width, &height, &channels, STBI_rgb_alpha);
@@ -71,7 +71,7 @@ lvk_image lre::renderer::load_image_2D(const char* filename) {
 	return image;
 }
 
-void lre::renderer::texture_pipeline_init() {
+void lucy::renderer::texture_pipeline_init() {
 	lvk_shader_module vertex_shader = device.create_shader_module("./shaders/texture.vert.spv");
 	lvk_shader_module fragment_shader = device.create_shader_module("./shaders/texture.frag.spv");
 
@@ -80,7 +80,7 @@ void lre::renderer::texture_pipeline_init() {
 		VK_DYNAMIC_STATE_SCISSOR
 	};
 
-	VertexInputDescription vertex_description = Vertex::get_vertex_input_description();
+	lvk::vertex_input_description vertex_description = lvk::vertex::get_vertex_input_description();
 
 	lvk::config::graphics_pipeline config = {
 		.shader_stage_array = {
@@ -127,16 +127,22 @@ void lre::renderer::texture_pipeline_init() {
 	device.destroy(vertex_shader);
 }
 
-void lre::renderer::descriptor_set_init() {
-	uint32_t descriptor_set_max_size = 10;
+void lucy::renderer::descriptor_set_init() {
+	uint32_t max_descriptor_sets = 1000;
 
-	VkDescriptorPoolSize descriptor_pool_sizes[] = {
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 10 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 },
-	};
-
-	descriptor_pool = device.create_descriptor_pool(descriptor_set_max_size, descriptor_pool_sizes);
+	descriptor_pool = device.create_descriptor_pool(max_descriptor_sets, {
+		{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 },
+	});
 
 	// seperate for each shader type
 	descriptor_set_layout = device.create_descriptor_set_layout({
@@ -146,9 +152,10 @@ void lre::renderer::descriptor_set_init() {
 	});
 
 	descriptor_ubo = device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
+	device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
 }
 
-void lre::renderer::init(SDL_Window* window) {
+void lucy::renderer::init(SDL_Window* window) {
 	instance = lvk_instance::initialize("Lucy Framework v17", window, true);
 	device = instance.create_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME });
 	
@@ -167,7 +174,7 @@ void lre::renderer::init(SDL_Window* window) {
 	}
 	
 	
-	mesh.vertices = std::vector<Vertex> {
+	mesh.vertices = std::vector<lvk::vertex> {
 		{ {  0.5f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } },
 		{ { -0.5f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f } },
 		{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f } },
@@ -202,7 +209,7 @@ void lre::renderer::init(SDL_Window* window) {
 	device.update_descriptor_set(descriptor_ubo, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
 }
 
-void lre::renderer::record(lre_frame& frame) {
+void lucy::renderer::record(lre_frame& frame) {
 	// auto& frame = frame_array[frame_number % FRAMES_IN_FLIGHT];
 	const auto& cmd = frame.command_buffer;
 
@@ -232,10 +239,6 @@ void lre::renderer::record(lre_frame& frame) {
 		}
 	};
 	
-	// dloggln(swapchain._extent.width);
-
-	// draw.extent = *(const VkExtent2D*)&draw.image._extent;
-
 	glm::vec3 cam_pos = { 0.f, 0.f, -10 };
 	
 	static uint32_t frame_count = 0;
@@ -277,7 +280,7 @@ void lre::renderer::record(lre_frame& frame) {
 	cmd.end();
 }
 
-void lre::renderer::submit(const lre_frame& frame) {
+void lucy::renderer::submit(const lre_frame& frame) {
 	VkPipelineStageFlags wait_dest = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 	VkSubmitInfo submit_info = {
@@ -305,7 +308,15 @@ void lre::renderer::submit(const lre_frame& frame) {
 	}
 }
 
-void lre::renderer::update(const bool& is_resized) {
+void lucy::renderer::set_projection(const glm::mat4& projection) {
+	
+}
+
+void lucy::renderer::set_view(const glm::mat4& view) {
+	
+}
+
+void lucy::renderer::update(const bool& is_resized) {
 	static uint32_t frame_number = 0;
 
 	if (is_resized || resize_requested) {
@@ -331,7 +342,7 @@ void lre::renderer::update(const bool& is_resized) {
 	// 	exit(0);
 }
 
-void lre::renderer::destroy() {
+void lucy::renderer::destroy() {
 	device.wait_idle();
 
 	device.destroy_device();

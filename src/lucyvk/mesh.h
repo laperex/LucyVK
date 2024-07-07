@@ -6,8 +6,8 @@
 // #include "lucyvk/memory.h"
 
 
-namespace lre {
-	struct VertexInputDescription {
+namespace lvk {
+	struct vertex_input_description {
 		std::vector<VkVertexInputBindingDescription> bindings;
 		std::vector<VkVertexInputAttributeDescription> attributes;
 
@@ -15,22 +15,22 @@ namespace lre {
 	};
 
 
-	struct Vertex {
+	struct vertex {
 		glm::vec3 position;
 		glm::vec3 normal;
 		glm::vec3 uv;
 
 
-		static VertexInputDescription get_vertex_input_description() {
+		static vertex_input_description get_vertex_input_description() {
 			return {
 				.bindings = {
-					lvk::info::vertex_input_description<Vertex>(0, VK_VERTEX_INPUT_RATE_VERTEX)
+					lvk::info::vertex_input_description<vertex>(0, VK_VERTEX_INPUT_RATE_VERTEX)
 				},
 
 				.attributes = {
-					lvk::info::vertex_input_attribute_description(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)),
-					lvk::info::vertex_input_attribute_description(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)),
-					lvk::info::vertex_input_attribute_description(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, uv)),
+					lvk::info::vertex_input_attribute_description(0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(vertex, position)),
+					lvk::info::vertex_input_attribute_description(0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(vertex, normal)),
+					lvk::info::vertex_input_attribute_description(0, 2, VK_FORMAT_R32G32B32_SFLOAT, offsetof(vertex, uv)),
 				},
 
 				.flags = 0
@@ -39,8 +39,8 @@ namespace lre {
 	};
 
 
-	struct Mesh {
-		std::vector<Vertex> vertices;
+	struct mesh {
+		std::vector<vertex> vertices;
 		std::vector<uint32_t> indices;
 
 		lvk_buffer vertex_buffer;

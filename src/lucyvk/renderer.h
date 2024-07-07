@@ -2,7 +2,7 @@
 
 #include "lucylm/math.hpp"
 
-#include "lucyre/mesh.h"
+#include "lucyvk/mesh.h"
 #include "lucyvk/command.h"
 #include "lucyvk/device.h"
 #include "lucyvk/handles.h"
@@ -29,41 +29,31 @@ struct lre_frame {
 	uint32_t image_index;
 };
 
-
-namespace lre {
+namespace lucy {
 	class renderer {
 		lvk_command_pool main_command_pool;
 		lre_frame frame_array[FRAMES_IN_FLIGHT];
 
 		lvk_instance instance;
 		lvk_device device;
-
+		lvk_render_pass render_pass;
 		lvk_swapchain swapchain;
-		// std::vector<lvk_framebuffer> framebuffer_array;
 
-		// lvk_image depth_image;
-		// lvk_image_view depth_image_view;
-
+		
+		lvk_descriptor_set_layout descriptor_set_layout;
 		lvk_descriptor_pool descriptor_pool;
+		lvk_descriptor_set descriptor_ubo;
 
+
+		// ----------------------------------------------
+		
 		lvk_pipeline graphics_pipeline;
 		lvk_pipeline_layout graphics_pipeline_layout;
-
-		lvk_descriptor_set descriptor_ubo;
-		lvk_descriptor_set_layout descriptor_set_layout;
 		
-		// lvk_image load_image;
-		// lvk_image_view load_image_view;
-
-
-		// lvk_sampler sampler;
-
-
-		lvk_render_pass render_pass;
 		
 		lvk_buffer mvp_uniform_buffer;
-		
-		Mesh mesh;
+
+		lvk::mesh mesh;
 		
 		VkClearValue clear_value[2] = {
 			{
@@ -80,7 +70,7 @@ namespace lre {
 		
 		SDL_Window* sdl_window = nullptr;
 		
-		void upload_mesh(Mesh& mesh);
+		void upload_mesh(lvk::mesh& mesh);
 		
 		void texture_pipeline_init();
 		void descriptor_set_init();
@@ -90,13 +80,15 @@ namespace lre {
 	public:
 		lvk_image load_image_2D(const char* filename);
 
-		renderer();
-	
 		void init(SDL_Window* window);
 
+		renderer();
 
 		void record(lre_frame& frame);
 		void submit(const lre_frame& frame);
+		
+		void set_projection(const glm::mat4& projection);
+		void set_view(const glm::mat4& view);
 
 		void begin();
 		void end();

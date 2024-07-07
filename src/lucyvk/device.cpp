@@ -1329,3 +1329,28 @@ lvk_sampler lvk_device::create_sampler(VkFilter min_filter, VkFilter mag_filter,
 
 	return sampler;
 }
+
+lvk_image lvk_device::load_image(VkDeviceSize size, void* data, VkExtent3D extent, VkImageType type, VkFormat format) {
+	lvk_buffer staging_buffer = create_staging_buffer(size, data);
+
+	lvk_image image = create_image(format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, extent, VK_IMAGE_TYPE_2D);
+
+	imm_submit([&](lvk_command_buffer command_buffer) {
+		VkImageMemoryBarrier image_barrier = lvk::info::image_memory_barrier(image, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, lvk::info::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT));
+
+		command_buffer.pipeline_barrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, image_barrier);
+		command_buffer.copy_buffer_to_image(staging_buffer, image, image._extent);
+
+		image_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		image_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		image_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		image_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		command_buffer.pipeline_barrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, image_barrier);
+	});
+
+	destroy(staging_buffer);
+
+	return image;
+}

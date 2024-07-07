@@ -6,6 +6,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "lucytl/linked_list.h"
+#include "voxel/camera.h"
 
 
 // // TODO: dynamic viewport
@@ -24,9 +25,14 @@
 int main(int count, char** args) {
 	freopen("output.log", "w", stderr);
 
-	std::vector<int> a = { 0 };
+	lucy::engine engine;
 	
-	lucy::engine::initialize();
-	lucy::engine::mainloop();
-	lucy::engine::destroy();
+	engine.add<lucy::camera>();
+	
+	// lucy::camera cam = { _window, };
+	
+
+	engine.initialize();
+	engine.mainloop();
+	engine.destroy();
 }

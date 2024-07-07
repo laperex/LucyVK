@@ -387,4 +387,9 @@ struct lvk_device {
 	constexpr VkResult present(const uint32_t image_index, const VkSwapchainKHR (&swapchains)[_skhr_N], const VkSemaphore (&semaphores)[_s_N]) const noexcept {
 		return present(image_index, swapchains, _skhr_N, semaphores, _s_N);
 	}
+	
+	
+	// LOADER
+	
+	lvk_image load_image(VkDeviceSize size, void* data, VkExtent3D extent, VkImageType type = VK_IMAGE_TYPE_2D, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
 };

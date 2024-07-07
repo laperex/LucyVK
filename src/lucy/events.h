@@ -15,10 +15,10 @@ namespace lucy {
 		bool is_key_toggled = false;
 
 		float mouse_wheel_scroll = 0;
-		
-		glm::ivec2 mouse_position = {};
-		glm::ivec2 mouse_position_relative = {};
-		glm::ivec2 mouse_offset_relative = {};
+
+		glm::ivec2 _cursor_pos = {};
+		glm::ivec2 _cursor_pos_rel = {};
+		glm::ivec2 _cursor_offset_rel = {};
 
 		std::set<uint32_t> mouse_pressed = {};
 		std::set<uint32_t> mouse_toggled = {};
@@ -47,5 +47,12 @@ namespace lucy {
 		
 		bool key_pressed(const std::vector<SDL_Scancode> scancode);
 		bool key_toggled(const std::vector<SDL_Scancode> scancode);
+		
+		bool button_pressed(const uint32_t button);
+		bool scroll_up();
+		bool scroll_down();
+
+		glm::ivec2 cursor_position();
+		glm::vec2 cursor_position_normalized(float posx, float posy, float width, float height);
 	};
 }

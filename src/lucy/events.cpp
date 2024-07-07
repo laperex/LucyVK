@@ -30,14 +30,14 @@ void lucy::events::update() {
 				break;
 			
 			case SDL_MOUSEMOTION:
-				mouse_position.x = event.motion.x;
-				mouse_position.y = event.motion.y;
+				_cursor_pos.x = event.motion.x;
+				_cursor_pos.y = event.motion.y;
 				
-				mouse_offset_relative.x = event.motion.xrel;
-				mouse_offset_relative.y = event.motion.yrel;
+				_cursor_offset_rel.x = event.motion.xrel;
+				_cursor_offset_rel.y = event.motion.yrel;
 				
-				mouse_position_relative.x += event.motion.xrel;
-				mouse_position_relative.y += event.motion.yrel;
+				_cursor_pos_rel.x += event.motion.xrel;
+				_cursor_pos_rel.y += event.motion.yrel;
 				break;
 			
 			case SDL_MOUSEBUTTONDOWN:
@@ -114,4 +114,27 @@ bool lucy::events::key_pressed(const std::vector<SDL_Scancode> scancode) {
 	}
 	
 	return true;
+}
+
+bool lucy::events::button_pressed(const uint32_t button) {
+	return mouse_pressed.contains(button);
+}
+
+bool lucy::events::scroll_up() {
+	return mouse_wheel_scroll > 0;
+}
+
+bool lucy::events::scroll_down() {
+	return mouse_wheel_scroll < 0;
+}
+
+glm::ivec2 lucy::events::cursor_position() {
+	return _cursor_pos;
+}
+
+glm::vec2 lucy::events::cursor_position_normalized(float posx, float posy, float width, float height) {
+	return {
+		((_cursor_pos.x - posx) / (width * 0.5)) - 1.0,
+		1.0 - ((_cursor_pos.y - posy) / (height * 0.5))
+	};
 }
