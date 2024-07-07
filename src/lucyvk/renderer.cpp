@@ -10,13 +10,6 @@
 #include "renderer.h"
 
 
-struct mvp_matrix {
-	glm::mat4 projection;
-	glm::mat4 view;
-	glm::mat4 model;
-	glm::vec4 color;
-};
-
 lucy::renderer::renderer()
 {
 	
@@ -161,7 +154,6 @@ void lucy::renderer::init(SDL_Window* window) {
 	
 	sdl_window = window;
 
-	mvp_uniform_buffer = device.create_uniform_buffer<mvp_matrix>();
 
 	main_command_pool = device.create_graphics_command_pool();
 
@@ -205,8 +197,6 @@ void lucy::renderer::init(SDL_Window* window) {
 	lvk_sampler sampler = device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 
 	device.update_descriptor_set(descriptor_ubo, 2, &load_image_view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);
-
-	device.update_descriptor_set(descriptor_ubo, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
 }
 
 void lucy::renderer::record(lre_frame& frame) {
@@ -239,21 +229,31 @@ void lucy::renderer::record(lre_frame& frame) {
 		}
 	};
 	
+	static lvk_buffer mvp_uniform_buffer = {
+		._buffer = VK_NULL_HANDLE
+	};
+	
+	if (mvp_uniform_buffer._buffer == VK_NULL_HANDLE) {
+		mvp_uniform_buffer = device.create_uniform_buffer<decltype(mvp)>();
+		device.update_descriptor_set(descriptor_ubo, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
+	}
+	
+
 	glm::vec3 cam_pos = { 0.f, 0.f, -10 };
 	
 	static uint32_t frame_count = 0;
 	frame_count++;
 
-	mvp_matrix mvp = {
-		.projection = glm::perspective(glm::radians(70.f), float(swapchain._extent.width) / float(swapchain._extent.height), 0.1f, 200.0f),
-		.view = glm::translate(glm::mat4(1.f), cam_pos),
-		.model = glm::rotate(glm::mat4(1.0f), glm::radians(frame_count * 0.4f), glm::vec3(0, 1, 0)),
+	// mvp = {
+	// 	.projection = glm::perspective(glm::radians(70.f), float(swapchain._extent.width) / float(swapchain._extent.height), 0.1f, 200.0f),
+	// 	.view = glm::translate(glm::mat4(1.f), cam_pos),
+	// 	.model = glm::rotate(glm::mat4(1.0f), glm::radians(frame_count * 0.4f), glm::vec3(0, 1, 0)),
 
-		// .model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0, 1, 0)),
-		.color = { 0, 1, 0, 1},
-	};
+	// 	// .model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0, 1, 0)),
+	// 	// .color = { 0, 1, 0, 1},
+	// };
 
-	mvp.projection[1][1] *= -1;
+	// mvp.projection[1][1] *= -1;
 
 	device.upload(mvp_uniform_buffer, mvp);
 
@@ -309,11 +309,15 @@ void lucy::renderer::submit(const lre_frame& frame) {
 }
 
 void lucy::renderer::set_projection(const glm::mat4& projection) {
-	
+	mvp.projection = projection;
 }
 
 void lucy::renderer::set_view(const glm::mat4& view) {
-	
+	mvp.view = view;
+}
+
+void lucy::renderer::set_model(const glm::mat4& model) {
+	mvp.model = model;
 }
 
 void lucy::renderer::update(const bool& is_resized) {

@@ -23,7 +23,7 @@
 
 
 int main(int count, char** args) {
-	freopen("output.log", "w", stderr);
+	// freopen("output.log", "w", stderr);
 
 	lucy::engine engine;
 	

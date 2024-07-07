@@ -16,7 +16,6 @@ void lucy::camera::initialization() {
 }
 
 void lucy::camera::update(double dt) {
-	
 	if (this->width != last_size.x || this->height != last_size.y || this->posx != last_pos.x || this->posy != last_pos.y) {
 		last_size.x = this->width;
 		last_size.y = this->height;
@@ -96,6 +95,9 @@ void lucy::camera::update(double dt) {
 		toggle = false;
 		delta = glm::vec3();
 	}
+
+	_renderer->set_projection(projection);
+	_renderer->set_view(view);
 }
 
 void lucy::camera::destroy() {

@@ -42,17 +42,14 @@ namespace lucy {
 		
 		lvk_descriptor_set_layout descriptor_set_layout;
 		lvk_descriptor_pool descriptor_pool;
-		lvk_descriptor_set descriptor_ubo;
 
 
 		// ----------------------------------------------
 		
 		lvk_pipeline graphics_pipeline;
 		lvk_pipeline_layout graphics_pipeline_layout;
+		lvk_descriptor_set descriptor_ubo;
 		
-		
-		lvk_buffer mvp_uniform_buffer;
-
 		lvk::mesh mesh;
 		
 		VkClearValue clear_value[2] = {
@@ -67,6 +64,14 @@ namespace lucy {
 				}
 			},
 		};
+		
+		
+		struct {
+			glm::mat4 projection;
+			glm::mat4 view;
+			glm::mat4 model;
+		} mvp;
+
 		
 		SDL_Window* sdl_window = nullptr;
 		
@@ -89,6 +94,7 @@ namespace lucy {
 		
 		void set_projection(const glm::mat4& projection);
 		void set_view(const glm::mat4& view);
+		void set_model(const glm::mat4& model);
 
 		void begin();
 		void end();
