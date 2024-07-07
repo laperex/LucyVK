@@ -1,13 +1,6 @@
 #include "camera.h"
 #include "lucyio/logger.h"
 
-glm::vec2 last_pos = { 0, 0 };
-float scrollspeed = 0.75 * 3;
-bool toggle = false;
-
-glm::vec3 delta;
-glm::vec3 initpos;
-
 void lucy::camera::initialization() {
 	position = { 0, 0, -10 };
 	c_near = 0.1;
@@ -15,15 +8,15 @@ void lucy::camera::initialization() {
 }
 
 void lucy::camera::update(double dt) {
+	static bool toggle = false;
+
 	window_size = _window->size();
 	
 	if (window_size != prev_window_size) {
 		prev_window_size = window_size;
-
 		prev_cursor_pos = window_size / 2;
 
 		first_mouse = true;
-
 		projection = glm::perspective(glm::radians(fov), (float)window_size.x / window_size.y, c_near, c_far);
 	}
 
@@ -65,6 +58,9 @@ void lucy::camera::update(double dt) {
 	float distance = glm::length(position);
 	scrollspeed = distance / 10;
 	position = distance * -front;
+
+	static glm::vec3 delta;
+	static glm::vec3 initpos;
 
 	static bool click_toggle = true;
 	if (_events->button_pressed(SDL_BUTTON_LEFT) && _events->key_pressed(SDL_SCANCODE_LALT)/*  && click_toggle */) {
