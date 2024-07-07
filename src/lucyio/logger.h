@@ -8,7 +8,7 @@
 #define DEBUG_ENABLE
 
 #ifdef DEBUG_ENABLE 
-	#define dloggln(...) util::println(__VA_ARGS__, '\n')
+	#define dloggln(...) util::println(__VA_ARGS__)
 #else
 	#define dloggln(...) ;
 #endif
@@ -54,33 +54,14 @@ std::ostream& operator<<(std::ostream& output, std::unordered_map<Key, Tp> const
 }
 
 namespace util {
-	inline void print() {}
-
-	template <typename T>
-	inline void print(T a) {
-		std::clog << a;
-		std::cout << a;
-	}
 	template <typename T>
 	inline void println(T a) {
-		std::clog << a;
-		std::cout << a;
+		std::clog << a << std::endl;
 	}
-
-	// template <typename T, typename Tp>
-	// inline void print<std::vector<Tp>>(T a) {
-		
-	// }
-
-	template <typename T, typename ...Ta>
-	void print(T a, Ta ...as) {
-		print(a);
-		print(as...);
-	}
-
+	
 	template <typename T, typename ...Ta>
 	void println(T a, Ta ...as) {
-		println(a);
+		std::clog << a;
 		println(as...);
 	}
 }
