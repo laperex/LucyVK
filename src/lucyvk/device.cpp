@@ -188,10 +188,18 @@ void lvk_device::destroy(VkBuffer buffer, VmaAllocation allocation) {
 	destroyer.delete_insert(buffer);
 }
 
+void lvk_device::destroy(const lvk_buffer& buffer) {
+	destroy(buffer, buffer._allocation);
+}
+
 void lvk_device::destroy(VkImage image, VmaAllocation allocation) {
 	vmaDestroyImage(allocator, image, allocation);
 	dloggln("Destroyed: ", image, "\t [Image]");
 	destroyer.delete_insert(image);
+}
+
+void lvk_device::destroy(const lvk_image& image) {
+	destroy(image, image._allocation);
 }
 
 
@@ -440,7 +448,7 @@ std::vector<lvk_command_buffer> lvk_device::create_command_buffers(const lvk_com
 }
 
 
-VkResult lvk_device::imm_submit(std::function<void(const VkCommandBuffer)> function) {
+VkResult lvk_device::imm_submit(std::function<void(lvk_command_buffer)> function) {
 	static struct {
 		VkCommandPool _command_pool = VK_NULL_HANDLE;
 		VkCommandBuffer _command_buffer = VK_NULL_HANDLE;
@@ -460,10 +468,12 @@ VkResult lvk_device::imm_submit(std::function<void(const VkCommandBuffer)> funct
 		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
 		.pInheritanceInfo = VK_NULL_HANDLE
 	};
+	
+	auto imm_cmd = static_cast<lvk_command_buffer>(immediate_command._command_buffer);
 
 	vkBeginCommandBuffer(immediate_command._command_buffer, &begin_info);
 	
-	function(immediate_command._command_buffer);
+	function(imm_cmd);
 	
 	vkEndCommandBuffer(immediate_command._command_buffer);
 	

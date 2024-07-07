@@ -46,15 +46,13 @@ lvk_image lre::renderer::load_image_from_file(const char* filename) {
 		.depth = 1,
 	};
 
-	lvk_buffer staging_buffer = this->device.create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, image_size, image_data);
+	lvk_buffer staging_buffer = this->device.create_staging_buffer(image_size, image_data);
 	
 	// device
 
 	lvk_image image = this->device.create_image(image_format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, image_extent, VK_IMAGE_TYPE_2D);
 
-	this->device.imm_submit([&](VkCommandBuffer cmd) {
-		lvk_command_buffer command_buffer = static_cast<lvk_command_buffer>(cmd);
-
+	this->device.imm_submit([&](lvk_command_buffer command_buffer) {
 		VkImageMemoryBarrier image_barrier = lvk::info::image_memory_barrier(image, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, lvk::info::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT));
 
 		command_buffer.pipeline_barrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, image_barrier);
@@ -69,6 +67,7 @@ lvk_image lre::renderer::load_image_from_file(const char* filename) {
 		command_buffer.pipeline_barrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, image_barrier);
 	});
 
+	device.destroy(staging_buffer);
 	stbi_image_free(image_data);
 
 	return image;
@@ -84,7 +83,6 @@ void lre::renderer::texture_pipeline_init() {
 	};
 
 	VertexInputDescription vertex_description = Vertex::get_vertex_input_description();
-
 
 	lvk::config::graphics_pipeline config = {
 		.shader_stage_array = {
@@ -126,6 +124,9 @@ void lre::renderer::texture_pipeline_init() {
 
 	graphics_pipeline_layout = device.create_pipeline_layout({ descriptor_set_layout });
 	graphics_pipeline = device.create_graphics_pipeline(graphics_pipeline_layout, config, render_pass);
+
+	device.destroy(fragment_shader);
+	device.destroy(vertex_shader);
 }
 
 void lre::renderer::descriptor_set_init() {

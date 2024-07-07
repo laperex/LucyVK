@@ -1,9 +1,12 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
+#include <cassert>
+#include <stdexcept>
 
-namespace util {
+namespace ltl {
 	template <typename T>
 	class list {
 		T* _begin = nullptr;
@@ -24,13 +27,27 @@ namespace util {
 			_end = nullptr;
 			_capacity = 0;
 		}
+		
+		list(const list<T>& _list) {
+			_begin = _list._begin;
+			_end = _list._end;
+			_capacity = _list._capacity;
+		}
 	
 		template <typename ..._il_T>
 		list(const _il_T ...il) {
 			initializer_list({ il... });
 		}
+		
+		inline list<T>& operator=(const list<T>& _list) {
+			_begin = _list._begin;
+			_end = _list._end;
+			_capacity = _list._capacity;
+
+			return *this;
+		}
 	
-		inline constexpr void reserve(size_t size) {
+		inline constexpr void resize(size_t size) {
 			if (size > _capacity) {
 				_begin = (_begin == nullptr) ? (T*)malloc(size * sizeof(T)): (T*)realloc(_begin, size * sizeof(T));
 				if (_capacity == 0) {
@@ -40,10 +57,10 @@ namespace util {
 			}
 		}
 
-		inline constexpr void resize() {
-			_begin = (T*)realloc(_begin, size() * sizeof(T));
-			_capacity = size();
-		}
+		// inline constexpr void resize() {
+		// 	_begin = (T*)realloc(_begin, size() * sizeof(T));
+		// 	_capacity = size();
+		// }
 
 
 		[[nodiscard]] inline constexpr T& operator[](const size_t index) {
@@ -71,6 +88,8 @@ namespace util {
 			}
 
 			*_end++ = element;
+			
+			// std::vector<>
 		}
 		
 		T pop_back() {

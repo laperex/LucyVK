@@ -85,7 +85,9 @@ struct lvk_device {
 	// void destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool);
 
 	void destroy(VkBuffer buffer, VmaAllocation allocation);
+	void destroy(const lvk_buffer& buffer);
 	void destroy(VkImage image, VmaAllocation allocation);
+	void destroy(const lvk_image& image);
 
 
 	// SYNCHRONIZATION 		---------- ---------- ---------- ----------
@@ -125,7 +127,7 @@ struct lvk_device {
 	std::vector<lvk_command_buffer> create_command_buffers(const lvk_command_pool& command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	
 	// lvk_immediate_command create_immediate_command();
-	VkResult imm_submit(std::function<void(const VkCommandBuffer)> function);
+	VkResult imm_submit(std::function<void(lvk_command_buffer)> function);
 	// VkResult imm_buffer_copy(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkDeviceSize size);
 	// VkResult 
 
