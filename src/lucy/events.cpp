@@ -18,6 +18,7 @@ void lucy::events::update() {
 	SDL_Event event;
 	
 	is_resized = false;
+	mouse_wheel_scroll = 0;
 
 	for (int i = 0; i < SDL_PollEvent(&event); i++) {
 		for (auto& function: event_function_array) {

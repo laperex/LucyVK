@@ -167,10 +167,10 @@ void lucy::renderer::init(SDL_Window* window) {
 	
 	
 	mesh.vertices = std::vector<lvk::vertex> {
-		{ {  0.5f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } },
-		{ { -0.5f,  0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f } },
-		{ { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f } },
-		{ {  0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } },
+		{ {  100,  100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } },
+		{ { -100,  100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f } },
+		{ { -100, -100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f } },
+		{ {  100, -100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } },
 	};
 	
 	mesh.indices = { 0,1,2, 2,3,0 };
@@ -253,7 +253,7 @@ void lucy::renderer::record(lre_frame& frame) {
 	// 	// .color = { 0, 1, 0, 1},
 	// };
 
-	// mvp.projection[1][1] *= -1;
+	mvp.projection[1][1] *= -1;
 
 	device.upload(mvp_uniform_buffer, mvp);
 

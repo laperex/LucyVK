@@ -10,12 +10,15 @@ glm::vec3 delta;
 glm::vec3 initpos;
 
 void lucy::camera::initialization() {
-	position = { 0, 0, 750 };
-	c_near = 10;
-	c_far = 3000;
+	position = { 0, 0, -10 };
+	c_near = 0.1;
+	c_far = 2000.f;
 }
 
 void lucy::camera::update(double dt) {
+	this->width = _window->size().x;
+	this->height = _window->size().y;
+	
 	if (this->width != last_size.x || this->height != last_size.y || this->posx != last_pos.x || this->posy != last_pos.y) {
 		last_size.x = this->width;
 		last_size.y = this->height;
@@ -64,6 +67,8 @@ void lucy::camera::update(double dt) {
 	if (_events->scroll_down())
 		this->position -= this->front * float(scrollspeed * dt);
 
+	dloggln(glm::to_string(position));
+
 	float distance = glm::length(this->position);
 	scrollspeed = distance / 10;
 	this->position = distance * -this->front;
@@ -98,6 +103,7 @@ void lucy::camera::update(double dt) {
 
 	_renderer->set_projection(projection);
 	_renderer->set_view(view);
+	_renderer->set_model(glm::mat4(1.0f));
 }
 
 void lucy::camera::destroy() {
