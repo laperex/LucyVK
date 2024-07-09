@@ -218,8 +218,16 @@ void lvk_command_buffer::set_viewport(const uint32_t first, const VkViewport* vi
 	vkCmdSetViewport(_command_buffer, first, count, viewports);
 }
 
+void lvk_command_buffer::set_viewport(const VkViewport viewport) const {
+	vkCmdSetViewport(_command_buffer, 0, 1, &viewport);
+}
+
 void lvk_command_buffer::set_scissor(const uint32_t first, const VkRect2D* scissors, const uint32_t count) const {
 	vkCmdSetScissor(_command_buffer, first, count, scissors);
+}
+
+void lvk_command_buffer::set_scissor(const VkRect2D scissors) const {
+	vkCmdSetScissor(_command_buffer, 0, 1, &scissors);
 }
 
 void lvk_command_buffer::end() const {
@@ -228,6 +236,14 @@ void lvk_command_buffer::end() const {
 
 void lvk_command_buffer::begin_render_pass(const VkRenderPassBeginInfo begin_info, const VkSubpassContents subpass_contents) const {
 	vkCmdBeginRenderPass(_command_buffer, &begin_info, subpass_contents);
+}
+
+void lvk_command_buffer::draw_indexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index, int32_t vertex_offset, uint32_t first_instance) const {
+	vkCmdDrawIndexed(_command_buffer, index_count, instance_count, first_index, vertex_offset, first_instance);
+}
+
+void lvk_command_buffer::draw(uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance) const {
+	vkCmdDraw(_command_buffer, vertex_count, instance_count, first_vertex, first_instance);
 }
 
 void lvk_command_buffer::begin_render_pass(const VkRenderPass render_pass, const VkFramebuffer framebuffer, const VkExtent2D extent, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count) const {

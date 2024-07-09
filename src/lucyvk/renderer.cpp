@@ -12,7 +12,7 @@
 
 lucy::renderer::renderer()
 {
-	
+	pipeline_manager.device = &device;
 }
 
 
@@ -144,7 +144,7 @@ void lucy::renderer::descriptor_set_init() {
 		lvk::info::descriptor_set_layout_binding(2, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1),
 	});
 
-	descriptor_ubo = device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
+	global_descriptor = device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
 	device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
 }
 
@@ -196,84 +196,48 @@ void lucy::renderer::init(SDL_Window* window) {
 	lvk_image_view load_image_view = device.create_image_view(load_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT);
 	lvk_sampler sampler = device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 
-	device.update_descriptor_set(descriptor_ubo, 2, &load_image_view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);
+	device.update_descriptor_set(global_descriptor, 2, &load_image_view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);
+
+	set_model(glm::mat4(1.0f));
 }
 
 void lucy::renderer::record(lre_frame& frame) {
-	// auto& frame = frame_array[frame_number % FRAMES_IN_FLIGHT];
 	const auto& cmd = frame.command_buffer;
 
-	// swapchain.acquire_next_image(&frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE);
-	if (device.swapchain_acquire_next_image(swapchain, &frame.image_index, frame.present_semaphore._semaphore, VK_NULL_HANDLE) == VK_ERROR_OUT_OF_DATE_KHR) {
+	if (device.swapchain_acquire_next_image(swapchain, &frame.image_index, frame.present_semaphore, VK_NULL_HANDLE) == VK_ERROR_OUT_OF_DATE_KHR) {
 		resize_requested = true;
 		return;
 	}
 
-	VkViewport viewport[] = {
-		{
-			.x = 0.0f,
-			.y = 0.0f,
-
-			.width = static_cast<float>(swapchain._extent.width),
-			.height = static_cast<float>(swapchain._extent.height),
-
-			.minDepth = 0.0f,
-			.maxDepth = 1.0f
-		}
-	};
-
-	VkRect2D scissor[] = {
-		{
-			.offset = { 0, 0 },
-			.extent = { static_cast<uint32_t>(swapchain._extent.width), static_cast<uint32_t>(swapchain._extent.height) }
-		}
-	};
-	
+	// mvp.projection[1][1] *= -1;
 	static lvk_buffer mvp_uniform_buffer = {
 		._buffer = VK_NULL_HANDLE
 	};
 	
 	if (mvp_uniform_buffer._buffer == VK_NULL_HANDLE) {
 		mvp_uniform_buffer = device.create_uniform_buffer<decltype(mvp)>();
-		device.update_descriptor_set(descriptor_ubo, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
+		device.update_descriptor_set(global_descriptor, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
 	}
-	
 
-	glm::vec3 cam_pos = { 0.f, 0.f, -10 };
-	
-	static uint32_t frame_count = 0;
-	frame_count++;
-
-	// mvp = {
-	// 	.projection = glm::perspective(glm::radians(70.f), float(swapchain._extent.width) / float(swapchain._extent.height), 0.1f, 200.0f),
-	// 	.view = glm::translate(glm::mat4(1.f), cam_pos),
-	// 	.model = glm::rotate(glm::mat4(1.0f), glm::radians(frame_count * 0.4f), glm::vec3(0, 1, 0)),
-
-	// 	// .model = glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0, 1, 0)),
-	// 	// .color = { 0, 1, 0, 1},
-	// };
-
-	mvp.projection[1][1] *= -1;
+	// mvp.projection[1][1] *= -1;
 
 	device.upload(mvp_uniform_buffer, mvp);
 
 	cmd.reset();
 	cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-	
-	cmd.set_viewport(viewport);
-	cmd.set_scissor(scissor);
+
+	cmd.set_viewport(lvk::info::viewport(0, 0, swapchain._extent.width, swapchain._extent.height, 0.0, 1.0));
+	cmd.set_scissor(lvk::info::scissor(0, 0, swapchain._extent.width, swapchain._extent.height));
 
 	cmd.begin_render_pass(render_pass, swapchain._framebuffers[frame.image_index], swapchain, VK_SUBPASS_CONTENTS_INLINE, clear_value);
-	
+
 	cmd.bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
-	
-	// cmd.set
 
 	cmd.bind_vertex_buffers({ mesh.vertex_buffer }, { 0 });
 	cmd.bind_index_buffer(mesh.index_buffer, VK_INDEX_TYPE_UINT32);
-	cmd.bind_descriptor_set(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout, { descriptor_ubo });
+	cmd.bind_descriptor_set(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout, { global_descriptor });
 
-	vkCmdDrawIndexed(cmd, mesh.indices.size(), 1, 0, 0, 0);
+	cmd.draw_indexed(mesh.indices.size(), 1, 0, 0, 0);
 
 	cmd.end_render_pass();
 

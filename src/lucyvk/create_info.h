@@ -55,6 +55,8 @@ namespace lvk::info {
 	constexpr VkPipelineRenderingCreateInfo rendering(const VkFormat (&color_attachment_formats)[_f_N], const VkFormat depth_attachment_format = VK_FORMAT_UNDEFINED, const VkFormat stencil_attachment_format = VK_FORMAT_UNDEFINED) noexcept {
 		return rendering(depth_attachment_format, stencil_attachment_format, color_attachment_formats, _f_N);
 	}
+	
+	VkGraphicsPipelineCreateInfo graphics_pipeline_create_info();
 
 	VkImageViewCreateInfo image_view(const VkImage image, VkFormat format, VkImageViewType view_type, VkImageSubresourceRange subresource_range, VkComponentMapping components);
 	VkImageViewCreateInfo image_view(const VkImage image, VkFormat format, VkImageAspectFlags aspect_flag, VkImageViewType view_type);
@@ -89,4 +91,7 @@ namespace lvk::info {
 	VkVertexInputAttributeDescription vertex_input_attribute_description(uint32_t binding, uint32_t location, VkFormat format, uint32_t offset);
 	
 	VkSubpassDescription subpass_description(VkSubpassDescriptionFlags flags, VkPipelineBindPoint pipelineBindPoint, uint32_t inputAttachmentCount, const VkAttachmentReference* pInputAttachments, uint32_t colorAttachmentCount, const VkAttachmentReference* pColorAttachments, const VkAttachmentReference* pResolveAttachments, const VkAttachmentReference* pDepthStencilAttachment, uint32_t preserveAttachmentCount, const uint32_t* pPreserveAttachments);
+
+	VkRect2D scissor(int32_t x, int32_t y, uint32_t width, uint32_t height);
+	VkViewport viewport(float x, float y, float width, float height, float min_depth, float max_depth);
 }

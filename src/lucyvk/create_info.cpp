@@ -169,6 +169,30 @@ VkPipelineRenderingCreateInfo lvk::info::rendering(const VkFormat depth_attachme
 	};
 }
 
+VkGraphicsPipelineCreateInfo lvk::info::graphics_pipeline_create_info() {
+	return {
+		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+		// .pNext = vk
+		// .flags = 
+		// .stageCount = 
+		// .pStages = 
+		// .pVertexInputState = 
+		// .pInputAssemblyState = 
+		// .pTessellationState = 
+		// .pViewportState = 
+		// .pRasterizationState = 
+		// .pMultisampleState = 
+		// .pDepthStencilState = 
+		// .pColorBlendState = 
+		// .pDynamicState = 
+		// .layout = 
+		// .renderPass = 
+		// .subpass = 
+		// .basePipelineHandle = 
+		// .basePipelineIndex = 
+	};
+}
+
 VkImageViewCreateInfo lvk::info::image_view(const VkImage image, VkFormat format, VkImageViewType view_type, VkImageSubresourceRange subresource_range, VkComponentMapping components) {
 	return {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -297,6 +321,32 @@ VkSubpassDescription lvk::info::subpass_description(VkSubpassDescriptionFlags fl
 
 		.preserveAttachmentCount = preserveAttachmentCount,
 		.pPreserveAttachments = pPreserveAttachments,
+	};
+}
+
+VkRect2D lvk::info::scissor(int32_t x, int32_t y, uint32_t width, uint32_t height) {
+	return {
+		.offset = {
+			.x = x,
+			.y = y
+		},
+		.extent = {
+			.width = width,
+			.height = height,
+		}
+	};
+}
+
+VkViewport lvk::info::viewport(float x, float y, float width, float height, float min_depth, float max_depth) {
+	return {
+		.x = x,
+		.y = y,
+		
+		.width = width,
+		.height = height,
+		
+		.minDepth = min_depth,
+		.maxDepth = max_depth
 	};
 }
 

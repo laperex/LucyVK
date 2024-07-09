@@ -22,6 +22,7 @@ struct lvk_command_buffer {
 
 	void blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size) const;
 
+	void set_viewport(const VkViewport viewport) const;
 	void set_viewport(const uint32_t first, const VkViewport* viewports, const uint32_t count) const;
 	template <std::size_t _v_N>  [[__gnu__::__always_inline__]]
 	constexpr void set_viewport(const uint32_t first, const VkViewport (&viewports)[_v_N]) const noexcept {
@@ -32,6 +33,7 @@ struct lvk_command_buffer {
 		set_viewport(0, viewports, _v_N);
 	}
 
+	void set_scissor(const VkRect2D scissors) const;
 	void set_scissor(const uint32_t first, const VkRect2D* scissors, const uint32_t count) const;
 	template <std::size_t _v_N>  [[__gnu__::__always_inline__]]
 	constexpr void set_scissor(const uint32_t first, const VkRect2D (&scissors)[_v_N]) const noexcept {
@@ -65,6 +67,9 @@ struct lvk_command_buffer {
 	}
 	void begin_render_pass(const VkRenderPass render_pass, const VkFramebuffer framebuffer, const VkExtent2D extent, const VkSubpassContents subpass_contents, const VkClearValue* clear_values, const uint32_t clear_value_count) const;
 	void begin_render_pass(const VkRenderPassBeginInfo beginInfo, const VkSubpassContents subpass_contents) const;
+	
+	void draw_indexed(uint32_t index_count, uint32_t instance_count, uint32_t first_index, int32_t vertex_offset, uint32_t first_instance) const;
+	void draw(uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance) const;
 	
 	void end() const;
 	void end_render_pass() const;

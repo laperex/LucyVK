@@ -89,10 +89,10 @@ void lucy::camera::update(double dt) {
 		toggle = false;
 		delta = glm::vec3();
 	}
+	
 
 	_renderer->set_projection(projection);
 	_renderer->set_view(view);
-	_renderer->set_model(glm::mat4(1.0f));
 }
 
 void lucy::camera::destroy() {

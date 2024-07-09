@@ -14,11 +14,14 @@
 #include <vector>
 // #include "lucyvk/render_pass.h"
 // #include "lucyvk/swapchain.h"
+#include "lucyvk/pipeline_manager.h"
 
 #define FRAMES_IN_FLIGHT 2
 
 
 struct lre_frame {
+	const lvk_command_pool* command_pool;
+
 	lvk_fence render_fence;
 
 	lvk_semaphore present_semaphore;
@@ -28,6 +31,7 @@ struct lre_frame {
 
 	uint32_t image_index;
 };
+
 
 namespace lucy {
 	class renderer {
@@ -41,14 +45,16 @@ namespace lucy {
 
 		
 		lvk_descriptor_set_layout descriptor_set_layout;
+		lvk_descriptor_set global_descriptor;
 		lvk_descriptor_pool descriptor_pool;
 
+		lvk_pipeline_manager pipeline_manager;
 
 		// ----------------------------------------------
-		
+
+
 		lvk_pipeline graphics_pipeline;
 		lvk_pipeline_layout graphics_pipeline_layout;
-		lvk_descriptor_set descriptor_ubo;
 		
 		lvk::mesh mesh;
 		

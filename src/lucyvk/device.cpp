@@ -789,6 +789,21 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipelin
 	return pipeline;
 }
 
+lvk_pipeline* lvk_device::create_graphics_pipeline_multi(const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo* graphics_pipeline_create_info_array, uint32_t graphics_pipeline_create_info_array_size) {
+	lvk_pipeline* pipeline_array = new lvk_pipeline[graphics_pipeline_create_info_array_size];
+
+	if (vkCreateGraphicsPipelines(this->_device, VK_NULL_HANDLE, graphics_pipeline_create_info_array_size, graphics_pipeline_create_info_array, nullptr, (VkPipeline*)pipeline_array) != VK_SUCCESS) {
+		throw std::runtime_error("graphics pipeline creation failed!");
+	}
+	dloggln("CREATED \t", (VkPipeline*)pipeline_array, "\t [Graphics Pipeline]");
+
+	for (int i = 0; i < graphics_pipeline_create_info_array_size; i++) {
+		destroyer.push(pipeline_array[i]);
+	}
+
+	return pipeline_array;
+}
+
 lvk_pipeline lvk_device::create_compute_pipeline(const VkPipelineLayout pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info) {
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE,
