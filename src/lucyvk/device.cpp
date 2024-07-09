@@ -401,49 +401,33 @@ void lvk_device::reset_command_pool(const lvk_command_pool& command_pool) {
 	vkResetCommandPool(_device, command_pool._command_pool, 0);
 }
 
-lvk_command_buffer lvk_device::create_command_buffer_unique(const VkCommandPool command_pool, VkCommandBufferLevel level) {
+lvk_command_buffer lvk_device::create_command_buffer(const VkCommandPool command_pool, VkCommandBufferLevel level) {
 	lvk_command_buffer command_buffer = {
 		._command_buffer = VK_NULL_HANDLE
 	};
 
+	create_command_buffer_array(&command_buffer, command_pool, 1, level);
+
+	return command_buffer;
+}
+
+void lvk_device::create_command_buffer_array(const lvk_command_buffer* command_buffer_array, const VkCommandPool command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level) {
 	VkCommandBufferAllocateInfo allocate_info = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 
 		.commandPool = command_pool,
 		.level = level,
-		.commandBufferCount = 1,
-	};
-
-	if (vkAllocateCommandBuffers(this->_device, &allocate_info, &command_buffer._command_buffer) != VK_SUCCESS) {
-		throw std::runtime_error("command buffer allocation failed!");
-	}
-	dloggln("ALLOCATED \t", command_buffer._command_buffer, "\t [CommandBuffer]");
-	
-	// command_buffer._command_buffer
-	destroyer.push(&command_buffer._command_buffer, 1, command_pool);
-	
-	return command_buffer;
-}
-
-std::vector<lvk_command_buffer> lvk_device::create_command_buffers(const lvk_command_pool& command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level) {
-	const std::vector<lvk_command_buffer> command_buffer_array(command_buffer_count);
-
-	VkCommandBufferAllocateInfo allocate_info = {
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-
-		.commandPool = command_pool._command_pool,
-		.level = level,
 		.commandBufferCount = command_buffer_count,
 	};
 
-	if (vkAllocateCommandBuffers(this->_device, &allocate_info, (VkCommandBuffer*)command_buffer_array.data()->_command_buffer) != VK_SUCCESS) {
+	if (vkAllocateCommandBuffers(this->_device, &allocate_info, (VkCommandBuffer*)command_buffer_array) != VK_SUCCESS) {
 		throw std::runtime_error("command buffers allocation failed!");
 	}
 	dloggln("ALLOCATED \t", command_buffer_array[0]._command_buffer, "\t [CommandBufferArray]");
 	
-	destroyer.push((VkCommandBuffer*)command_buffer_array.data()->_command_buffer, command_buffer_count, command_pool);
+	destroyer.push((VkCommandBuffer*)command_buffer_array, command_buffer_count, command_pool);
 	
-	return command_buffer_array;
+	// return command_buffer_array;
 }
 
 
@@ -457,7 +441,7 @@ VkResult lvk_device::imm_submit(std::function<void(lvk_command_buffer)> function
 	if (immediate_command._fence == VK_NULL_HANDLE) {
 		immediate_command._fence = create_fence();
 		immediate_command._command_pool = create_command_pool(_queue.graphics.index.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-		immediate_command._command_buffer = create_command_buffer_unique(immediate_command._command_pool);
+		immediate_command._command_buffer = create_command_buffer(immediate_command._command_pool);
 
 		dloggln("CREATED \t", "[Immediate Commands]");
 	}
@@ -789,9 +773,7 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipelin
 	return pipeline;
 }
 
-lvk_pipeline* lvk_device::create_graphics_pipeline_multi(const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo* graphics_pipeline_create_info_array, uint32_t graphics_pipeline_create_info_array_size) {
-	lvk_pipeline* pipeline_array = new lvk_pipeline[graphics_pipeline_create_info_array_size];
-
+void lvk_device::create_graphics_pipeline_array(const VkPipeline* pipeline_array, const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo* graphics_pipeline_create_info_array, uint32_t graphics_pipeline_create_info_array_size) {
 	if (vkCreateGraphicsPipelines(this->_device, VK_NULL_HANDLE, graphics_pipeline_create_info_array_size, graphics_pipeline_create_info_array, nullptr, (VkPipeline*)pipeline_array) != VK_SUCCESS) {
 		throw std::runtime_error("graphics pipeline creation failed!");
 	}
@@ -800,8 +782,6 @@ lvk_pipeline* lvk_device::create_graphics_pipeline_multi(const VkPipelineLayout 
 	for (int i = 0; i < graphics_pipeline_create_info_array_size; i++) {
 		destroyer.push(pipeline_array[i]);
 	}
-
-	return pipeline_array;
 }
 
 lvk_pipeline lvk_device::create_compute_pipeline(const VkPipelineLayout pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info) {

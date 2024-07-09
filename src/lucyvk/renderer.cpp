@@ -158,7 +158,7 @@ void lucy::renderer::init(SDL_Window* window) {
 	main_command_pool = device.create_graphics_command_pool();
 
 	for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
-		frame_array[i].command_buffer = device.create_command_buffer_unique(main_command_pool);
+		frame_array[i].command_buffer = device.create_command_buffer(main_command_pool);
 
 		frame_array[i].render_fence = device.create_fence();
 		frame_array[i].render_semaphore = device.create_semaphore();

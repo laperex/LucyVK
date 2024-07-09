@@ -121,8 +121,8 @@ struct lvk_device {
 	lvk_command_pool create_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
 	void reset_command_pool(const lvk_command_pool& command_pool);
 
-	lvk_command_buffer create_command_buffer_unique(const VkCommandPool command_pool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-	std::vector<lvk_command_buffer> create_command_buffers(const lvk_command_pool& command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	lvk_command_buffer create_command_buffer(const VkCommandPool command_pool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	void create_command_buffer_array(const lvk_command_buffer* command_buffer_array, const VkCommandPool command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	
 	// lvk_immediate_command create_immediate_command();
 	VkResult imm_submit(std::function<void(lvk_command_buffer)> function);
@@ -214,9 +214,10 @@ struct lvk_device {
 	// 	const VkPipelineDynamicStateCreateInfo dynamic_state,
 	// 	const VkRenderPass render_pass
 	// );
-	
+
 	lvk_pipeline create_graphics_pipeline(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config, const VkRenderPass render_pass);
-	lvk_pipeline* create_graphics_pipeline_multi(const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo* graphics_pipeline_create_info_array, uint32_t graphics_pipeline_create_info_array_size);
+	void create_graphics_pipeline_array(const VkPipeline* pipeline_array, const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo* graphics_pipeline_create_info_array, uint32_t graphics_pipeline_create_info_array_size);
+	lvk_pipeline create_graphics_pipeline(const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo graphics_pipeline_create_info);
 	lvk_pipeline create_compute_pipeline(const VkPipelineLayout pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info);
 	
 
