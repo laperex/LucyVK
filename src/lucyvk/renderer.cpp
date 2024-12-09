@@ -5,6 +5,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <assimp/Importer.hpp>
+
 #include "lucyio/logger.h"
 
 #include "renderer.h"
@@ -18,6 +20,10 @@ lucy::renderer::renderer()
 
 void lucy::renderer::upload_mesh(lvk::mesh& mesh) {
 	mesh.vertex_buffer = device.create_vertex_buffer(mesh.vertices.size(), mesh.vertices.data());
+	
+}
+
+lvk_image lucy::renderer::load_model(const char* filename) {
 	
 }
 
@@ -121,20 +127,20 @@ void lucy::renderer::texture_pipeline_init() {
 }
 
 void lucy::renderer::descriptor_set_init() {
-	uint32_t max_descriptor_sets = 1000;
+	uint32_t max_descriptor_sets = 100;
 
 	descriptor_pool = device.create_descriptor_pool(max_descriptor_sets, {
-		{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
-		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
+		{ VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
+		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 100 },
 	});
 
 	// seperate for each shader type
@@ -145,7 +151,7 @@ void lucy::renderer::descriptor_set_init() {
 	});
 
 	global_descriptor = device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
-	device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
+	// device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
 }
 
 void lucy::renderer::init(SDL_Window* window) {
@@ -264,8 +270,10 @@ void lucy::renderer::submit(const lre_frame& frame) {
 
 	device.submit(&submit_info, 1, frame.render_fence);
 	
-	vkWaitForFences(device._device, 1, &frame.render_fence._fence, false, LVK_TIMEOUT);
-	vkResetFences(device._device, 1, &frame.render_fence._fence);
+	// vkWaitForFences(device._device, 1, &frame.render_fence._fence, false, LVK_TIMEOUT);
+	device.wait_for_fences({ frame.render_fence });
+	device.reset_fences({ frame.render_fence });
+	// vkResetFences(device._device, 1, &frame.render_fence._fence);
 
 	if (device.present(frame.image_index, swapchain, frame.render_semaphore) == VK_ERROR_OUT_OF_DATE_KHR) {
 		resize_requested = true;
@@ -305,14 +313,11 @@ void lucy::renderer::update(const bool& is_resized) {
 	record(frame_array[frame_number % FRAMES_IN_FLIGHT]);
 
 	frame_number++;
-
-	// if (frame_number == 2)
-	// 	exit(0);
 }
 
 void lucy::renderer::destroy() {
 	device.wait_idle();
 
-	device.destroy_device();
+	device.destroy();
 	instance.destroy();
 }

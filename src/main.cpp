@@ -6,6 +6,8 @@
 #include <vulkan/vulkan_core.h>
 
 #include "lucytl/linked_list.h"
+#include "lucytl/static_list.h"
+#include "lucytl/array.h"
 #include "voxel/camera.h"
 
 
@@ -23,14 +25,9 @@
 
 
 int main(int count, char** args) {
-	// freopen("output.log", "w", stderr);
-
 	lucy::engine engine;
-	
+
 	engine.add<lucy::camera>();
-	
-	// lucy::camera cam = { _window, };
-	
 
 	engine.initialize();
 	engine.mainloop();

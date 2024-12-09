@@ -19,11 +19,13 @@
 
 
 struct lvk_device {
+private:
 	LVK_HANDLE_DEF(VkDevice, _device)
 	VmaAllocator _allocator;
 
-	std::vector<const char*> extensions;
+	// std::vector<const char*> extensions;
 
+	VkSurfaceKHR _surfaceKHR;
 
 	struct {
 		struct {
@@ -38,6 +40,7 @@ struct lvk_device {
 
 	struct {
 		VkSurfaceCapabilitiesKHR capabilities;
+
 		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> present_modes;
 	} _swapchain_support_details;
@@ -54,12 +57,11 @@ struct lvk_device {
 
 	lvk_destroyer destroyer;
 
-	VkSurfaceKHR _surfaceKHR;
 
-	void destroy_device();
+	friend lvk_instance;
 
-
-	// ~lvk_device();
+public:
+	void destroy();
 	
 	// DESTROYER 		---------- ---------- ---------- ----------
 	
@@ -216,8 +218,10 @@ struct lvk_device {
 	// );
 
 	lvk_pipeline create_graphics_pipeline(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config, const VkRenderPass render_pass);
+
 	void create_graphics_pipeline_array(const VkPipeline* pipeline_array, const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo* graphics_pipeline_create_info_array, uint32_t graphics_pipeline_create_info_array_size);
 	lvk_pipeline create_graphics_pipeline(const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo graphics_pipeline_create_info);
+
 	lvk_pipeline create_compute_pipeline(const VkPipelineLayout pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info);
 	
 
@@ -297,8 +301,10 @@ struct lvk_device {
 	
 	
 	// DESCRIPTOR_SET		   ---------- ---------- ----------
+
+	void create_descriptor_set_array(const lvk_descriptor_set* descriptor_set_array, const VkDescriptorPool descriptor_pool, const VkDescriptorSetLayout* descriptor_set_layout_array, uint32_t descriptor_set_layout_array_size);
+	lvk_descriptor_set create_descriptor_set(const VkDescriptorPool descriptor_pool, const VkDescriptorSetLayout descriptor_set_layout);
 	
-	lvk_descriptor_set create_descriptor_set(const lvk_descriptor_pool& descriptor_pool, const lvk_descriptor_set_layout& descriptor_set_layout);
 	void update_descriptor_set(const lvk_descriptor_set& descriptor_set, uint32_t binding, const lvk_buffer* buffer, VkDescriptorType type, const std::size_t offset = 0) const;
 	void update_descriptor_set(const lvk_descriptor_set& descriptor_set, uint32_t binding, const lvk_image_view* image_view, const lvk_sampler& sampler, VkImageLayout image_layout, VkDescriptorType type, const std::size_t offset = 0) const;
 	// template <std::size_t _ds_N> [[nodiscard, __gnu__::__always_inline__]]

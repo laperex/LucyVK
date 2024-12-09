@@ -131,6 +131,7 @@ void lvk_device::destroy(VkDescriptorPool descriptor_pool) {
 
 
 void lvk_device::destroy(VkFramebuffer framebuffer) {
+	dloggln("[ERR] \t", framebuffer, "\t [Framebuffer]");
 	vkDestroyFramebuffer(_device, framebuffer, VK_NULL_HANDLE);
 	dloggln("DESTROYED \t", framebuffer, "\t [Framebuffer]");
 	destroyer.delete_insert(framebuffer);
@@ -215,7 +216,7 @@ void lvk_device::destroy(const lvk_image& image) {
 // 	dloggln("DESTROYED \t", descriptor_set[0], "\t [DescriptionSet]");
 // }
 
-void lvk_device::destroy_device() {
+void lvk_device::destroy() {
 	destroyer.flush = true;
 	
 	int i = 0;
@@ -638,17 +639,20 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass
 	}
 	dloggln("CREATED \t", swapchain, "\t [Swapchain]");
 
-	dloggln("INFO \t", "[", create_info.imageExtent.width, ", ", create_info.imageExtent.height, "]");
-	dloggln("INFO swapchain._extent \t", "[", swapchain._extent.width, ", ", swapchain._extent.height, "]");
+	// dloggln("INFO \t", "[", create_info.imageExtent.width, ", ", create_info.imageExtent.height, "]");
+	// dloggln("INFO swapchain._extent \t", "[", swapchain._extent.width, ", ", swapchain._extent.height, "]");
 	
-	// ImageViews
-	
+	// Depth & ImageViews & Framebuffers
+
+	if (swapchain._image_views == VK_NULL_HANDLE) {
+		swapchain._image_views = new VkImageView[swapchain._image_count];
+		swapchain._framebuffers = new VkFramebuffer[swapchain._image_count];
+	}
+
 	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, VK_NULL_HANDLE);
 	VkImage* _images = new VkImage[swapchain._image_count];
 	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, _images);
 
-	swapchain._image_views.resize(swapchain._image_count);
-	swapchain._framebuffers.resize(swapchain._image_count);
 	
 	depth_image = create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
 	swapchain._depth_image_view = create_image_view(depth_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -663,7 +667,7 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass
 		});
 	}
 	dloggln("CREATED \t", "[Swapchain ImageViews]");
-	
+
 	delete [] _images;
 }
 
@@ -784,10 +788,19 @@ void lvk_device::create_graphics_pipeline_array(const VkPipeline* pipeline_array
 	}
 }
 
+lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo graphics_pipeline_create_info) {
+	lvk_pipeline pipeline = {
+		._pipeline = VK_NULL_HANDLE,
+	};
+
+	// create_graphics_pipeline()
+
+	return pipeline;
+}
+
 lvk_pipeline lvk_device::create_compute_pipeline(const VkPipelineLayout pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info) {
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE,
-		// .type = VK_PIPELINE_BIND_POINT_COMPUTE,
 	};
 
 	VkComputePipelineCreateInfo pipeline_info = {
@@ -1046,26 +1059,25 @@ lvk_descriptor_set_layout lvk_device::create_descriptor_set_layout(const VkDescr
 // |--------------------------------------------------
 
 
-lvk_descriptor_set lvk_device::create_descriptor_set(const lvk_descriptor_pool& descriptor_pool, const lvk_descriptor_set_layout& descriptor_set_layout) {
-	lvk_descriptor_set descriptor_set = {
-		._descriptor_set = VK_NULL_HANDLE,
-	};
-
+void lvk_device::create_descriptor_set_array(const lvk_descriptor_set* descriptor_set_array, const VkDescriptorPool descriptor_pool, const VkDescriptorSetLayout* descriptor_set_layout_array, uint32_t descriptor_set_layout_array_size) {
 	VkDescriptorSetAllocateInfo allocate_info ={
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-		.descriptorPool = descriptor_pool._descriptor_pool,
-		.descriptorSetCount = 1,
-		.pSetLayouts = &descriptor_set_layout._descriptor_set_layout,
+
+		.descriptorPool = descriptor_pool,
+		.descriptorSetCount = descriptor_set_layout_array_size,
+		.pSetLayouts = descriptor_set_layout_array,
 	};
 
-	if (vkAllocateDescriptorSets(this->_device, &allocate_info, &descriptor_set._descriptor_set) != VK_SUCCESS) {
+	if (vkAllocateDescriptorSets(this->_device, &allocate_info, (VkDescriptorSet*)descriptor_set_array) != VK_SUCCESS) {
 		throw std::runtime_error("descriptor_set allocation failed!");
 	}
-	dloggln("ALLOCATED \t", descriptor_set._descriptor_set, "\t [Description Set]");
-	
-	// deletion_queue.push<VkDevice>([=](void* _){
-	// 	lvk_destroy((VkDevice)_, descriptor_set._descriptor_set, descriptor_pool);
-	// });
+	dloggln("ALLOCATED \t", descriptor_set_array->_descriptor_set, "\t [Description Set]");
+}
+
+lvk_descriptor_set lvk_device::create_descriptor_set(const VkDescriptorPool descriptor_pool, const VkDescriptorSetLayout descriptor_set_layout) {
+	lvk_descriptor_set descriptor_set;
+
+	create_descriptor_set_array(&descriptor_set, descriptor_pool, &descriptor_set_layout, 1);
 
 	return descriptor_set;
 }

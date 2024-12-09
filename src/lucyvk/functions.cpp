@@ -61,7 +61,7 @@ VkPhysicalDevice lvk::default_physical_device(const std::vector<VkPhysicalDevice
 	for (const auto& physical_device: physicalDeviceArray) {
 		static int i = 0;
 		
-		if (i++ == 0) continue;
+		// if (i++ == 0) continue;
 
 		bool isRequiredDeviceExtensionsAvailable = false;
 		bool isIndicesComplete = false;

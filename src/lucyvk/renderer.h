@@ -108,5 +108,8 @@ namespace lucy {
 		void update(const bool& is_resized);
 		
 		void destroy();
+
+	protected:
+		lvk_image load_model(const char* filename);
 	};
 }

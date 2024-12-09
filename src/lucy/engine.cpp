@@ -50,10 +50,6 @@ void lucy::engine::mainloop() {
 }
 
 void lucy::engine::destroy() {
-	// auto& _renderer = static_store<lucy::renderer>();
-	// auto& _window = static_store<lucy::window>();
-	// auto& _events = static_store<lucy::events>();
-	
 	_renderer.destroy();
 }
 

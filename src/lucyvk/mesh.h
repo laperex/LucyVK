@@ -36,6 +36,8 @@ namespace lvk {
 				.flags = 0
 			};
 		};
+
+		void load_obj(const char* filename);
 	};
 
 

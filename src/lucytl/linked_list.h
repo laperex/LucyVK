@@ -53,7 +53,6 @@ namespace ltl {
 				_begin = new_node;
 			}
 			_end = new_node;
-			
 			_size++;
 			
 			return _end;

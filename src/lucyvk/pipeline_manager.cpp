@@ -1,7 +1,5 @@
 #include "pipeline_manager.h"
 
-// lvk_pipeline_manager::lvk_pipeline_manager(lvk_device& device): device(device) {}
-
-// lvk_pipeline_manager::lvk_pipeline_manager() {
-// 	device = {}
-// }
+void lvk_pipeline_manager::add_custom_pipeline(const char* name, VkGraphicsPipelineCreateInfo create_info) {
+	
+}

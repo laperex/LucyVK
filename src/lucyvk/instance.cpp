@@ -64,8 +64,7 @@ static bool CheckValidationLayerSupport() {
 
 lvk_instance::~lvk_instance()
 {
-	// static int i = 0;
-	// dloggln("-- Instance Destructor\n", i++);
+	
 }
 
 lvk_instance lvk_instance::initialize(const char* name, SDL_Window* sdl_window, bool enable_validation_layers, std::vector<const char*> layers, std::vector<const char*> extensions) {
@@ -194,35 +193,38 @@ bool lvk_instance::is_debug_enable() {
 }
 
 lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk::SelectPhysicalDevice_F function) {
-	lvk_device device = {
-		._device = VK_NULL_HANDLE,
-		._allocator = VK_NULL_HANDLE,
+	lvk_device device = {};
 
-		.extensions = extensions,
+	// 	._device = VK_NULL_HANDLE,
+	// 	._allocator = VK_NULL_HANDLE,
 
-		._queue = {
-			.graphics = {
-				.handle = VK_NULL_HANDLE
-			},
-			.present = {
-				.handle = VK_NULL_HANDLE
-			},
-			.compute = {
-				.handle = VK_NULL_HANDLE
-			},
-			.transfer = {
-				.handle = VK_NULL_HANDLE
-			},
-		},
+	// 	.extensions = extensions,
 
-		.physical_device = {
-			._physical_device = VK_NULL_HANDLE,
-		},
+	// 	._queue = {
+	// 		.graphics = {
+	// 			.handle = VK_NULL_HANDLE
+	// 		},
+	// 		.present = {
+	// 			.handle = VK_NULL_HANDLE
+	// 		},
+	// 		.compute = {
+	// 			.handle = VK_NULL_HANDLE
+	// 		},
+	// 		.transfer = {
+	// 			.handle = VK_NULL_HANDLE
+	// 		},
+	// 	},
 
-		.destroyer = {},
+	// 	.physical_device = {
+	// 		._physical_device = VK_NULL_HANDLE,
+	// 	},
 
-		._surfaceKHR = _surfaceKHR,
-	};
+	// 	.destroyer = {},
+
+	// 	._surfaceKHR = _surfaceKHR,
+	// };
+	
+	device._surfaceKHR = _surfaceKHR;
 
 	{
 		uint32_t available_device_count = 0;
@@ -275,7 +277,7 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 			vkGetPhysicalDeviceSurfaceFormatsKHR(device.physical_device, _surfaceKHR, &format_count, VK_NULL_HANDLE);
 
 			if (format_count != 0) {
-				device._swapchain_support_details.formats.resize(format_count);
+				device._swapchain_support_details.formats.reserve(format_count);
 				vkGetPhysicalDeviceSurfaceFormatsKHR(device.physical_device, _surfaceKHR, &format_count, device._swapchain_support_details.formats.data());
 			}
 
@@ -283,7 +285,7 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 			vkGetPhysicalDeviceSurfacePresentModesKHR(device.physical_device, _surfaceKHR, &present_mode_count, VK_NULL_HANDLE);
 
 			if (present_mode_count != 0) {
-				device._swapchain_support_details.present_modes.resize(present_mode_count);
+				device._swapchain_support_details.present_modes.reserve(present_mode_count);
 				vkGetPhysicalDeviceSurfacePresentModesKHR(device.physical_device, _surfaceKHR, &present_mode_count, device._swapchain_support_details.present_modes.data());
 			}
 		}
@@ -334,8 +336,8 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 		.queueCreateInfoCount = static_cast<uint32_t>(unique_queue_indices.size()),
 		.pQueueCreateInfos = queue_create_info_array,
 		
-		.enabledExtensionCount = static_cast<uint32_t>(std::size(device.extensions)),
-		.ppEnabledExtensionNames = device.extensions.data(),
+		.enabledExtensionCount = static_cast<uint32_t>(std::size(extensions)),
+		.ppEnabledExtensionNames = extensions.data(),
 		
 		.pEnabledFeatures = &device.physical_device._features
 	};

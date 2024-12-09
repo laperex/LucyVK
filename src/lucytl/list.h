@@ -27,25 +27,29 @@ namespace ltl {
 			_end = nullptr;
 			_capacity = 0;
 		}
-		
-		list(const list<T>& _list) {
-			_begin = _list._begin;
-			_end = _list._end;
-			_capacity = _list._capacity;
-		}
 	
 		template <typename ..._il_T>
 		list(const _il_T ...il) {
 			initializer_list({ il... });
 		}
-		
-		inline list<T>& operator=(const list<T>& _list) {
+
+		list(list<T>& _list) {
 			_begin = _list._begin;
 			_end = _list._end;
 			_capacity = _list._capacity;
 
-			return *this;
+			_list._begin = nullptr;
 		}
+		
+		// inline list<T>& operator=(list<T>& _list) {
+		// 	_begin = _list._begin;
+		// 	_end = _list._end;
+		// 	_capacity = _list._capacity;
+
+		// 	_list._begin = nullptr;
+
+		// 	return *this;
+		// }
 	
 		inline constexpr void resize(size_t size) {
 			if (size > _capacity) {
@@ -64,6 +68,8 @@ namespace ltl {
 
 
 		[[nodiscard]] inline constexpr T& operator[](const size_t index) {
+			assert(index < _capacity);
+			
 			return _begin[index];
 		}
 
