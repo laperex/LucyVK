@@ -300,7 +300,7 @@ void lucy::renderer::update(const bool& is_resized) {
 		int width, height;
 		SDL_GetWindowSize(sdl_window, &width, &height);
 		device.swapchain_recreate(swapchain, render_pass, width, height);
-		
+
 		frame_number = 0;
 		resize_requested = false;
 		return;
@@ -316,6 +316,7 @@ void lucy::renderer::update(const bool& is_resized) {
 }
 
 void lucy::renderer::destroy() {
+	device.swapchain_destroy(swapchain);
 	device.wait_idle();
 
 	device.destroy();

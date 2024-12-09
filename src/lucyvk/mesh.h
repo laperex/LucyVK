@@ -47,8 +47,14 @@ namespace lvk {
 
 		lvk_buffer vertex_buffer;
 		lvk_buffer index_buffer;
-		
+
 		void load_obj(const char* filename);
 	};
 }
+
+// struct lvk_gpu_mesh {
+// 	lvk_buffer vertex_buffer;
+// 	lvk_buffer index_buffer;
+// 	VkDeviceAddress vertex_buffer_address;
+// };
 

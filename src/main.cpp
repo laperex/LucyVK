@@ -18,10 +18,11 @@
 	// TODO: material management
 	// TODO: shader management
 // // TODO: memory handles
-// TODO: render_pass restructuring
+//! TODO: render_pass restructuring
+//! TODO: better memory management
 // // TODO: Implement Better Destruction -
 // TODO: Implement Image Loading
-// TODO: Implement DearImGui
+//! TODO: Implement DearImGui
 
 
 int main(int count, char** args) {

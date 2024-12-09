@@ -3,6 +3,7 @@
 #include <map>
 #include <optional>
 #include <deque>
+#include <span>
 
 #include "lucyvk/define.h"
 #include "lucyvk/destroyer.h"
@@ -10,6 +11,7 @@
 // #include "lucyvk/types.h"
 #include "lucyvk/command.h"
 #include "lucyvk/config.h"
+#include "lucyvk/mesh.h"
 
 
 
@@ -137,7 +139,31 @@ public:
 
 	lvk_swapchain create_swapchain(VkRenderPass render_pass, uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format);
 	void swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass render_pass, uint32_t width, uint32_t height);
+	void swapchain_destroy(lvk_swapchain& swapchain);
 	VkResult swapchain_acquire_next_image(const lvk_swapchain& swapchain, uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT) const;
+	
+	// GPU DRAW
+	
+	template <typename T>
+	lvk_gpu_mesh upload_mesh(std::span<uint32_t> indices, std::span<T> vertices) {
+		lvk_gpu_mesh gpu_mesh = {
+			.vertex_buffer = {},
+			.index_buffer = {},
+			.vertex_buffer_address = {},
+		};
+		
+		gpu_mesh.vertex_buffer = create_buffer(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VMA_MEMORY_USAGE_GPU_ONLY, vertices.size() * sizeof(T), vertices.data());
+		
+		VkBufferDeviceAddressInfo buffer_device_addres_info = {
+			.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+			.buffer = gpu_mesh.vertex_buffer,
+			.pNext = VK_NULL_HANDLE
+		};
+		
+		gpu_mesh.vertex_buffer_address = vkGetBufferDeviceAddress(_device, &buffer_device_addres_info);
+		
+		gpu_mesh.index_buffer = create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, indices.size() * sizeof(uint32_t), indices.data());
+	}
 	
 	
 	// SHADER		---------- ---------- ---------- ----------
