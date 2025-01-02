@@ -5,7 +5,7 @@ void lucy::world::initialization() {
 	
 }
 
-void lucy::world::update() {
+void lucy::world::update(double dt) {
 	
 }
 

@@ -172,17 +172,17 @@ void lucy::renderer::init(SDL_Window* window) {
 	}
 	
 	
-	mesh.vertices = std::vector<lvk::vertex> {
-		{ {  100,  100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } },
-		{ { -100,  100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f } },
-		{ { -100, -100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f } },
-		{ {  100, -100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } },
-	};
+	// mesh.vertices = std::vector<lvk::vertex> {
+	// 	{ {  100,  100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } },
+	// 	{ { -100,  100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f } },
+	// 	{ { -100, -100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f } },
+	// 	{ {  100, -100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } },
+	// };
 	
-	mesh.indices = { 0,1,2, 2,3,0 };
+	// mesh.indices = { 0,1,2, 2,3,0 };
 	
-	mesh.index_buffer = device.create_index_buffer_static(mesh.indices);
-	mesh.vertex_buffer = device.create_vertex_buffer(mesh.vertices);
+	// mesh.index_buffer = device.create_index_buffer_static(mesh.indices);
+	// mesh.vertex_buffer = device.create_vertex_buffer(mesh.vertices);
 
 
 	glm::ivec2 size;
@@ -239,11 +239,11 @@ void lucy::renderer::record(lre_frame& frame) {
 
 	cmd.bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 
-	cmd.bind_vertex_buffers({ mesh.vertex_buffer }, { 0 });
-	cmd.bind_index_buffer(mesh.index_buffer, VK_INDEX_TYPE_UINT32);
+	// cmd.bind_vertex_buffers({ mesh.vertex_buffer }, { 0 });
+	// cmd.bind_index_buffer(mesh.index_buffer, VK_INDEX_TYPE_UINT32);
 	cmd.bind_descriptor_set(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout, { global_descriptor });
 
-	cmd.draw_indexed(mesh.indices.size(), 1, 0, 0, 0);
+	// cmd.draw_indexed(mesh.indices.size(), 1, 0, 0, 0);
 
 	cmd.end_render_pass();
 
@@ -278,6 +278,8 @@ void lucy::renderer::submit(const lre_frame& frame) {
 	if (device.present(frame.image_index, swapchain, frame.render_semaphore) == VK_ERROR_OUT_OF_DATE_KHR) {
 		resize_requested = true;
 	}
+	
+	printf("jsdabsfj");
 }
 
 void lucy::renderer::set_projection(const glm::mat4& projection) {

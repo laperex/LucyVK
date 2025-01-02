@@ -127,7 +127,7 @@ public:
 
 	lvk_command_buffer create_command_buffer(const VkCommandPool command_pool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 	void create_command_buffer_array(const lvk_command_buffer* command_buffer_array, const VkCommandPool command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-	
+
 	// lvk_immediate_command create_immediate_command();
 	VkResult imm_submit(std::function<void(lvk_command_buffer)> function);
 	// VkResult imm_buffer_copy(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkDeviceSize size);
@@ -144,26 +144,26 @@ public:
 	
 	// GPU DRAW
 	
-	template <typename T>
-	lvk_gpu_mesh upload_mesh(std::span<uint32_t> indices, std::span<T> vertices) {
-		lvk_gpu_mesh gpu_mesh = {
-			.vertex_buffer = {},
-			.index_buffer = {},
-			.vertex_buffer_address = {},
-		};
+	// template <typename T>
+	// lvk_gpu_mesh upload_mesh(std::span<uint32_t> indices, std::span<T> vertices) {
+	// 	lvk_gpu_mesh gpu_mesh = {
+	// 		.vertex_buffer = {},
+	// 		.index_buffer = {},
+	// 		.vertex_buffer_address = {},
+	// 	};
 		
-		gpu_mesh.vertex_buffer = create_buffer(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VMA_MEMORY_USAGE_GPU_ONLY, vertices.size() * sizeof(T), vertices.data());
+	// 	gpu_mesh.vertex_buffer = create_buffer(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, VMA_MEMORY_USAGE_GPU_ONLY, vertices.size() * sizeof(T), vertices.data());
 		
-		VkBufferDeviceAddressInfo buffer_device_addres_info = {
-			.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
-			.buffer = gpu_mesh.vertex_buffer,
-			.pNext = VK_NULL_HANDLE
-		};
+	// 	VkBufferDeviceAddressInfo buffer_device_addres_info = {
+	// 		.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+	// 		.buffer = gpu_mesh.vertex_buffer,
+	// 		.pNext = VK_NULL_HANDLE
+	// 	};
 		
-		gpu_mesh.vertex_buffer_address = vkGetBufferDeviceAddress(_device, &buffer_device_addres_info);
+	// 	gpu_mesh.vertex_buffer_address = vkGetBufferDeviceAddress(_device, &buffer_device_addres_info);
 		
-		gpu_mesh.index_buffer = create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, indices.size() * sizeof(uint32_t), indices.data());
-	}
+	// 	gpu_mesh.index_buffer = create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, indices.size() * sizeof(uint32_t), indices.data());
+	// }
 	
 	
 	// SHADER		---------- ---------- ---------- ----------

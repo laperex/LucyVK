@@ -9,6 +9,7 @@
 #include "lucytl/static_list.h"
 #include "lucytl/array.h"
 #include "voxel/camera.h"
+#include "voxel/world.h"
 
 
 // // TODO: dynamic viewport
@@ -29,6 +30,7 @@ int main(int count, char** args) {
 	lucy::engine engine;
 
 	engine.add<lucy::camera>();
+	engine.add<lucy::world>();
 
 	engine.initialize();
 	engine.mainloop();
