@@ -77,6 +77,7 @@ private:
 	void push_function(VkShaderModule shader_module);
 	void push_function(VkSampler sampler);
 	void push_function(VkCommandBuffer* command_buffers, uint32_t command_buffer_count, VkCommandPool command_pool);
+	void push_function(VkDescriptorSet* descriptor_sets, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool);
 	// void push_function(VkCommandBuffer command_buffers, uint32_t command_buffer_count, VkCommandPool command_pool);
 
 	void push_function(VkBuffer buffer, VmaAllocation allocation);
@@ -84,6 +85,9 @@ private:
 
 public:
 	const lvk_command_buffer& push(const lvk_command_buffer& command_buffer, const lvk_command_pool& command_pool);
+	const lvk_descriptor_set& push(const lvk_descriptor_set& descriptor_set, const lvk_descriptor_pool& descriptor_pool);
+	const lvk_buffer& push(const lvk_buffer& buffer);
+	const lvk_image& push(const lvk_image& image);
 
 	template <typename T>
 	const T& push(const T& handle) {
@@ -106,9 +110,6 @@ public:
 		push_function(handle);
 		return handle;
 	}
-
-	const lvk_buffer& push(const lvk_buffer& buffer);
-	const lvk_image& push(const lvk_image& image);
 	
 	void flush();
 
@@ -133,4 +134,8 @@ public:
 	void destroy(const lvk_buffer& buffer);
 	void destroy(VkImage image, VmaAllocation allocation);
 	void destroy(const lvk_image& image);
+
+	// void destroy(VkDescriptorSet descriptor_set, VkDescriptorPool descriptor_pool);
+
+	void destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool);
 };

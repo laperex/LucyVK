@@ -194,8 +194,8 @@ struct lvk_swapchain {
 	VkImageUsageFlags _image_usage;
 
 	uint32_t _image_count;
-	VkFramebuffer* _framebuffers;
-	VkImageView* _image_views;
+	std::vector<VkFramebuffer> _framebuffers;
+	std::vector<VkImageView> _image_views;
 
 	VkImageView _depth_image_view;
 	lvk_image _depth_image;

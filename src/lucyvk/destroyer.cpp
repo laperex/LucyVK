@@ -48,10 +48,8 @@ void _push(lvk_deletor_deque* destroyer, T data, VmaAllocation allocation) {
 template <typename T, typename M>
 void _push(lvk_deletor_deque* destroyer, T* data, uint32_t data_count, M pool) {
 	static_assert(
-		std::is_same<T, VkDescriptorSet>() ||
-		std::is_same<T, VkDescriptorPool>() ||
-		std::is_same<M, VkCommandBuffer>() ||
-		std::is_same<M, VkCommandPool>(),
+		(std::is_same<T, VkDescriptorSet>() && std::is_same<M, VkDescriptorPool>()) ||
+		(std::is_same<T, VkCommandBuffer>() && std::is_same<M, VkCommandPool>()),
 		"Error, Invalid Type!"
 	);
 
@@ -59,10 +57,10 @@ void _push(lvk_deletor_deque* destroyer, T* data, uint32_t data_count, M pool) {
 
 	lvk_deletor_deque::delete_element element = {
 		.data = std::vector<void*>(data_count + 1),
-		.type = typeid(VkCommandBuffer).hash_code()
+		.type = typeid(T).hash_code()
 	};
 
-	std::memcpy(element.data.data(), data, data_count * sizeof(VkCommandBuffer));
+	std::memcpy(element.data.data(), data, data_count * sizeof(T));
 	element.data[data_count] = pool;
 
 	destroyer->delete_deque.push_back(element);
@@ -71,6 +69,10 @@ void _push(lvk_deletor_deque* destroyer, T* data, uint32_t data_count, M pool) {
 
 void lvk_deletor_deque::push_function(VkCommandBuffer* command_buffers, uint32_t command_buffer_count, VkCommandPool command_pool) {
 	_push<VkCommandBuffer, VkCommandPool>(this, command_buffers, command_buffer_count, command_pool);
+}
+
+void lvk_deletor_deque::push_function(VkDescriptorSet* descriptor_sets, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool) {
+	_push<VkDescriptorSet, VkDescriptorPool>(this, descriptor_sets, descriptor_set_count, descriptor_pool);
 }
 
 
@@ -85,6 +87,11 @@ void lvk_deletor_deque::push_function(VkImage image, VmaAllocation allocation) {
 const lvk_command_buffer& lvk_deletor_deque::push(const lvk_command_buffer& command_buffer, const lvk_command_pool& command_pool) {
 	push_function((VkCommandBuffer*)&command_buffer, 1, command_pool);
 	return command_buffer;
+}
+
+const lvk_descriptor_set& lvk_deletor_deque::push(const lvk_descriptor_set& descriptor_set, const lvk_descriptor_pool& descriptor_pool) {
+	push_function((VkDescriptorSet*)&descriptor_set, 1, descriptor_pool);
+	return descriptor_set;
 }
 
 void lvk_deletor_deque::push_function(VkCommandPool command_pool) {
@@ -197,6 +204,10 @@ void lvk_deletor_deque::flush() {
 		if (element->type == typeid(VkCommandBuffer).hash_code()) {
 			destroy((VkCommandBuffer*)element->data.data(), element->data.size() - 1, (VkCommandPool)element->data.back());
 		}
+		
+		if (element->type == typeid(VkDescriptorSet).hash_code()) {
+			destroy((VkDescriptorSet*)element->data.data(), element->data.size() - 1, (VkDescriptorPool)element->data.back());
+		}
 
 		if (element->type == typeid(VkBuffer).hash_code()) {
 			destroy((VkBuffer)element->data[0], (VmaAllocation)element->data[1]);
@@ -255,12 +266,12 @@ void lvk_deletor_deque::destroy(VkFence fence) {
 // 	dloggln("DESTROYED \t", descriptor_set, "\t [DescriptionSet]");
 // }
 
-// void lvk_device::destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool) {
-// 	assert(descriptor_set_count);
+void lvk_deletor_deque::destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool) {
+	assert(descriptor_set_count);
 
-// 	vkFreeDescriptorSets(_device, descriptor_pool, descriptor_set_count, descriptor_set);
-// 	dloggln("DESTROYED \t", descriptor_set[0], "\t [DescriptionSet]");
-// }
+	vkFreeDescriptorSets(device, descriptor_pool, descriptor_set_count, descriptor_set);
+	dloggln("DESTROYED \t", descriptor_set[0], "\t [DescriptionSet]");
+}
 
 
 void lvk_deletor_deque::destroy(VkDescriptorSetLayout descriptor_set_layout) {

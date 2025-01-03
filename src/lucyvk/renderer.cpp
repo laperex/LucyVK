@@ -119,8 +119,8 @@ void lucy::renderer::texture_pipeline_init() {
 		}
 	};
 
-	graphics_pipeline_layout = device.create_pipeline_layout({ descriptor_set_layout });
-	graphics_pipeline = device.create_graphics_pipeline(graphics_pipeline_layout, config, render_pass);
+	graphics_pipeline_layout = deletor.push(device.create_pipeline_layout({ descriptor_set_layout }));
+	graphics_pipeline = deletor.push(device.create_graphics_pipeline(graphics_pipeline_layout, config, render_pass));
 
 	deletor.destroy(fragment_shader);
 	deletor.destroy(vertex_shader);
@@ -129,7 +129,7 @@ void lucy::renderer::texture_pipeline_init() {
 void lucy::renderer::descriptor_set_init() {
 	uint32_t max_descriptor_sets = 100;
 
-	descriptor_pool = device.create_descriptor_pool(max_descriptor_sets, {
+	descriptor_pool = deletor.push(device.create_descriptor_pool(max_descriptor_sets, {
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
 		{ VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
 		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100 },
@@ -141,7 +141,7 @@ void lucy::renderer::descriptor_set_init() {
 		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
 		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
 		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 100 },
-	});
+	}));
 
 	// seperate for each shader type
 	descriptor_set_layout = deletor.push(
@@ -302,10 +302,11 @@ void lucy::renderer::update(const bool& is_resized) {
 	static uint32_t frame_number = 0;
 
 	if (is_resized || resize_requested) {
+		dloggln("Resize ?");
 		device.wait_idle();
 		int width, height;
 		SDL_GetWindowSize(sdl_window, &width, &height);
-		device.swapchain_recreate(swapchain, render_pass, width, height);
+		// device.swapchain_recreate(swapchain, render_pass, width, height);
 
 		frame_number = 0;
 		resize_requested = false;

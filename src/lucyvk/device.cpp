@@ -75,6 +75,8 @@ VkResult lvk_device::present(const uint32_t image_index, const VkSwapchainKHR sw
 
 
 void lvk_device::destroy() {
+	_deletor.flush();
+
 	vmaDestroyAllocator(_allocator);
 	dloggln("DESTROYED \t", _allocator, "\t [Allocator]");
 
@@ -246,9 +248,9 @@ VkResult lvk_device::imm_submit(std::function<void(lvk_command_buffer)> function
 	} immediate_command;
 
 	if (immediate_command._fence == VK_NULL_HANDLE) {
-		immediate_command._fence = create_fence();
-		immediate_command._command_pool = create_command_pool(_queue.graphics.index.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-		immediate_command._command_buffer = create_command_buffer(immediate_command._command_pool);
+		immediate_command._fence = _deletor.push(create_fence());
+		immediate_command._command_pool = _deletor.push(create_command_pool(_queue.graphics.index.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT));
+		immediate_command._command_buffer = _deletor.push(create_command_buffer(immediate_command._command_pool), static_cast<lvk_command_pool>(immediate_command._command_pool));
 
 		dloggln("CREATED \t", "[Immediate Commands]");
 	}
@@ -438,14 +440,18 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass
 	
 	// Depth & ImageViews & Framebuffers
 
-	if (swapchain._image_views == VK_NULL_HANDLE) {
-		swapchain._image_views = new VkImageView[swapchain._image_count];
-		swapchain._framebuffers = new VkFramebuffer[swapchain._image_count];
-	}
+	// if (swapchain._image_views == VK_NULL_HANDLE) {
+	// 	swapchain._image_views = new VkImageView[swapchain._image_count];
+	// 	swapchain._framebuffers = new VkFramebuffer[swapchain._image_count];
+	// }
 
 	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, VK_NULL_HANDLE);
-	VkImage* _images = new VkImage[swapchain._image_count];
-	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, _images);
+
+	std::vector<VkImage> _images(swapchain._image_count);
+	swapchain._image_views.resize(swapchain._image_count);
+	swapchain._framebuffers.resize(swapchain._image_count);
+
+	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, _images.data());
 
 	swapchain._depth_image = create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
 	swapchain._depth_image_view = create_image_view(swapchain._depth_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -460,8 +466,6 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass
 		});
 	}
 	dloggln("CREATED \t", "[Swapchain ImageViews]");
-
-	delete [] _images;
 }
 
 void lvk_device::swapchain_destroy(lvk_swapchain& swapchain) {
