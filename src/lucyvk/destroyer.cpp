@@ -164,7 +164,7 @@ void lvk_deletor_deque::push_fn(std::function<void()>&& function) {
 	});
 }
 
-
+// move this to a function
 void lvk_deletor_deque::flush() {
 	int i = 0;
 	for (auto element = delete_deque.rbegin(); element != delete_deque.rend(); element++) {
