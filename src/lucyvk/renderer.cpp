@@ -10,6 +10,9 @@
 #include "lucyio/logger.h"
 
 #include "renderer.h"
+#include <imgui.h>
+#include <imgui_impl_sdl2.h>
+#include <imgui.h>
 
 
 lucy::renderer::renderer()
@@ -154,6 +157,10 @@ void lucy::renderer::descriptor_set_init() {
 
 	global_descriptor = device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
 	// device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
+}
+
+void lucy::renderer::init_imgui() {
+	
 }
 
 void lucy::renderer::init(SDL_Window* window) {
@@ -302,11 +309,10 @@ void lucy::renderer::update(const bool& is_resized) {
 	static uint32_t frame_number = 0;
 
 	if (is_resized || resize_requested) {
-		dloggln("Resize ?");
 		device.wait_idle();
 		int width, height;
 		SDL_GetWindowSize(sdl_window, &width, &height);
-		// device.swapchain_recreate(swapchain, render_pass, width, height);
+		device.swapchain_recreate(swapchain, render_pass, width, height);
 
 		frame_number = 0;
 		resize_requested = false;

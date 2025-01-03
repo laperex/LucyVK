@@ -89,6 +89,8 @@ namespace lucy {
 		
 		void texture_pipeline_init();
 		void descriptor_set_init();
+
+		void init_imgui();
 		
 		bool resize_requested = false;
 
@@ -96,6 +98,7 @@ namespace lucy {
 		lvk_image load_image_2D(const char* filename);
 
 		void init(SDL_Window* window);
+
 
 		renderer();
 
