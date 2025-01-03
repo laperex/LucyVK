@@ -24,10 +24,11 @@ struct lvk_device {
 private:
 	LVK_HANDLE_DEF(VkDevice, _device)
 	VmaAllocator _allocator;
+	VkSurfaceKHR _surfaceKHR;
 
 	// std::vector<const char*> extensions;
 
-	VkSurfaceKHR _surfaceKHR;
+	lvk_deletor_deque _deletor;
 
 	struct {
 		struct {
@@ -57,39 +58,39 @@ private:
 		const uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags property_flags) const;
 	} physical_device;
 
-	lvk_destroyer destroyer;
-
 
 	friend lvk_instance;
 
 public:
 	void destroy();
 	
-	// DESTROYER 		---------- ---------- ---------- ----------
+	// DESTROYER 		---------- ---------- ---------- 
 	
-	void destroy(VkCommandPool command_pool);
-	void destroy(VkPipelineLayout pipeline_layout);
-	void destroy(VkPipeline pipeline);
-	void destroy(VkSwapchainKHR swapchain);
-	void destroy(VkSemaphore semaphore);
-	void destroy(VkFence fence);
-	void destroy(VkDescriptorSetLayout descriptor_set_layout);
-	void destroy(VkDescriptorPool descriptor_pool);
-	void destroy(VkFramebuffer framebuffer);
-	void destroy(VkRenderPass render_pass);
-	void destroy(VkImageView image_view);
-	void destroy(VkShaderModule shader_module);
-	void destroy(VkSampler sampler);
+	lvk_deletor_deque create_deletor();
 	
-	// void destroy(VkCommandBuffer command_buffer, VkCommandPool command_pool);
-	void destroy(VkCommandBuffer* command_buffer, uint32_t command_buffer_count, VkCommandPool command_pool);
-	// void destroy(VkDescriptorSet descriptor_set, VkDescriptorPool descriptor_pool);
-	// void destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool);
+	// void destroy(VkCommandPool command_pool);
+	// void destroy(VkPipelineLayout pipeline_layout);
+	// void destroy(VkPipeline pipeline);
+	// void destroy(VkSwapchainKHR swapchain);
+	// void destroy(VkSemaphore semaphore);
+	// void destroy(VkFence fence);
+	// void destroy(VkDescriptorSetLayout descriptor_set_layout);
+	// void destroy(VkDescriptorPool descriptor_pool);
+	// void destroy(VkFramebuffer framebuffer);
+	// void destroy(VkRenderPass render_pass);
+	// void destroy(VkImageView image_view);
+	// void destroy(VkShaderModule shader_module);
+	// void destroy(VkSampler sampler);
+	
+	// // void destroy(VkCommandBuffer command_buffer, VkCommandPool command_pool);
+	// void destroy(VkCommandBuffer* command_buffer, uint32_t command_buffer_count, VkCommandPool command_pool);
+	// // void destroy(VkDescriptorSet descriptor_set, VkDescriptorPool descriptor_pool);
+	// // void destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool);
 
-	void destroy(VkBuffer buffer, VmaAllocation allocation);
-	void destroy(const lvk_buffer& buffer);
-	void destroy(VkImage image, VmaAllocation allocation);
-	void destroy(const lvk_image& image);
+	// void destroy(VkBuffer buffer, VmaAllocation allocation);
+	// void destroy(const lvk_buffer& buffer);
+	// void destroy(VkImage image, VmaAllocation allocation);
+	// void destroy(const lvk_image& image);
 
 
 	// SYNCHRONIZATION 		---------- ---------- ---------- ----------

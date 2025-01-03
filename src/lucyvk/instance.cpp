@@ -174,8 +174,7 @@ lvk_instance lvk_instance::initialize(const char* name, SDL_Window* sdl_window, 
 	return instance;
 }
 
-void lvk_instance::destroy()
-{
+void lvk_instance::destroy() {
 	if (_debug_messenger != VK_NULL_HANDLE) {
         DestroyDebugUtilsMessengerEXT(_instance, _debug_messenger, VK_NULL_HANDLE);
 		dloggln("DebugUtilMessenger Destroyed");
@@ -381,7 +380,12 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 
     vmaCreateAllocator(&allocator_create_info, &device._allocator);
 	dloggln("Created:\t", device._allocator, "\t [Allocator]");
-	
+
+	device._deletor = {
+		.device = device._device,
+		.allocator = device._allocator
+	};
+
 	return device;
 }
 

@@ -64,7 +64,7 @@ lvk_image lucy::renderer::load_image_2D(const char* filename) {
 		command_buffer.pipeline_barrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, image_barrier);
 	});
 
-	device.destroy(staging_buffer);
+	deletor.destroy(staging_buffer);
 	stbi_image_free(image_data);
 
 	return image;
@@ -122,8 +122,8 @@ void lucy::renderer::texture_pipeline_init() {
 	graphics_pipeline_layout = device.create_pipeline_layout({ descriptor_set_layout });
 	graphics_pipeline = device.create_graphics_pipeline(graphics_pipeline_layout, config, render_pass);
 
-	device.destroy(fragment_shader);
-	device.destroy(vertex_shader);
+	deletor.destroy(fragment_shader);
+	deletor.destroy(vertex_shader);
 }
 
 void lucy::renderer::descriptor_set_init() {
@@ -144,11 +144,13 @@ void lucy::renderer::descriptor_set_init() {
 	});
 
 	// seperate for each shader type
-	descriptor_set_layout = device.create_descriptor_set_layout({
-		lvk::info::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1),
-		lvk::info::descriptor_set_layout_binding(1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
-		lvk::info::descriptor_set_layout_binding(2, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1),
-	});
+	descriptor_set_layout = deletor.push(
+		device.create_descriptor_set_layout({
+			lvk::info::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1),
+			lvk::info::descriptor_set_layout_binding(1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
+			lvk::info::descriptor_set_layout_binding(2, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1),
+		})
+	);
 
 	global_descriptor = device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
 	// device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
@@ -157,38 +159,40 @@ void lucy::renderer::descriptor_set_init() {
 void lucy::renderer::init(SDL_Window* window) {
 	instance = lvk_instance::initialize("Lucy Framework v17", window, true);
 	device = instance.create_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME });
+	deletor = device.create_deletor();
+	// main_deletor = 
 	
 	sdl_window = window;
 
-
-	main_command_pool = device.create_graphics_command_pool();
+	main_command_pool = deletor.push(device.create_graphics_command_pool());
 
 	for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
-		frame_array[i].command_buffer = device.create_command_buffer(main_command_pool);
+		frame_array[i].command_buffer = deletor.push(device.create_command_buffer(main_command_pool), main_command_pool);
+		// deletor.push(frame_array[i].command_buffer)
 
-		frame_array[i].render_fence = device.create_fence();
-		frame_array[i].render_semaphore = device.create_semaphore();
-		frame_array[i].present_semaphore = device.create_semaphore();
+		frame_array[i].render_fence = deletor.push(device.create_fence());
+		frame_array[i].render_semaphore = deletor.push(device.create_semaphore());
+		frame_array[i].present_semaphore = deletor.push(device.create_semaphore());
 	}
 	
 	
-	// mesh.vertices = std::vector<lvk::vertex> {
-	// 	{ {  100,  100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } },
-	// 	{ { -100,  100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f } },
-	// 	{ { -100, -100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f } },
-	// 	{ {  100, -100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } },
-	// };
+	mesh.vertices = std::vector<lvk::vertex> {
+		{ {  100,  100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 0.0f } },
+		{ { -100,  100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f, 0.0f } },
+		{ { -100, -100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f } },
+		{ {  100, -100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } },
+	};
 	
-	// mesh.indices = { 0,1,2, 2,3,0 };
+	mesh.indices = { 0,1,2, 2,3,0 };
 	
-	// mesh.index_buffer = device.create_index_buffer_static(mesh.indices);
-	// mesh.vertex_buffer = device.create_vertex_buffer(mesh.vertices);
+	mesh.index_buffer = deletor.push(device.create_index_buffer_static(mesh.indices));
+	mesh.vertex_buffer = deletor.push(device.create_vertex_buffer(mesh.vertices));
 
 
 	glm::ivec2 size;
 	SDL_GetWindowSize(window, &size.x, &size.y);
 
-	render_pass = device.create_default_render_pass(VK_FORMAT_B8G8R8A8_UNORM);
+	render_pass = deletor.push(device.create_default_render_pass(VK_FORMAT_B8G8R8A8_UNORM));
 	swapchain = device.create_swapchain(render_pass, size.x, size.y, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
 		.format = VK_FORMAT_B8G8R8A8_UNORM,
 		.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
@@ -198,9 +202,9 @@ void lucy::renderer::init(SDL_Window* window) {
 
 	texture_pipeline_init();
 
-	lvk_image load_image = load_image_2D("/home/laperex/Programming/C++/LucyVK/assets/buff einstein.jpg");
-	lvk_image_view load_image_view = device.create_image_view(load_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT);
-	lvk_sampler sampler = device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+	lvk_image load_image = deletor.push(load_image_2D("/home/laperex/Programming/C++/LucyVK/assets/buff einstein.jpg"));
+	lvk_image_view load_image_view = deletor.push(device.create_image_view(load_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT));
+	lvk_sampler sampler = deletor.push(device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT));
 
 	device.update_descriptor_set(global_descriptor, 2, &load_image_view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);
 
@@ -221,7 +225,7 @@ void lucy::renderer::record(lre_frame& frame) {
 	};
 	
 	if (mvp_uniform_buffer._buffer == VK_NULL_HANDLE) {
-		mvp_uniform_buffer = device.create_uniform_buffer<decltype(mvp)>();
+		mvp_uniform_buffer = deletor.push(device.create_uniform_buffer<decltype(mvp)>());
 		device.update_descriptor_set(global_descriptor, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
 	}
 
@@ -239,11 +243,11 @@ void lucy::renderer::record(lre_frame& frame) {
 
 	cmd.bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 
-	// cmd.bind_vertex_buffers({ mesh.vertex_buffer }, { 0 });
-	// cmd.bind_index_buffer(mesh.index_buffer, VK_INDEX_TYPE_UINT32);
+	cmd.bind_vertex_buffers({ mesh.vertex_buffer }, { 0 });
+	cmd.bind_index_buffer(mesh.index_buffer, VK_INDEX_TYPE_UINT32);
 	cmd.bind_descriptor_set(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout, { global_descriptor });
 
-	// cmd.draw_indexed(mesh.indices.size(), 1, 0, 0, 0);
+	cmd.draw_indexed(mesh.indices.size(), 1, 0, 0, 0);
 
 	cmd.end_render_pass();
 
@@ -279,7 +283,7 @@ void lucy::renderer::submit(const lre_frame& frame) {
 		resize_requested = true;
 	}
 	
-	printf("jsdabsfj");
+	// printf("jsdabsfj\n");
 }
 
 void lucy::renderer::set_projection(const glm::mat4& projection) {
@@ -318,9 +322,13 @@ void lucy::renderer::update(const bool& is_resized) {
 }
 
 void lucy::renderer::destroy() {
+	dloggln("-----------------------------------------------------------");
+
 	device.swapchain_destroy(swapchain);
 	device.wait_idle();
 
+	deletor.flush();
+	
 	device.destroy();
 	instance.destroy();
 }

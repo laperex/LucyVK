@@ -31,7 +31,7 @@ struct lre_frame {
 
 	uint32_t image_index;
 
-	lvk_destroyer deletion_queue;
+	lvk_deletor_deque deletion_queue;
 };
 
 
@@ -58,7 +58,9 @@ namespace lucy {
 		lvk_pipeline graphics_pipeline;
 		lvk_pipeline_layout graphics_pipeline_layout;
 		
-		// lvk::mesh mesh;
+		lvk_deletor_deque deletor;
+		
+		lvk::mesh mesh;
 		
 		VkClearValue clear_value[2] = {
 			{
