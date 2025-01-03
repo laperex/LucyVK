@@ -62,6 +62,10 @@ private:
 	friend lvk_instance;
 
 public:
+	VkPhysicalDevice get_physical_device();
+	VkDevice get_logical_device();
+	VkQueue get_graphics_queue();
+
 	void destroy();
 	
 	// DESTROYER 		---------- ---------- ---------- 
@@ -340,11 +344,11 @@ public:
 
 	// DESCRIPTOR_POOL		   ---------- ---------- ----------
 
-	lvk_descriptor_pool create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count);
+	lvk_descriptor_pool create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count, VkDescriptorPoolCreateFlags flags = 0);
 
 	template <std::size_t _dps_N> [[nodiscard, __gnu__::__always_inline__]]
-	constexpr lvk_descriptor_pool create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize (&descriptor_pool_sizes)[_dps_N]) noexcept {
-		return create_descriptor_pool(max_descriptor_sets, descriptor_pool_sizes, _dps_N);
+	constexpr lvk_descriptor_pool create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize (&descriptor_pool_sizes)[_dps_N], VkDescriptorPoolCreateFlags flags = 0) noexcept {
+		return create_descriptor_pool(max_descriptor_sets, descriptor_pool_sizes, _dps_N, flags);
 	}
 
 	void clear_descriptor_pool(const lvk_descriptor_pool& descriptor_pool) const;

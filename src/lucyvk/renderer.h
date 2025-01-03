@@ -90,7 +90,7 @@ namespace lucy {
 		void texture_pipeline_init();
 		void descriptor_set_init();
 
-		void init_imgui();
+		void init_imgui(SDL_Window* sdl_window);
 		
 		bool resize_requested = false;
 

@@ -57,6 +57,8 @@ struct lvk_deletor_deque {
 		std::vector<void*> data = {};
 		std::size_t type = 0;
 	};
+	
+	typedef std::function<void()> void_lambda_function;
 
 	std::deque<delete_element> delete_deque;
 	VkDevice device;
@@ -110,6 +112,8 @@ public:
 		push_function(handle);
 		return handle;
 	}
+	
+	void push_fn(std::function<void()>&& function);
 	
 	void flush();
 

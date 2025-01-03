@@ -157,10 +157,22 @@ const lvk_image& lvk_deletor_deque::push(const lvk_image& image) {
 	return image;
 }
 
+void lvk_deletor_deque::push_fn(std::function<void()>&& function) {
+	delete_deque.push_back({
+		.data = { (void*)&function },
+		.type = typeid(std::function<void()>).hash_code()
+	});
+}
+
 
 void lvk_deletor_deque::flush() {
 	int i = 0;
 	for (auto element = delete_deque.rbegin(); element != delete_deque.rend(); element++) {
+		if (element->type == typeid(std::function<void()>).hash_code()) {
+			dloggln("ssadadsasd");
+			void_lambda_function fn = (void_lambda_function)element->data[0];
+			fn();
+		}
 		if (element->type == typeid(VkCommandPool).hash_code()) {
 			destroy(static_cast<VkCommandPool>(element->data[0]));
 		}

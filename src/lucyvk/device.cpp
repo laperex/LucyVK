@@ -74,6 +74,18 @@ VkResult lvk_device::present(const uint32_t image_index, const VkSwapchainKHR sw
 }
 
 
+VkPhysicalDevice lvk_device::get_physical_device() {
+	return physical_device._physical_device;
+}
+
+VkDevice lvk_device::get_logical_device() {
+	return _device;
+}
+
+VkQueue lvk_device::get_graphics_queue() {
+	return _queue.graphics.handle;
+}
+
 void lvk_device::destroy() {
 	_deletor.flush();
 
@@ -938,13 +950,14 @@ void lvk_device::update_descriptor_set(const lvk_descriptor_set& descriptor_set,
 // |--------------------------------------------------
 
 
-lvk_descriptor_pool lvk_device::create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count) {
+lvk_descriptor_pool lvk_device::create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count, VkDescriptorPoolCreateFlags flags) {
 	lvk_descriptor_pool descriptor_pool = {
 		._descriptor_pool = VK_NULL_HANDLE,
 	};
 
 	VkDescriptorPoolCreateInfo pool_info = {
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+		.flags = flags,
 		.maxSets = max_descriptor_sets,
 		.poolSizeCount = descriptor_pool_sizes_count,
 		.pPoolSizes = descriptor_pool_sizes

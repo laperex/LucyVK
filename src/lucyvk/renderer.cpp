@@ -12,6 +12,7 @@
 #include "renderer.h"
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
+#include <imgui_impl_vulkan.h>
 #include <imgui.h>
 
 
@@ -159,8 +160,60 @@ void lucy::renderer::descriptor_set_init() {
 	// device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
 }
 
-void lucy::renderer::init_imgui() {
+void lucy::renderer::init_imgui(SDL_Window* sdl_window) {
+	VkDescriptorPoolSize pool_sizes[] = {
+		{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+	};
 	
+	VkDescriptorPool imgui_descrptor_pool = device.create_descriptor_pool(1000, pool_sizes, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
+
+	ImGui::CreateContext();
+	// this initializes imgui for SDL
+	ImGui_ImplSDL2_InitForVulkan(sdl_window);
+
+	// this initializes imgui for Vulkan
+	ImGui_ImplVulkan_InitInfo init_info = {
+		.Instance = instance._instance,
+		.PhysicalDevice = device.get_physical_device(),
+		.Device = device.get_logical_device(),
+		.Queue = device.get_graphics_queue(),
+		.DescriptorPool = imgui_descrptor_pool,
+		.MinImageCount = 3,
+		.ImageCount = 3,
+
+		//dynamic rendering parameters for imgui to use
+		.MSAASamples = VK_SAMPLE_COUNT_1_BIT,
+		.UseDynamicRendering = true,
+
+		.PipelineRenderingCreateInfo = {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+			.colorAttachmentCount = 1,
+			.pColorAttachmentFormats = &swapchain._surface_format.format,
+		},
+	};
+
+	ImGui_ImplVulkan_Init(&init_info);
+	ImGui_ImplVulkan_CreateFontsTexture();
+
+	// add the destroy the imgui created structures
+	deletor.push_fn([=]() {
+		dloggln("IMGUI DESTROYED");
+
+		ImGui_ImplVulkan_Shutdown();
+		vkDestroyDescriptorPool(init_info.Device, imgui_descrptor_pool, nullptr);
+	});
+
+	dloggln("IMGUI INITIALIZED");
 }
 
 void lucy::renderer::init(SDL_Window* window) {
@@ -205,6 +258,8 @@ void lucy::renderer::init(SDL_Window* window) {
 		.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 	});
 
+	init_imgui(sdl_window);
+	
 	descriptor_set_init();
 
 	texture_pipeline_init();

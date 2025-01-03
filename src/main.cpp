@@ -25,6 +25,11 @@
 // TODO: Implement Image Loading
 //! TODO: Implement DearImGui
 
+void a() {
+	printf("sdkjansd");
+}
+
+typedef void(*NULL_DU)();
 
 int main(int count, char** args) {
 	lucy::engine engine;
