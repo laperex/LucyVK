@@ -459,11 +459,11 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass
 
 	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, VK_NULL_HANDLE);
 
-	std::vector<VkImage> _images(swapchain._image_count);
+	swapchain._images.resize(swapchain._image_count);
 	swapchain._image_views.resize(swapchain._image_count);
 	swapchain._framebuffers.resize(swapchain._image_count);
 
-	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, _images.data());
+	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, swapchain._images.data());
 
 	swapchain._depth_image = create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
 	swapchain._depth_image_view = create_image_view(swapchain._depth_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT);
@@ -471,7 +471,7 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass
 	// // destroyer.push(swapchain);
 
 	for (size_t i = 0; i < swapchain._image_count; i++) {
-		swapchain._image_views[i] = create_image_view(_images[i], swapchain._surface_format.format, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT);
+		swapchain._image_views[i] = create_image_view(swapchain._images[i], swapchain._surface_format.format, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT);
 		swapchain._framebuffers[i] = create_framebuffer(render_pass, swapchain._extent, {
 			swapchain._image_views[i],
 			swapchain._depth_image_view
@@ -637,6 +637,7 @@ lvk_pipeline lvk_device::create_graphics_pipeline_dynamic(const VkPipelineLayout
 	dloggln("CREATED \t", pipeline._pipeline, "\t [Dynamic Graphics Pipeline]");
 
 	// destroyer.push(pipeline);
+	return pipeline;
 }
 
 void lvk_device::create_graphics_pipeline_array(const VkPipeline* pipeline_array, const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo* graphics_pipeline_create_info_array, uint32_t graphics_pipeline_create_info_array_size) {

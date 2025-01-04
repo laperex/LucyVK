@@ -92,6 +92,11 @@ void lucy::renderer::texture_pipeline_init() {
 
 		// .depthAttachmentFormat
 	};
+	
+	VkPipelineColorBlendAttachmentState color_blend_attachment_state = {
+		.blendEnable = VK_FALSE,
+		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+	};
 
 	lvk::config::graphics_pipeline config = {
 		.shader_stage_array = {
@@ -109,12 +114,15 @@ void lucy::renderer::texture_pipeline_init() {
 
 		.depth_stencil_state = lvk::info::depth_stencil_state(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL),
 
-		.color_blend_state = lvk::info::color_blend_state({
-			{
-				.blendEnable = VK_FALSE,
-				.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
-			}
-		}),
+		.color_blend_state = {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+
+			.logicOpEnable = VK_FALSE,
+			.logicOp = VK_LOGIC_OP_COPY,
+
+			.attachmentCount = 1,
+			.pAttachments = &color_blend_attachment_state,
+		},
 
 		// TODO: Abstraction [Temporary Structs for Storage only with std::vector]
 		// TODO: create_graphics_pipeline with seperate config parameters for below structs
@@ -317,6 +325,28 @@ void lucy::renderer::record(lre_frame& frame) {
 
 	cmd.reset();
 	cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	{
+		const VkImageMemoryBarrier image_memory_barrier {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+
+			.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			
+
+			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+
+			.image = swapchain._images[frame.image_index],
+			.subresourceRange = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel = 0,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1,
+			}
+		};
+
+		vkCmdPipelineBarrier(cmd._command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+	}
 
 	cmd.set_viewport(lvk::info::viewport(0, 0, swapchain._extent.width, swapchain._extent.height, 0.0, 1.0));
 	cmd.set_scissor(lvk::info::scissor(0, 0, swapchain._extent.width, swapchain._extent.height));
@@ -346,6 +376,7 @@ void lucy::renderer::record(lre_frame& frame) {
 		.colorAttachmentCount = 1,
 		.pColorAttachments = &color_attachment_info,
 	};
+	
 
 	vkCmdBeginRendering(cmd._command_buffer, &render_info);
 
@@ -358,6 +389,25 @@ void lucy::renderer::record(lre_frame& frame) {
 	cmd.draw_indexed(mesh.indices.size(), 1, 0, 0, 0);
 
 	vkCmdEndRendering(cmd._command_buffer);
+
+	{
+		const VkImageMemoryBarrier image_memory_barrier {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			.image = swapchain._images[frame.image_index],
+			.subresourceRange = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel = 0,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1,
+			}
+		};
+
+		vkCmdPipelineBarrier(cmd._command_buffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+	}
 
 	cmd.end();
 }
