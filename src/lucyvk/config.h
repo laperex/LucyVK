@@ -13,13 +13,14 @@ namespace lvk::config {
 		VkPipelineVertexInputStateCreateInfo vertex_input_state;
 		VkPipelineInputAssemblyStateCreateInfo input_assembly_state;
 		VkPipelineTessellationStateCreateInfo testallation_state;
-		VkPipelineViewportStateCreateInfo viewport_state;
 		VkPipelineRasterizationStateCreateInfo rasterization_state;
 		VkPipelineMultisampleStateCreateInfo multisample_state;
 		VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
 		VkPipelineColorBlendStateCreateInfo color_blend_state;
+		
+		VkPipelineViewportStateCreateInfo viewport_state;
 		VkPipelineDynamicStateCreateInfo dynamic_state;
 
-		VkPipelineRenderingCreateInfo rendering_info;
+		VkPipelineRenderingCreateInfoKHR rendering_info;
 	};
 }

@@ -567,11 +567,13 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipelin
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE
 	};
-	
+
+	assert(render_pass != VK_NULL_HANDLE);
+
 	VkGraphicsPipelineCreateInfo pipeline_info = {
 		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 
-		.pNext = (config.rendering_info.sType == VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO) ? &config.rendering_info: VK_NULL_HANDLE,
+		.pNext = VK_NULL_HANDLE,
 
 		.stageCount = static_cast<uint32_t>(config.shader_stage_array.size()),
 		.pStages = config.shader_stage_array.data(),
@@ -598,6 +600,43 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipelin
 	// destroyer.push(pipeline);
 	
 	return pipeline;
+}
+
+lvk_pipeline lvk_device::create_graphics_pipeline_dynamic(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config) {
+	lvk_pipeline pipeline = {
+		._pipeline = VK_NULL_HANDLE
+	};
+	
+	assert(config.rendering_info.sType == VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR);
+	
+	VkGraphicsPipelineCreateInfo pipeline_info = {
+		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+
+		.pNext = &config.rendering_info,
+
+		.stageCount = static_cast<uint32_t>(config.shader_stage_array.size()),
+		.pStages = config.shader_stage_array.data(),
+
+		.pVertexInputState = &config.vertex_input_state,
+		.pInputAssemblyState = &config.input_assembly_state,
+		.pViewportState = &config.viewport_state,
+		.pRasterizationState = &config.rasterization_state,
+		.pMultisampleState = &config.multisample_state,
+		.pDepthStencilState = &config.depth_stencil_state,
+		.pColorBlendState = &config.color_blend_state,
+		.pDynamicState = &config.dynamic_state,
+		.layout = pipeline_layout,
+		.renderPass = VK_NULL_HANDLE,
+		.subpass = 0,
+		.basePipelineHandle = VK_NULL_HANDLE,
+	};
+
+	if (vkCreateGraphicsPipelines(this->_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline._pipeline) != VK_SUCCESS) {
+		throw std::runtime_error("dynamic graphics pipeline creation failed!");
+	}
+	dloggln("CREATED \t", pipeline._pipeline, "\t [Dynamic Graphics Pipeline]");
+
+	// destroyer.push(pipeline);
 }
 
 void lvk_device::create_graphics_pipeline_array(const VkPipeline* pipeline_array, const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo* graphics_pipeline_create_info_array, uint32_t graphics_pipeline_create_info_array_size) {

@@ -1,5 +1,6 @@
 #include "events.h"
 #include "lucyio/logger.h"
+#include <imgui_impl_sdl2.h>
 #include <stdexcept>
 
 void lucy::events::add(function event_function) {
@@ -21,6 +22,9 @@ void lucy::events::update() {
 	mouse_wheel_scroll = 0;
 
 	for (int i = 0; i < SDL_PollEvent(&event); i++) {
+		// TODO: better impl
+		ImGui_ImplSDL2_ProcessEvent(&event);
+
 		for (auto& function: event_function_array) {
 			function(&event);
 		}

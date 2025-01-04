@@ -84,6 +84,14 @@ void lucy::renderer::texture_pipeline_init() {
 	};
 
 	lvk::vertex_input_description vertex_description = lvk::vertex::get_vertex_input_description();
+	
+	const VkPipelineRenderingCreateInfoKHR pipeline_rendering_create_info {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+		.colorAttachmentCount = 1,
+		.pColorAttachmentFormats = &swapchain._surface_format.format,
+
+		// .depthAttachmentFormat
+	};
 
 	lvk::config::graphics_pipeline config = {
 		.shader_stage_array = {
@@ -94,14 +102,6 @@ void lucy::renderer::texture_pipeline_init() {
 		.vertex_input_state = lvk::info::vertex_input_state(vertex_description.bindings, vertex_description.attributes),
 
 		.input_assembly_state = lvk::info::input_assembly_state(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE),
-
-		// .viewport_state = lvk::info::viewport_state(viewport, scissor),
-		.viewport_state = {
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-			
-			.viewportCount = 1,
-			.scissorCount = 1
-		},
 		
 		.rasterization_state = lvk::info::rasterization_state(VK_POLYGON_MODE_FILL),
 
@@ -115,16 +115,37 @@ void lucy::renderer::texture_pipeline_init() {
 				.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
 			}
 		}),
+
+		// TODO: Abstraction [Temporary Structs for Storage only with std::vector]
+		// TODO: create_graphics_pipeline with seperate config parameters for below structs
+		.viewport_state = {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+			
+			.viewportCount = 1,
+			.scissorCount = 1
+		},
 		
 		.dynamic_state = {
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+
 			.dynamicStateCount = std::size(state),
 			.pDynamicStates = state,
+		},
+		
+		.rendering_info = {
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+			
+			.pNext = VK_NULL_HANDLE,
+
+			.colorAttachmentCount = 1,
+    		.pColorAttachmentFormats = &swapchain._surface_format.format,
+			.depthAttachmentFormat = swapchain._depth_image._format,
+			// .stencilAttachmentFormat = swapchain._depth_image._format
 		}
 	};
 
 	graphics_pipeline_layout = deletor.push(device.create_pipeline_layout({ descriptor_set_layout }));
-	graphics_pipeline = deletor.push(device.create_graphics_pipeline(graphics_pipeline_layout, config, render_pass));
+	graphics_pipeline = deletor.push(device.create_graphics_pipeline_dynamic(graphics_pipeline_layout, config));
 
 	deletor.destroy(fragment_shader);
 	deletor.destroy(vertex_shader);
@@ -218,9 +239,8 @@ void lucy::renderer::init_imgui(SDL_Window* sdl_window) {
 
 void lucy::renderer::init(SDL_Window* window) {
 	instance = lvk_instance::initialize("Lucy Framework v17", window, true);
-	device = instance.create_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME });
+	device = instance.create_device({ VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME });
 	deletor = device.create_deletor();
-	// main_deletor = 
 	
 	sdl_window = window;
 
@@ -301,7 +321,33 @@ void lucy::renderer::record(lre_frame& frame) {
 	cmd.set_viewport(lvk::info::viewport(0, 0, swapchain._extent.width, swapchain._extent.height, 0.0, 1.0));
 	cmd.set_scissor(lvk::info::scissor(0, 0, swapchain._extent.width, swapchain._extent.height));
 
-	cmd.begin_render_pass(render_pass, swapchain._framebuffers[frame.image_index], swapchain, VK_SUBPASS_CONTENTS_INLINE, clear_value);
+	// cmd.begin_render_pass(render_pass, swapchain._framebuffers[frame.image_index], swapchain, VK_SUBPASS_CONTENTS_INLINE, clear_value);
+
+	const VkRenderingAttachmentInfo color_attachment_info {
+		.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+		.imageView = swapchain._image_views[frame.image_index],
+		.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,
+		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+		.clearValue = {
+			.color = {
+				{ 0.0f, 0.0f, 0, 0.0f }
+			}
+		},
+	};
+
+	const VkRenderingInfo render_info {
+		.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+		.renderArea = {
+			.offset = { 0, 0 },
+			.extent = swapchain._extent
+		},
+		.layerCount = 1,
+		.colorAttachmentCount = 1,
+		.pColorAttachments = &color_attachment_info,
+	};
+
+	vkCmdBeginRendering(cmd._command_buffer, &render_info);
 
 	cmd.bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 
@@ -311,7 +357,7 @@ void lucy::renderer::record(lre_frame& frame) {
 
 	cmd.draw_indexed(mesh.indices.size(), 1, 0, 0, 0);
 
-	cmd.end_render_pass();
+	vkCmdEndRendering(cmd._command_buffer);
 
 	cmd.end();
 }
@@ -373,6 +419,17 @@ void lucy::renderer::update(const bool& is_resized) {
 		resize_requested = false;
 		return;
 	}
+
+	ImGui_ImplVulkan_NewFrame();
+	ImGui_ImplSDL2_NewFrame();
+	ImGui::NewFrame();
+
+	//some imgui UI to test
+	ImGui::ShowDemoWindow();
+
+	//make imgui calculate internal draw structures
+	ImGui::Render();
+
 
 	if (frame_number > 0) {
 		submit(frame_array[(frame_number - 1) % FRAMES_IN_FLIGHT]);

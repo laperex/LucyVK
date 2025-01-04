@@ -107,7 +107,7 @@ VkPhysicalDevice lvk::default_physical_device(const std::vector<VkPhysicalDevice
 					vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, instance->_surfaceKHR, &format_count, formats.data());
 				}
 
-				uint32_t present_mode_count;
+				uint32_t present_mode_count = 0;
 				vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, instance->_surfaceKHR, &present_mode_count, VK_NULL_HANDLE);
 
 				if (present_mode_count != 0) {
@@ -118,7 +118,7 @@ VkPhysicalDevice lvk::default_physical_device(const std::vector<VkPhysicalDevice
 				isSwapchainAdequate = !formats.empty() && !present_modes.empty();
 			}
 
-			VkPhysicalDeviceFeatures supportedFeatures;
+			VkPhysicalDeviceFeatures supportedFeatures = {};
 			vkGetPhysicalDeviceFeatures(physical_device, &supportedFeatures);
 
 			if (isRequiredDeviceExtensionsAvailable && isSwapchainAdequate && supportedFeatures.samplerAnisotropy) {

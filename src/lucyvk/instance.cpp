@@ -148,6 +148,8 @@ lvk_instance lvk_instance::initialize(const char* name, SDL_Window* sdl_window, 
 			}
 		}
     }
+	
+	// requiredExtensionArray.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
 	create_info.enabledLayerCount = std::size(layers);
 	create_info.ppEnabledLayerNames = layers.data();
@@ -316,21 +318,22 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 		};
     }
 	
-	VkPhysicalDeviceDynamicRenderingFeatures dynamic_features = {
-		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
+	VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamic_rendering_feature {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
+		.pNext = VK_NULL_HANDLE,
 		.dynamicRendering = VK_TRUE,
 	};
 	
-	VkPhysicalDeviceSynchronization2Features sync2_features = {
+	VkPhysicalDeviceSynchronization2FeaturesKHR sync2_features = {
 		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
-		.pNext = &dynamic_features,
+		.pNext = &dynamic_rendering_feature,
 		.synchronization2 = VK_TRUE,
 	};
 	
 	VkDeviceCreateInfo create_info = {
 		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 		
-		// .pNext = &sync2_features,
+		.pNext = &sync2_features,
 		
 		.queueCreateInfoCount = static_cast<uint32_t>(unique_queue_indices.size()),
 		.pQueueCreateInfos = queue_create_info_array,
