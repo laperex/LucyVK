@@ -269,7 +269,7 @@ void lucy::renderer::init(SDL_Window* window) {
 		{ { -100, -100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f } },
 		{ {  100, -100, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f } },
 	};
-	
+
 	mesh.indices = { 0,1,2, 2,3,0 };
 	
 	mesh.index_buffer = deletor.push(device.create_index_buffer_static(mesh.indices));
@@ -359,24 +359,21 @@ void lucy::renderer::record(lre_frame& frame) {
 	cmd.transition_image2(frame.draw_image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 	{
 		static float framenumber = 0;
-		VkClearColorValue clearValue;
 		float flash = std::abs(std::sin((framenumber++) / 120.f));
-		clearValue = { { 0.0f, 0.0f, flash, 1.0f } };
 
-		VkImageSubresourceRange clearRange = lvk::info::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
-		vkCmdClearColorImage(cmd, frame.draw_image._image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
+		cmd.clear_color_image(frame.draw_image, VK_IMAGE_LAYOUT_GENERAL, { { 0.0f, 0.0f, flash, 1.0f } }, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 
 	// cmd.begin_render_pass(render_pass, swapchain._framebuffers[frame.image_index], swapchain, VK_SUBPASS_CONTENTS_INLINE, clear_value);
 	cmd.transition_image2(frame.draw_image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	{
-		const VkRenderingAttachmentInfo color_attachment_info {
+		const VkRenderingAttachmentInfo color_attachment_info = {
 			.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
 	
 			.imageView = frame.draw_image_view,
 			.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,
 			
-			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,	// VK_ATTACHMENT_LOAD_OP_CLEAR
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 			
 			.clearValue = {
@@ -386,13 +383,13 @@ void lucy::renderer::record(lre_frame& frame) {
 			},
 		};
 
-		const VkRenderingInfo render_info {
+		const VkRenderingInfo render_info = {
 			.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
 			.renderArea = {
 				.offset = { 0, 0 },
 				.extent = {
-					.width = swapchain._extent.width,
-					.height = swapchain._extent.height
+					.width = frame.draw_image._extent.width,
+					.height = frame.draw_image._extent.height
 				}
 			},
 			.layerCount = 1,
@@ -421,7 +418,42 @@ void lucy::renderer::record(lre_frame& frame) {
 	
 	cmd.blit_image_to_image2(frame.draw_image, swapchain._images[frame.swapchain_image_index], { frame.draw_image._extent.width, frame.draw_image._extent.height }, swapchain._extent);
 
-	cmd.transition_image2(swapchain._images[frame.swapchain_image_index], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+	cmd.transition_image2(swapchain._images[frame.swapchain_image_index], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+	//* draw imgui
+	{
+		// vkinit::attachment_info(targetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		const VkRenderingAttachmentInfo color_attachment = {
+			.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+	
+			.imageView = swapchain._image_views[frame.swapchain_image_index],
+			.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,
+			
+			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+		};
+		
+		const VkRenderingInfo render_info = {
+			.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+			.renderArea = {
+				.offset = { 0, 0 },
+				.extent = {
+					.width = swapchain._extent.width,
+					.height = swapchain._extent.height
+				}
+			},
+			.layerCount = 1,
+			.colorAttachmentCount = 1,
+			.pColorAttachments = &color_attachment,
+		};
+
+		vkCmdBeginRendering(cmd, &render_info);
+
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+
+		vkCmdEndRendering(cmd);
+	}
+
+	cmd.transition_image2(swapchain._images[frame.swapchain_image_index], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 	cmd.end();
 }

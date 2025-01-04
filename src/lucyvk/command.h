@@ -91,4 +91,11 @@ struct lvk_command_buffer {
 	void transition_image(VkImageMemoryBarrier image_memory_barrier) const;
 	void pipeline_barrier(VkPipelineStageFlags src_pipeline_stage, VkPipelineStageFlags dst_pipeline_stage, VkImageMemoryBarrier image_memory_barrier) const;
 	// VkSubmitInfo immediate_transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const;
+	
+	void clear_color_image(VkImage image, VkImageLayout image_layout, VkClearColorValue* clear_value_array, uint32_t clear_value_array_size, VkImageSubresourceRange clear_range) const;
+	void clear_color_image(VkImage image, VkImageLayout image_layout, VkClearColorValue clear_value, VkImageAspectFlags aspect_flags) const;
+	template <std::size_t _ccv_N> [[__gnu__::__always_inline__]]
+    constexpr void clear_color_image(VkImage image, VkImageLayout image_layout, const VkClearColorValue (&clear_value_array)[_ccv_N], VkImageSubresourceRange clear_range) const noexcept {
+		clear_color_image(image, image_layout, clear_value_array, _ccv_N, clear_range);
+	}
 };

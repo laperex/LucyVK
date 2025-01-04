@@ -78,6 +78,16 @@ void lvk_command_buffer::pipeline_barrier(VkPipelineStageFlags src_pipeline_stag
 	vkCmdPipelineBarrier(_command_buffer, src_pipeline_stage, dst_pipeline_stage, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
 }
 
+void lvk_command_buffer::clear_color_image(VkImage image, VkImageLayout image_layout, VkClearColorValue* clear_value_array, uint32_t clear_value_array_size, VkImageSubresourceRange clear_range) const {
+	vkCmdClearColorImage(_command_buffer, image, image_layout, clear_value_array, clear_value_array_size, &clear_range);
+}
+
+void lvk_command_buffer::clear_color_image(VkImage image, VkImageLayout image_layout, VkClearColorValue clear_value, VkImageAspectFlags aspect_flags) const {
+	VkImageSubresourceRange clear_range = lvk::info::image_subresource_range(aspect_flags);
+
+	vkCmdClearColorImage(_command_buffer, image, image_layout, &clear_value, 1, &clear_range);	
+}
+
 // VkSubmitInfo lvk_command_buffer::immediate_transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const {
 // 	return immediate([=]{
 // 		transition_image(image, current_layout, new_layout);
