@@ -15,15 +15,15 @@
 // // TODO: dynamic viewport
 // TODO: renderer restructuring
 	// // TODO: semaphore unsignaling
-	//! TODO: mesh loading
+	//! TODO: GLTF loading
 	// TODO: material management
 	// TODO: shader management
 // // TODO: memory handles
-// TODO: render_pass restructuring
+// // TODO: render_pass restructuring
 // // TODO: better memory management
 // // TODO: Implement Better Destruction -
-// TODO: Implement Image Loading
-//! TODO: Implement DearImGui
+// TODO: Implement Better Image Loading
+// // TODO: Implement DearImGui
 
 void a() {
 	printf("sdkjansd");

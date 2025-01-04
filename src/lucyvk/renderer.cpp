@@ -312,7 +312,7 @@ void lucy::renderer::record(lre_frame& frame) {
 	static lvk_buffer mvp_uniform_buffer = {
 		._buffer = VK_NULL_HANDLE
 	};
-	
+
 	if (mvp_uniform_buffer._buffer == VK_NULL_HANDLE) {
 		mvp_uniform_buffer = deletor.push(device.create_uniform_buffer<decltype(mvp)>());
 		device.update_descriptor_set(global_descriptor, 1, &mvp_uniform_buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0);
@@ -364,43 +364,21 @@ void lucy::renderer::record(lre_frame& frame) {
 		cmd.clear_color_image(frame.draw_image, VK_IMAGE_LAYOUT_GENERAL, { { 0.0f, 0.0f, flash, 1.0f } }, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 
-	// cmd.begin_render_pass(render_pass, swapchain._framebuffers[frame.image_index], swapchain, VK_SUBPASS_CONTENTS_INLINE, clear_value);
+	//* Main Rendering onto draw_image
 	cmd.transition_image2(frame.draw_image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	{
-		const VkRenderingAttachmentInfo color_attachment_info = {
-			.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-	
-			.imageView = frame.draw_image_view,
-			.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,
-			
-			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,	// VK_ATTACHMENT_LOAD_OP_CLEAR
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			
-			.clearValue = {
-				.color = {
-					{ 0.0f, 0.0f, 0, 0.0f }
-				}
-			},
-		};
-
-		const VkRenderingInfo render_info = {
-			.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-			.renderArea = {
-				.offset = { 0, 0 },
-				.extent = {
-					.width = frame.draw_image._extent.width,
-					.height = frame.draw_image._extent.height
-				}
-			},
-			.layerCount = 1,
-			.colorAttachmentCount = 1,
-			.pColorAttachments = &color_attachment_info,
-		};
-
 		cmd.set_viewport(lvk::info::viewport(0, 0, swapchain._extent.width, swapchain._extent.height, 0.0, 1.0));
 		cmd.set_scissor(lvk::info::scissor(0, 0, swapchain._extent.width, swapchain._extent.height));		
 		
-		vkCmdBeginRendering(cmd._command_buffer, &render_info);
+		cmd.begin_rendering(
+			{
+				.width = frame.draw_image._extent.width,
+				.height = frame.draw_image._extent.height
+			},
+			{
+				lvk::info::rendering_attachment_info(frame.draw_image_view, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR)
+			}
+		);
 
 		cmd.bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 
@@ -410,7 +388,7 @@ void lucy::renderer::record(lre_frame& frame) {
 
 		cmd.draw_indexed(mesh.indices.size(), 1, 0, 0, 0);
 
-		vkCmdEndRendering(cmd._command_buffer);
+		cmd.end_rendering();
 	}
 	
 	cmd.transition_image2(frame.draw_image._image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -418,39 +396,16 @@ void lucy::renderer::record(lre_frame& frame) {
 	
 	cmd.blit_image_to_image2(frame.draw_image, swapchain._images[frame.swapchain_image_index], { frame.draw_image._extent.width, frame.draw_image._extent.height }, swapchain._extent);
 
+	//* draw imgui on the swapchain
 	cmd.transition_image2(swapchain._images[frame.swapchain_image_index], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-	//* draw imgui
 	{
-		// vkinit::attachment_info(targetImageView, nullptr, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-		const VkRenderingAttachmentInfo color_attachment = {
-			.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-	
-			.imageView = swapchain._image_views[frame.swapchain_image_index],
-			.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,
-			
-			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-		};
-		
-		const VkRenderingInfo render_info = {
-			.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-			.renderArea = {
-				.offset = { 0, 0 },
-				.extent = {
-					.width = swapchain._extent.width,
-					.height = swapchain._extent.height
-				}
-			},
-			.layerCount = 1,
-			.colorAttachmentCount = 1,
-			.pColorAttachments = &color_attachment,
-		};
-
-		vkCmdBeginRendering(cmd, &render_info);
+		cmd.begin_rendering(swapchain._extent, {
+			lvk::info::rendering_attachment_info(swapchain._image_views[frame.swapchain_image_index], VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR)
+		});
 
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
 
-		vkCmdEndRendering(cmd);
+		cmd.end_rendering();
 	}
 
 	cmd.transition_image2(swapchain._images[frame.swapchain_image_index], VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);

@@ -94,4 +94,7 @@ namespace lvk::info {
 
 	VkRect2D scissor(int32_t x, int32_t y, uint32_t width, uint32_t height);
 	VkViewport viewport(float x, float y, float width, float height, float min_depth, float max_depth);
+	
+	VkRenderingAttachmentInfo rendering_attachment_info(VkImageView image_view, VkImageLayout image_layout, VkClearValue* clear_value = VK_NULL_HANDLE);
+	VkRenderingAttachmentInfo rendering_attachment_info(VkImageView image_view, VkImageLayout image_layout, VkClearValue clear_value);
 }

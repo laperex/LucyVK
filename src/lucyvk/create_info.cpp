@@ -350,6 +350,24 @@ VkViewport lvk::info::viewport(float x, float y, float width, float height, floa
 	};
 }
 
+VkRenderingAttachmentInfo lvk::info::rendering_attachment_info(VkImageView image_view, VkImageLayout image_layout, VkClearValue* clear_value) {
+	return {
+		.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+
+		.imageView = image_view,
+		.imageLayout = image_layout,
+		
+		.loadOp = (clear_value != VK_NULL_HANDLE) ? VK_ATTACHMENT_LOAD_OP_CLEAR: VK_ATTACHMENT_LOAD_OP_LOAD,
+		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+
+		.clearValue = (clear_value != VK_NULL_HANDLE) ? *clear_value: VkClearValue{}
+	};
+}
+
+VkRenderingAttachmentInfo lvk::info::rendering_attachment_info(VkImageView image_view, VkImageLayout image_layout, VkClearValue clear_value) {
+	return rendering_attachment_info(image_view, image_layout, &clear_value);
+}
+
 VkCommandBufferSubmitInfo lvk::info::command_buffer_submit(const lvk_command_buffer* command_buffer) {
 	return {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,

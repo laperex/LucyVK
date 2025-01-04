@@ -88,6 +88,34 @@ void lvk_command_buffer::clear_color_image(VkImage image, VkImageLayout image_la
 	vkCmdClearColorImage(_command_buffer, image, image_layout, &clear_value, 1, &clear_range);	
 }
 
+void lvk_command_buffer::begin_rendering(VkExtent2D extent,
+	const VkRenderingAttachmentInfo* color_attachment_array, uint32_t color_attachment_array_size,
+	const VkRenderingAttachmentInfo* depth_attachment,
+	const VkRenderingAttachmentInfo* stencil_attachment
+) const {
+	const VkRenderingInfo render_info = {
+		.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+		.renderArea = {
+			.offset = { 0, 0 },
+			.extent = extent
+		},
+		.layerCount = 1,
+
+		.colorAttachmentCount = color_attachment_array_size,
+		.pColorAttachments = color_attachment_array,
+		
+		.pDepthAttachment = depth_attachment,
+		
+		.pStencilAttachment = stencil_attachment
+	};
+
+	vkCmdBeginRendering(_command_buffer, &render_info);
+}
+
+void lvk_command_buffer::end_rendering() const {
+	vkCmdEndRendering(_command_buffer);
+}
+
 // VkSubmitInfo lvk_command_buffer::immediate_transition_image(VkImage image, VkImageLayout current_layout, VkImageLayout new_layout) const {
 // 	return immediate([=]{
 // 		transition_image(image, current_layout, new_layout);

@@ -98,4 +98,13 @@ struct lvk_command_buffer {
     constexpr void clear_color_image(VkImage image, VkImageLayout image_layout, const VkClearColorValue (&clear_value_array)[_ccv_N], VkImageSubresourceRange clear_range) const noexcept {
 		clear_color_image(image, image_layout, clear_value_array, _ccv_N, clear_range);
 	}
+
+	void begin_rendering(VkExtent2D extent, const VkRenderingAttachmentInfo* color_attachment_array, uint32_t color_attachment_array_size, const VkRenderingAttachmentInfo* depth_attachment, const VkRenderingAttachmentInfo* stencil_attachment) const;
+	template <std::size_t _rai_N> [[__gnu__::__always_inline__]]
+	constexpr void begin_rendering(VkExtent2D extent, const VkRenderingAttachmentInfo (&color_attachment_array)[_rai_N], const VkRenderingAttachmentInfo* depth_attachment = nullptr, const VkRenderingAttachmentInfo* stencil_attachment = nullptr) const noexcept {
+		begin_rendering(extent, color_attachment_array, _rai_N, depth_attachment, stencil_attachment);
+	}
+
+	void end_rendering() const;
 };
+
