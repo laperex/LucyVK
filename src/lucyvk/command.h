@@ -20,7 +20,7 @@ struct lvk_command_buffer {
 	void begin(const VkCommandBufferBeginInfo* beginInfo) const;
 	void begin(const VkCommandBufferUsageFlags flags, const VkCommandBufferInheritanceInfo* inheritance_info = VK_NULL_HANDLE) const;
 
-	void blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size) const;
+	void blit_image_to_image2(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size) const;
 
 	void set_viewport(const VkViewport viewport) const;
 	void set_viewport(const uint32_t first, const VkViewport* viewports, const uint32_t count) const;

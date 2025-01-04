@@ -169,7 +169,7 @@ void lvk_command_buffer::dispatch(uint32_t group_count_x, uint32_t group_count_y
 	vkCmdDispatch(_command_buffer, group_count_x, group_count_y, group_count_z);
 }
 
-void lvk_command_buffer::blit_image_to_image(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size) const {
+void lvk_command_buffer::blit_image_to_image2(VkImage source, VkImage destination, VkExtent2D src_size, VkExtent2D dst_size) const {
 	VkImageBlit2 blit_region = {
 		.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
 		

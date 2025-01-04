@@ -142,11 +142,11 @@ void lucy::renderer::texture_pipeline_init() {
 		
 		.rendering_info = {
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-			
+
 			.pNext = VK_NULL_HANDLE,
 
 			.colorAttachmentCount = 1,
-    		.pColorAttachmentFormats = &swapchain._surface_format.format,
+    		.pColorAttachmentFormats = &draw_image_format,
 			.depthAttachmentFormat = swapchain._depth_image._format,
 			// .stencilAttachmentFormat = swapchain._depth_image._format
 		}
@@ -256,7 +256,6 @@ void lucy::renderer::init(SDL_Window* window) {
 
 	for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
 		frame_array[i].command_buffer = deletor.push(device.create_command_buffer(main_command_pool), main_command_pool);
-		// deletor.push(frame_array[i].command_buffer)
 
 		frame_array[i].render_fence = deletor.push(device.create_fence());
 		frame_array[i].render_semaphore = deletor.push(device.create_semaphore());
@@ -280,8 +279,8 @@ void lucy::renderer::init(SDL_Window* window) {
 	glm::ivec2 size;
 	SDL_GetWindowSize(window, &size.x, &size.y);
 
-	render_pass = deletor.push(device.create_default_render_pass(VK_FORMAT_B8G8R8A8_UNORM));
-	swapchain = device.create_swapchain(render_pass, size.x, size.y, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
+	// render_pass = deletor.push(device.create_default_render_pass(VK_FORMAT_B8G8R8A8_UNORM));
+	swapchain = device.create_swapchain(size.x, size.y, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, {
 		.format = VK_FORMAT_B8G8R8A8_UNORM,
 		.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
 	});
@@ -304,7 +303,7 @@ void lucy::renderer::init(SDL_Window* window) {
 void lucy::renderer::record(lre_frame& frame) {
 	const auto& cmd = frame.command_buffer;
 
-	if (device.swapchain_acquire_next_image(swapchain, &frame.image_index, frame.present_semaphore, VK_NULL_HANDLE) == VK_ERROR_OUT_OF_DATE_KHR) {
+	if (device.swapchain_acquire_next_image(swapchain, &frame.swapchain_image_index, frame.present_semaphore, VK_NULL_HANDLE) == VK_ERROR_OUT_OF_DATE_KHR) {
 		resize_requested = true;
 		return;
 	}
@@ -323,91 +322,106 @@ void lucy::renderer::record(lre_frame& frame) {
 
 	device.upload(mvp_uniform_buffer, mvp);
 
+
+	//* Draw Image Recreation
+	if (frame.draw_image._extent.width != swapchain._extent.width || frame.draw_image._extent.height != swapchain._extent.height) {
+		if (frame.draw_image._image != VK_NULL_HANDLE) {
+			deletor.destroy(frame.draw_image_view);
+			deletor.destroy(frame.draw_image);
+		}
+
+		frame.draw_image = device.create_image(
+			draw_image_format,
+			
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			
+			VMA_MEMORY_USAGE_GPU_ONLY,
+
+			VkExtent3D {
+				.width = swapchain._extent.width,
+				.height = swapchain._extent.height,
+				.depth = 1
+			},
+
+			VK_IMAGE_TYPE_2D
+		);
+
+		frame.draw_image_view = device.create_image_view(frame.draw_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT);
+	}
+
+
+	//* Command Buffer Recording
 	cmd.reset();
 	cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+	//* draw background
+	cmd.transition_image2(frame.draw_image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 	{
-		const VkImageMemoryBarrier image_memory_barrier {
-			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+		static float framenumber = 0;
+		VkClearColorValue clearValue;
+		float flash = std::abs(std::sin((framenumber++) / 120.f));
+		clearValue = { { 0.0f, 0.0f, flash, 1.0f } };
 
-			.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-			
-
-			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-
-			.image = swapchain._images[frame.image_index],
-			.subresourceRange = {
-				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-				.baseMipLevel = 0,
-				.levelCount = 1,
-				.baseArrayLayer = 0,
-				.layerCount = 1,
-			}
-		};
-
-		vkCmdPipelineBarrier(cmd._command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+		VkImageSubresourceRange clearRange = lvk::info::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
+		vkCmdClearColorImage(cmd, frame.draw_image._image, VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
 	}
-
-	cmd.set_viewport(lvk::info::viewport(0, 0, swapchain._extent.width, swapchain._extent.height, 0.0, 1.0));
-	cmd.set_scissor(lvk::info::scissor(0, 0, swapchain._extent.width, swapchain._extent.height));
 
 	// cmd.begin_render_pass(render_pass, swapchain._framebuffers[frame.image_index], swapchain, VK_SUBPASS_CONTENTS_INLINE, clear_value);
-
-	const VkRenderingAttachmentInfo color_attachment_info {
-		.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-		.imageView = swapchain._image_views[frame.image_index],
-		.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,
-		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-		.clearValue = {
-			.color = {
-				{ 0.0f, 0.0f, 0, 0.0f }
-			}
-		},
-	};
-
-	const VkRenderingInfo render_info {
-		.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-		.renderArea = {
-			.offset = { 0, 0 },
-			.extent = swapchain._extent
-		},
-		.layerCount = 1,
-		.colorAttachmentCount = 1,
-		.pColorAttachments = &color_attachment_info,
-	};
-	
-
-	vkCmdBeginRendering(cmd._command_buffer, &render_info);
-
-	cmd.bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
-
-	cmd.bind_vertex_buffers({ mesh.vertex_buffer }, { 0 });
-	cmd.bind_index_buffer(mesh.index_buffer, VK_INDEX_TYPE_UINT32);
-	cmd.bind_descriptor_set(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout, { global_descriptor });
-
-	cmd.draw_indexed(mesh.indices.size(), 1, 0, 0, 0);
-
-	vkCmdEndRendering(cmd._command_buffer);
-
+	cmd.transition_image2(frame.draw_image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	{
-		const VkImageMemoryBarrier image_memory_barrier {
-			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-			.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-			.image = swapchain._images[frame.image_index],
-			.subresourceRange = {
-				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-				.baseMipLevel = 0,
-				.levelCount = 1,
-				.baseArrayLayer = 0,
-				.layerCount = 1,
-			}
+		const VkRenderingAttachmentInfo color_attachment_info {
+			.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+	
+			.imageView = frame.draw_image_view,
+			.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR,
+			
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			
+			.clearValue = {
+				.color = {
+					{ 0.0f, 0.0f, 0, 0.0f }
+				}
+			},
 		};
 
-		vkCmdPipelineBarrier(cmd._command_buffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+		const VkRenderingInfo render_info {
+			.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+			.renderArea = {
+				.offset = { 0, 0 },
+				.extent = {
+					.width = swapchain._extent.width,
+					.height = swapchain._extent.height
+				}
+			},
+			.layerCount = 1,
+			.colorAttachmentCount = 1,
+			.pColorAttachments = &color_attachment_info,
+		};
+
+		cmd.set_viewport(lvk::info::viewport(0, 0, swapchain._extent.width, swapchain._extent.height, 0.0, 1.0));
+		cmd.set_scissor(lvk::info::scissor(0, 0, swapchain._extent.width, swapchain._extent.height));		
+		
+		vkCmdBeginRendering(cmd._command_buffer, &render_info);
+
+		cmd.bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
+
+		cmd.bind_vertex_buffers({ mesh.vertex_buffer }, { 0 });
+		cmd.bind_index_buffer(mesh.index_buffer, VK_INDEX_TYPE_UINT32);
+		cmd.bind_descriptor_set(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_layout, { global_descriptor });
+
+		cmd.draw_indexed(mesh.indices.size(), 1, 0, 0, 0);
+
+		vkCmdEndRendering(cmd._command_buffer);
 	}
+	
+	cmd.transition_image2(frame.draw_image._image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+	cmd.transition_image2(swapchain._images[frame.swapchain_image_index], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	
+	cmd.blit_image_to_image2(frame.draw_image, swapchain._images[frame.swapchain_image_index], { frame.draw_image._extent.width, frame.draw_image._extent.height }, swapchain._extent);
+
+	cmd.transition_image2(swapchain._images[frame.swapchain_image_index], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
 	cmd.end();
 }
@@ -437,7 +451,7 @@ void lucy::renderer::submit(const lre_frame& frame) {
 	device.reset_fences({ frame.render_fence });
 	// vkResetFences(device._device, 1, &frame.render_fence._fence);
 
-	if (device.present(frame.image_index, swapchain, frame.render_semaphore) == VK_ERROR_OUT_OF_DATE_KHR) {
+	if (device.present(frame.swapchain_image_index, swapchain, frame.render_semaphore) == VK_ERROR_OUT_OF_DATE_KHR) {
 		resize_requested = true;
 	}
 	
@@ -463,7 +477,7 @@ void lucy::renderer::update(const bool& is_resized) {
 		device.wait_idle();
 		int width, height;
 		SDL_GetWindowSize(sdl_window, &width, &height);
-		device.swapchain_recreate(swapchain, render_pass, width, height);
+		device.swapchain_recreate(swapchain, width, height);
 
 		frame_number = 0;
 		resize_requested = false;
@@ -492,6 +506,13 @@ void lucy::renderer::update(const bool& is_resized) {
 
 void lucy::renderer::destroy() {
 	dloggln("-----------------------------------------------------------");
+
+	for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
+		if (frame_array[i].draw_image._image != VK_NULL_HANDLE) {
+			deletor.destroy(frame_array[i].draw_image_view);
+			deletor.destroy(frame_array[i].draw_image);
+		}
+	}
 
 	device.swapchain_destroy(swapchain);
 	device.wait_idle();

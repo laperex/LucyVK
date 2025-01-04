@@ -322,7 +322,7 @@ VkResult lvk_device::imm_submit(std::function<void(lvk_command_buffer)> function
 // |--------------------------------------------------
 
 
-lvk_swapchain lvk_device::create_swapchain(VkRenderPass render_pass, uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format) {
+lvk_swapchain lvk_device::create_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format) {
 	const auto& capabilities = _swapchain_support_details.capabilities;
 	// _swapchain_support_details.capabilities;
 
@@ -358,13 +358,13 @@ lvk_swapchain lvk_device::create_swapchain(VkRenderPass render_pass, uint32_t wi
 	
 	dloggln("INFO:\t", lvk::to_string(swapchain._present_mode), "\t [Swapchain PresentMode]");
 
-	swapchain_recreate(swapchain, render_pass, width, height);
+	swapchain_recreate(swapchain, width, height);
 
 	return swapchain;
 }
 
 
-void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass render_pass, uint32_t width, uint32_t height) {
+void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, uint32_t height) {
 	if (swapchain._image_count) {
 		swapchain_destroy(swapchain);
 	}
@@ -401,7 +401,10 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass
 
 		.imageFormat = swapchain._surface_format.format,
 		.imageColorSpace = swapchain._surface_format.colorSpace,
-		.imageExtent = swapchain._extent,
+		.imageExtent = {
+			.width = swapchain._extent.width,
+			.height = swapchain._extent.height,
+		},
 			// (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) ?
 			// capabilities.currentExtent:
 			// VkExtent2D {
@@ -461,21 +464,22 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass
 
 	swapchain._images.resize(swapchain._image_count);
 	swapchain._image_views.resize(swapchain._image_count);
-	swapchain._framebuffers.resize(swapchain._image_count);
+	//! swapchain._framebuffers.resize(swapchain._image_count);
 
 	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, swapchain._images.data());
 
 	swapchain._depth_image = create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
 	swapchain._depth_image_view = create_image_view(swapchain._depth_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT);
 
-	// // destroyer.push(swapchain);
+	// destroyer.push(swapchain);
 
 	for (size_t i = 0; i < swapchain._image_count; i++) {
 		swapchain._image_views[i] = create_image_view(swapchain._images[i], swapchain._surface_format.format, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT);
-		swapchain._framebuffers[i] = create_framebuffer(render_pass, swapchain._extent, {
-			swapchain._image_views[i],
-			swapchain._depth_image_view
-		});
+	
+		//! swapchain._framebuffers[i] = create_framebuffer(render_pass, swapchain._extent, {
+		//! 	swapchain._image_views[i],
+		//! 	swapchain._depth_image_view
+		//! });
 	}
 	dloggln("CREATED \t", "[Swapchain ImageViews]");
 }
@@ -488,7 +492,7 @@ void lvk_device::swapchain_destroy(lvk_swapchain& swapchain) {
 
 	for (int i = 0; i < swapchain._image_count; i++) {
 		_deletor.destroy(swapchain._image_views[i]);
-		_deletor.destroy(swapchain._framebuffers[i]);
+		//! _deletor.destroy(swapchain._framebuffers[i]);
 	}
 
 	_deletor.destroy(swapchain._depth_image, swapchain._depth_image._allocation);

@@ -187,7 +187,7 @@ struct lvk_sampler {
 
 struct lvk_swapchain {
 	LVK_HANDLE_DEF(VkSwapchainKHR, _swapchain)
-	LVK_HANDLE_DEF(VkExtent2D, _extent)
+	VkExtent2D _extent;
 
 	VkSurfaceFormatKHR _surface_format;
 	VkPresentModeKHR _present_mode;
@@ -195,8 +195,10 @@ struct lvk_swapchain {
 
 	uint32_t _image_count;
 	std::vector<VkImage> _images;
-	std::vector<VkFramebuffer> _framebuffers;
 	std::vector<VkImageView> _image_views;
+
+	//! not required in dynamic mode
+	//! std::vector<VkFramebuffer> _framebuffers;
 
 	VkImageView _depth_image_view;
 	lvk_image _depth_image;

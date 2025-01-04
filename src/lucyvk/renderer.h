@@ -29,7 +29,10 @@ struct lre_frame {
 
 	lvk_command_buffer command_buffer;
 
-	uint32_t image_index;
+	uint32_t swapchain_image_index;
+	
+	lvk_image draw_image = {};
+	lvk_image_view draw_image_view = {};
 
 	lvk_deletor_deque deletion_queue;
 };
@@ -37,12 +40,14 @@ struct lre_frame {
 
 namespace lucy {
 	class renderer {
+		const VkFormat draw_image_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		
 		lvk_command_pool main_command_pool;
 		lre_frame frame_array[FRAMES_IN_FLIGHT];
 
 		lvk_instance instance;
 		lvk_device device;
-		lvk_render_pass render_pass;
+		// lvk_render_pass render_pass;
 		lvk_swapchain swapchain;
 
 		

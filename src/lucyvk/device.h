@@ -142,8 +142,8 @@ public:
 	// SWAPCHAIN 	---------- ---------- ---------- ----------
 
 
-	lvk_swapchain create_swapchain(VkRenderPass render_pass, uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format);
-	void swapchain_recreate(lvk_swapchain& swapchain, const VkRenderPass render_pass, uint32_t width, uint32_t height);
+	lvk_swapchain create_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format);
+	void swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, uint32_t height);
 	void swapchain_destroy(lvk_swapchain& swapchain);
 	VkResult swapchain_acquire_next_image(const lvk_swapchain& swapchain, uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT) const;
 	
