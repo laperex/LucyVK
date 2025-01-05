@@ -5,8 +5,8 @@
 // #define STB_IMAGE_IMPLEMENTATION
 // #include <stb_image.h>
 
+// #define VMA_IMPLEMENTATION
 #define VMA_IMPLEMENTATION
-
 #include "vk_mem_alloc.h"
 
 #include <assimp/Importer.hpp>
@@ -79,6 +79,8 @@ GPUMeshBuffers lucy::renderer::upload_mesh(const std::span<Vertex>& vertices, co
 	});
 
 	deletor.destroy(staging);
+
+	return mesh_buffers;
 }
 
 // FRAME
