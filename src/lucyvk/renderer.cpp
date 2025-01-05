@@ -208,7 +208,7 @@ void lucy::renderer::init_pipeline() {
 		}
 	));
 
-	mesh_pipeline = deletor.push(device.create_graphics_pipeline_dynamic(mesh_pipeline_layout, config));
+	mesh_pipeline = deletor.push(device.create_graphics_pipeline(mesh_pipeline_layout, config));
 
 	deletor.destroy(fragment_shader);
 	deletor.destroy(vertex_shader);

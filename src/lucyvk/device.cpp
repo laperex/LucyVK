@@ -541,56 +541,56 @@ lvk_shader_module lvk_device::create_shader_module(const char* filename) const {
 // |--------------------------------------------------
 
 
-lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config, const VkRenderPass render_pass) const {
-	lvk_pipeline pipeline = {
-		._pipeline = VK_NULL_HANDLE
-	};
+// lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config, const VkRenderPass render_pass) const {
+// 	lvk_pipeline pipeline = {
+// 		._pipeline = VK_NULL_HANDLE
+// 	};
 
-	assert(render_pass != VK_NULL_HANDLE);
+// 	assert(render_pass != VK_NULL_HANDLE);
 	
-	VkPipelineDynamicStateCreateInfo dynamic_state = {
-		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+// 	VkPipelineDynamicStateCreateInfo dynamic_state = {
+// 		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
 		
-		.pNext = VK_NULL_HANDLE,
-		.flags = 0,
+// 		.pNext = VK_NULL_HANDLE,
+// 		.flags = 0,
 
-		.dynamicStateCount = static_cast<uint32_t>(config.dynamic_state_array.size()),
-		.pDynamicStates = config.dynamic_state_array.data()
-	};
+// 		.dynamicStateCount = static_cast<uint32_t>(config.dynamic_state_array.size()),
+// 		.pDynamicStates = config.dynamic_state_array.data()
+// 	};
 
-	VkGraphicsPipelineCreateInfo pipeline_info = {
-		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+// 	VkGraphicsPipelineCreateInfo pipeline_info = {
+// 		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 
-		.pNext = VK_NULL_HANDLE,
+// 		.pNext = VK_NULL_HANDLE,
 
-		.stageCount = static_cast<uint32_t>(config.shader_stage_array.size()),
-		.pStages = config.shader_stage_array.data(),
+// 		.stageCount = static_cast<uint32_t>(config.shader_stage_array.size()),
+// 		.pStages = config.shader_stage_array.data(),
 
-		.pVertexInputState = &config.vertex_input_state,
-		.pInputAssemblyState = &config.input_assembly_state,
-		.pViewportState = &config.viewport_state,
-		.pRasterizationState = &config.rasterization_state,
-		.pMultisampleState = &config.multisample_state,
-		.pDepthStencilState = &config.depth_stencil_state,
-		.pColorBlendState = &config.color_blend_state,
-		.pDynamicState = &dynamic_state,
-		.layout = pipeline_layout,
-		.renderPass = render_pass,
-		.subpass = 0,
-		.basePipelineHandle = VK_NULL_HANDLE,
-	};
+// 		.pVertexInputState = &config.vertex_input_state,
+// 		.pInputAssemblyState = &config.input_assembly_state,
+// 		.pViewportState = &config.viewport_state,
+// 		.pRasterizationState = &config.rasterization_state,
+// 		.pMultisampleState = &config.multisample_state,
+// 		.pDepthStencilState = &config.depth_stencil_state,
+// 		.pColorBlendState = &config.color_blend_state,
+// 		.pDynamicState = &dynamic_state,
+// 		.layout = pipeline_layout,
+// 		.renderPass = render_pass,
+// 		.subpass = 0,
+// 		.basePipelineHandle = VK_NULL_HANDLE,
+// 	};
 
-	if (vkCreateGraphicsPipelines(this->_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline._pipeline) != VK_SUCCESS) {
-		throw std::runtime_error("graphics pipeline creation failed!");
-	}
-	dloggln("CREATED \t", pipeline._pipeline, "\t [Graphics Pipeline]");
+// 	if (vkCreateGraphicsPipelines(this->_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &pipeline._pipeline) != VK_SUCCESS) {
+// 		throw std::runtime_error("graphics pipeline creation failed!");
+// 	}
+// 	dloggln("CREATED \t", pipeline._pipeline, "\t [Graphics Pipeline]");
 
-	// destroyer.push(pipeline);
+// 	// destroyer.push(pipeline);
 	
-	return pipeline;
-}
+// 	return pipeline;
+// }
 
-lvk_pipeline lvk_device::create_graphics_pipeline_dynamic(const VkPipelineLayout pipeline_layout, lvk::config::graphics_pipeline& config) const {
+lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipeline_layout, lvk::config::graphics_pipeline& config) const {
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE
 	};
