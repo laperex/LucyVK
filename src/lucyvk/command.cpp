@@ -199,7 +199,7 @@ void lvk_command_buffer::copy_buffer_to_image(VkBuffer source, VkImage destinati
 	vkCmdCopyBufferToImage(_command_buffer, source, destination, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
 }
 
-void lvk_command_buffer::copy_buffer_to_buffer(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkBufferCopy* buffer_copy_array, const uint32_t buffer_copy_array_size) const {
+void lvk_command_buffer::copy_buffer(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkBufferCopy* buffer_copy_array, const uint32_t buffer_copy_array_size) const {
 	vkCmdCopyBuffer(_command_buffer, src_buffer, dst_buffer, buffer_copy_array_size, buffer_copy_array);
 }
 

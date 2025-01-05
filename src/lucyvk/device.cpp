@@ -262,7 +262,7 @@ void lvk_device::create_command_buffer_array(const lvk_command_buffer* command_b
 }
 
 
-VkResult lvk_device::imm_submit(std::function<void(lvk_command_buffer)> function) const {
+VkResult lvk_device::immediate_submit(std::function<void(lvk_command_buffer)> function) const {
 	VkCommandBufferBeginInfo begin_info = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
@@ -690,9 +690,9 @@ lvk_pipeline lvk_device::create_compute_pipeline(const VkPipelineLayout pipeline
 void lvk_device::upload(const VmaAllocation allocation, const VkDeviceSize size, const void* data = nullptr) const {
 	void* _data = nullptr;
 	vmaMapMemory(this->_allocator, allocation, &_data);
-	
+
 	memcpy(_data, data, size);
-	
+
 	vmaUnmapMemory(this->_allocator, allocation);
 }
 
@@ -786,8 +786,8 @@ void lvk_device::upload(const lvk_buffer& buffer, const VkDeviceSize size, const
 
 		// lvk_destroy(_allocator, staging_buffer._buffer, staging_buffer._allocation);
 
-		this->imm_submit([&](VkCommandBuffer cmd) {
-			static_cast<lvk_command_buffer>(cmd).copy_buffer_to_buffer(staging_buffer, buffer, {
+		this->immediate_submit([&](VkCommandBuffer cmd) {
+			static_cast<lvk_command_buffer>(cmd).copy_buffer(staging_buffer, buffer, {
 				{
 					.srcOffset = 0,
 					.dstOffset = 0,
@@ -1205,7 +1205,7 @@ lvk_image lvk_device::load_image(VkDeviceSize size, void* data, VkExtent3D exten
 
 	lvk_image image = create_image(format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, extent, VK_IMAGE_TYPE_2D);
 
-	imm_submit([&](lvk_command_buffer command_buffer) {
+	immediate_submit([&](lvk_command_buffer command_buffer) {
 		VkImageMemoryBarrier image_barrier = lvk::info::image_memory_barrier(image, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, lvk::info::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT));
 
 		command_buffer.pipeline_barrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, image_barrier);

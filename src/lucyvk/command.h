@@ -77,10 +77,10 @@ struct lvk_command_buffer {
 	void copy_image_to_image2(VkImage source, VkImage destination, VkImageLayout source_layout, VkImageLayout destination_layout, VkExtent2D src_size, VkExtent2D dst_size) const;
 	void copy_buffer_to_image(VkBuffer source, VkImage destination, VkExtent3D region) const;
 	
-	void copy_buffer_to_buffer(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkBufferCopy* buffer_copy_array, const uint32_t buffer_copy_array_size) const;
+	void copy_buffer(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkBufferCopy* buffer_copy_array, const uint32_t buffer_copy_array_size) const;
 	template <std::size_t _bc_N> [[__gnu__::__always_inline__]]
-	constexpr void copy_buffer_to_buffer(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkBufferCopy (&buffer_copy_array)[_bc_N]) const noexcept {
-		copy_buffer_to_buffer(src_buffer, dst_buffer, buffer_copy_array, _bc_N);
+	constexpr void copy_buffer(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkBufferCopy (&buffer_copy_array)[_bc_N]) const noexcept {
+		copy_buffer(src_buffer, dst_buffer, buffer_copy_array, _bc_N);
 	}
 
 	void dispatch(uint32_t group_count_x, uint32_t group_count_y, uint32_t group_count_z) const;

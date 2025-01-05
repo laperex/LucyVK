@@ -59,8 +59,8 @@ struct Vertex {
 
 // holds the resources needed for a mesh
 struct GPUMeshBuffers {
-    lvk_buffer indexBuffer;
-    lvk_buffer vertexBuffer;
+    lvk_buffer index_buffer;
+    lvk_buffer vertex_buffer;
     VkDeviceAddress vertexBufferAddress;
 };
 
@@ -91,13 +91,8 @@ namespace lucy {
 
 
 		// ----------------------------------------------
-		
-		lvk_descriptor_set_layout descriptor_set_layout;
-		lvk_descriptor_set global_descriptor;
-		lvk_descriptor_pool descriptor_pool;
 
-		lvk_pipeline graphics_pipeline;
-		lvk_pipeline_layout graphics_pipeline_layout;
+		lvk_descriptor_pool descriptor_pool;
 	
 		lvk_deletor_deque deletor;
 
@@ -124,13 +119,12 @@ namespace lucy {
 
 		SDL_Window* sdl_window = nullptr;
 
-		GPUMeshBuffers upload_mesh(const std::span<Vertex>& vertices, const std::span<uint32_t>& indices);
+		GPUMeshBuffers upload_mesh(const std::span<Vertex>& vertices, const std::span<uint32_t>& indices) const;
 
 		lre_frame create_frame(lvk_command_pool&);
 		void destroy_frame(lre_frame&);
 		
 		void init_pipeline();
-		void init_descriptor_set();
 
 		void init_imgui(SDL_Window* sdl_window);
 		void draw_imgui(lre_frame& frame);
@@ -145,8 +139,6 @@ namespace lucy {
 
 	public:
 		void init(SDL_Window* window);
-		
-		const lvk_device& get_device();
 
 		renderer();
 
@@ -155,8 +147,10 @@ namespace lucy {
 		void set_model(const glm::mat4& model);
 
 		void update(const bool& is_resized);
-		
-		void record_command(const std::function<void(lre_frame&, lvk_device&)>&&);
+
+		void fn_imgui(const std::function<void(lre_frame&, lvk_device&)>&&);
+		void fn_record(const std::function<void(lre_frame&, lvk_device&)>&&);
+		void fn_(const std::function<void(lre_frame&, lvk_device&)>&&);
 		
 		void destroy();
 	};

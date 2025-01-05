@@ -141,7 +141,7 @@ private:
 
 public:
 	// lvk_immediate_command create_immediate_command();
-	VkResult imm_submit(std::function<void(lvk_command_buffer)> function) const;
+	VkResult immediate_submit(std::function<void(lvk_command_buffer)> function) const;
 	// VkResult imm_buffer_copy(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkDeviceSize size);
 	// VkResult 
 

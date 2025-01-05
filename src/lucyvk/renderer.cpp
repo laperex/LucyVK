@@ -5,6 +5,10 @@
 // #define STB_IMAGE_IMPLEMENTATION
 // #include <stb_image.h>
 
+#define VMA_IMPLEMENTATION
+
+#include "vk_mem_alloc.h"
+
 #include <assimp/Importer.hpp>
 
 #include "lucyio/logger.h"
@@ -22,26 +26,59 @@ lucy::renderer::renderer()
 }
 
 
-GPUMeshBuffers lucy::renderer::upload_mesh(const std::span<Vertex>& vertices, const std::span<uint32_t>& indices) {
+GPUMeshBuffers lucy::renderer::upload_mesh(const std::span<Vertex>& vertices, const std::span<uint32_t>& indices) const {
+	std::size_t vertex_buffer_size = vertices.size_bytes();
+	std::size_t index_buffer_size = indices.size_bytes();
+	
 	GPUMeshBuffers mesh_buffers = {
-		.indexBuffer = device.create_buffer(
+		.index_buffer = device.create_buffer(
 			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VMA_MEMORY_USAGE_GPU_ONLY,
-			indices.size_bytes(), indices.data()
+			vertex_buffer_size
 		),
-		.vertexBuffer = device.create_buffer(
+		.vertex_buffer = device.create_buffer(
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 			VMA_MEMORY_USAGE_GPU_ONLY,
-			vertices.size_bytes(), vertices.data()
+			index_buffer_size
 		)
 	};
 
 	VkBufferDeviceAddressInfo device_address_info = {
 		.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
-		.buffer = mesh_buffers.vertexBuffer._buffer
+		.buffer = mesh_buffers.vertex_buffer._buffer
 	};
 
 	mesh_buffers.vertexBufferAddress = vkGetBufferDeviceAddress(device.get_logical_device(), &device_address_info);
+
+
+	lvk_buffer staging = device.create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, vertex_buffer_size + index_buffer_size);
+
+	void* data = staging._allocation->GetMappedData();
+
+	// copy vertex buffer
+	memcpy(data, vertices.data(), vertex_buffer_size);
+	// copy index buffer
+	memcpy((char*)data + vertex_buffer_size, indices.data(), index_buffer_size);
+
+	device.immediate_submit([&](lvk_command_buffer cmd) {
+		cmd.copy_buffer(staging._buffer, mesh_buffers.vertex_buffer, {
+			{
+				.srcOffset = 0,
+				.dstOffset = 0,
+				.size = vertex_buffer_size,
+			}
+		});
+
+		cmd.copy_buffer(staging._buffer, mesh_buffers.index_buffer, {
+			{
+				.srcOffset = vertex_buffer_size,
+				.dstOffset = 0,
+				.size = index_buffer_size,
+			}
+		});
+	});
+
+	deletor.destroy(staging);
 }
 
 // FRAME
@@ -68,19 +105,24 @@ void lucy::renderer::destroy_frame(lre_frame& frame) {
 
 
 void lucy::renderer::init_pipeline() {
+	// seperate for each shader type
+	lvk_descriptor_set_layout descriptor_set_layout = deletor.push(
+		device.create_descriptor_set_layout({
+			lvk::info::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1),
+			lvk::info::descriptor_set_layout_binding(1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
+			lvk::info::descriptor_set_layout_binding(2, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1),
+		})
+	);
+
+	device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
+	
 	lvk_shader_module vertex_shader = device.create_shader_module("./shaders/texture.vert.spv");
 	lvk_shader_module fragment_shader = device.create_shader_module("./shaders/texture.frag.spv");
-
-	// VkDynamicState state[] = ;
-
-	// lvk::vertex_input_description vertex_description = lvk::vertex::get_vertex_input_description();
 
 	VkPipelineColorBlendAttachmentState color_blend_attachment_state = {
 		.blendEnable = VK_FALSE,
 		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
 	};
-	
-	// lvk::info::vertex_input_state()
 
 	lvk::config::graphics_pipeline config = {
 		.shader_stage_array = {
@@ -143,41 +185,11 @@ void lucy::renderer::init_pipeline() {
 		}
 	};
 
-	graphics_pipeline_layout = deletor.push(device.create_pipeline_layout({ descriptor_set_layout }));
-	graphics_pipeline = deletor.push(device.create_graphics_pipeline_dynamic(graphics_pipeline_layout, config));
+	lvk_pipeline_layout graphics_pipeline_layout = deletor.push(device.create_pipeline_layout({ descriptor_set_layout }));
+	lvk_pipeline graphics_pipeline = deletor.push(device.create_graphics_pipeline_dynamic(graphics_pipeline_layout, config));
 
 	deletor.destroy(fragment_shader);
 	deletor.destroy(vertex_shader);
-}
-
-void lucy::renderer::init_descriptor_set() {
-	uint32_t max_descriptor_sets = 100;
-
-	descriptor_pool = deletor.push(device.create_descriptor_pool(max_descriptor_sets, {
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
-		{ VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
-		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 100 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 100 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
-		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 100 },
-	}));
-
-	// seperate for each shader type
-	descriptor_set_layout = deletor.push(
-		device.create_descriptor_set_layout({
-			lvk::info::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1),
-			lvk::info::descriptor_set_layout_binding(1, VK_SHADER_STAGE_VERTEX_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
-			lvk::info::descriptor_set_layout_binding(2, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1),
-		})
-	);
-
-	global_descriptor = device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
-	device.create_descriptor_set(descriptor_pool, descriptor_set_layout);
 }
 
 void lucy::renderer::init_imgui(SDL_Window* sdl_window) {
@@ -194,7 +206,7 @@ void lucy::renderer::init_imgui(SDL_Window* sdl_window) {
 		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
 		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
 	};
-	
+
 	VkDescriptorPool imgui_descrptor_pool = device.create_descriptor_pool(1000, pool_sizes, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
 
 	ImGui::CreateContext();
@@ -252,7 +264,8 @@ void lucy::renderer::draw_background(lre_frame& frame) {
 	const auto& cmd = frame.command_buffer;
 	
 	static float framenumber = 0;
-	float flash = std::abs(std::sin((framenumber++) / 120.f));
+	// float flash = std::abs(std::sin((framenumber++) / 120.f));
+	float flash = 0;
 
 	cmd.clear_color_image(frame.draw_image, VK_IMAGE_LAYOUT_GENERAL, { { 0.0f, 0.0f, flash, 1.0f } }, VK_IMAGE_ASPECT_COLOR_BIT);
 }
@@ -272,7 +285,6 @@ void lucy::renderer::draw_main(lre_frame& frame) {
 			lvk::info::rendering_attachment_info(frame.draw_image_view, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR)
 		}
 	);
-
 
 	cmd.end_rendering();
 }
@@ -299,18 +311,31 @@ void lucy::renderer::init(SDL_Window* window) {
 	for (auto& frame: frame_array) {
 		frame = create_frame(command_pool);
 	}
+	
+	uint32_t max_descriptor_sets = 100;
 
+	descriptor_pool = deletor.push(device.create_descriptor_pool(max_descriptor_sets, {
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
+		{ VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
+		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 100 },
+	}));
 
 	draw_property = {
 		.color_format_array = { VK_FORMAT_R16G16B16A16_SFLOAT },
 		.depth_format = VK_FORMAT_D32_SFLOAT
 	};
 
-	init_imgui(sdl_window);
-
-	init_descriptor_set();
-
 	init_pipeline();
+
+	init_imgui(sdl_window);
 
 	// lvk_image load_image = deletor.push(device.load_image_from_file("/home/laperex/Programming/C++/LucyVK/assets/buff einstein.jpg"));
 	// lvk_image_view load_image_view = deletor.push(device.create_image_view(load_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT));
@@ -380,7 +405,7 @@ void lucy::renderer::record(lre_frame& frame) {
 	cmd.transition_image2(frame.draw_image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 	draw_main(frame);
 
-	// do not edit below
+	//! do not edit below
 	cmd.transition_image2(frame.draw_image._image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 	cmd.transition_image2(swapchain._images[frame.swapchain_image_index], VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
