@@ -77,20 +77,27 @@ VkResult lvk_device::present(const uint32_t image_index, const VkSwapchainKHR sw
 }
 
 
-VkPhysicalDevice lvk_device::get_physical_device() {
+VkPhysicalDevice lvk_device::get_physical_device() const {
 	return physical_device._physical_device;
 }
 
-VkDevice lvk_device::get_logical_device() {
+VkDevice lvk_device::get_logical_device() const {
 	return _device;
 }
 
-VkQueue lvk_device::get_graphics_queue() {
+VkQueue lvk_device::get_graphics_queue() const {
 	return _queue.graphics.handle;
 }
 
 void lvk_device::destroy() {
 	_deletor.flush();
+
+	_deletor.destroy(imm_command._fence);
+	_deletor.destroy(imm_command._command_buffer, static_cast<VkCommandPool>(imm_command._command_pool));
+	_deletor.destroy(imm_command._command_pool);
+
+	dloggln("DESTROYED \t", "[Immediate Commands]");
+	
 
 	vmaDestroyAllocator(_allocator);
 	dloggln("DESTROYED \t", _allocator, "\t [Allocator]");
@@ -100,7 +107,7 @@ void lvk_device::destroy() {
 }
 
 
-lvk_deletor_deque lvk_device::create_deletor() {
+lvk_deletor_deque lvk_device::create_deletor() const {
 	return {
 		.delete_deque = {},
 		.device = _device,
@@ -114,7 +121,7 @@ lvk_deletor_deque lvk_device::create_deletor() {
 // |--------------------------------------------------
 
 
-lvk_semaphore lvk_device::create_semaphore() {
+lvk_semaphore lvk_device::create_semaphore() const {
 	lvk_semaphore semaphore = {
 		._semaphore = VK_NULL_HANDLE
 	};
@@ -141,7 +148,7 @@ lvk_semaphore lvk_device::create_semaphore() {
 // |--------------------------------------------------
 
 
-lvk_fence lvk_device::create_fence(VkFenceCreateFlags flags) {
+lvk_fence lvk_device::create_fence(VkFenceCreateFlags flags) const {
 	lvk_fence fence = {
 		._fence = VK_NULL_HANDLE
 	};
@@ -185,7 +192,7 @@ void lvk_device::reset_fences(const lvk_fence* fence, uint32_t fence_count) cons
 // |--------------------------------------------------
 
 
-lvk_command_pool lvk_device::create_graphics_command_pool() {
+lvk_command_pool lvk_device::create_graphics_command_pool() const {
 	return create_command_pool(_queue.graphics.index.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 }
 
@@ -200,7 +207,7 @@ lvk_command_pool lvk_device::create_graphics_command_pool() {
 // }
 
 
-lvk_command_pool lvk_device::create_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags) {
+lvk_command_pool lvk_device::create_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags) const {
 	lvk_command_pool command_pool = {
 		._command_pool = VK_NULL_HANDLE
 	};
@@ -221,11 +228,11 @@ lvk_command_pool lvk_device::create_command_pool(uint32_t queue_family_index, Vk
 	return command_pool;
 }
 
-void lvk_device::reset_command_pool(const lvk_command_pool& command_pool) {
+void lvk_device::reset_command_pool(const lvk_command_pool& command_pool) const {
 	vkResetCommandPool(_device, command_pool._command_pool, 0);
 }
 
-lvk_command_buffer lvk_device::create_command_buffer(const VkCommandPool command_pool, VkCommandBufferLevel level) {
+lvk_command_buffer lvk_device::create_command_buffer(const VkCommandPool command_pool, VkCommandBufferLevel level) const {
 	lvk_command_buffer command_buffer = {
 		._command_buffer = VK_NULL_HANDLE
 	};
@@ -235,7 +242,7 @@ lvk_command_buffer lvk_device::create_command_buffer(const VkCommandPool command
 	return command_buffer;
 }
 
-void lvk_device::create_command_buffer_array(const lvk_command_buffer* command_buffer_array, const VkCommandPool command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level) {
+void lvk_device::create_command_buffer_array(const lvk_command_buffer* command_buffer_array, const VkCommandPool command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level) const {
 	VkCommandBufferAllocateInfo allocate_info = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 
@@ -255,69 +262,37 @@ void lvk_device::create_command_buffer_array(const lvk_command_buffer* command_b
 }
 
 
-VkResult lvk_device::imm_submit(std::function<void(lvk_command_buffer)> function) {
-	static struct {
-		VkCommandPool _command_pool = VK_NULL_HANDLE;
-		VkCommandBuffer _command_buffer = VK_NULL_HANDLE;
-		VkFence _fence = VK_NULL_HANDLE;
-	} immediate_command;
-
-	if (immediate_command._fence == VK_NULL_HANDLE) {
-		immediate_command._fence = _deletor.push(create_fence());
-		immediate_command._command_pool = _deletor.push(create_command_pool(_queue.graphics.index.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT));
-		immediate_command._command_buffer = _deletor.push(create_command_buffer(immediate_command._command_pool), static_cast<lvk_command_pool>(immediate_command._command_pool));
-
-		dloggln("CREATED \t", "[Immediate Commands]");
-	}
-
+VkResult lvk_device::imm_submit(std::function<void(lvk_command_buffer)> function) const {
 	VkCommandBufferBeginInfo begin_info = {
 		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 		.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
 		.pInheritanceInfo = VK_NULL_HANDLE
 	};
-	
-	auto imm_cmd = static_cast<lvk_command_buffer>(immediate_command._command_buffer);
 
-	vkBeginCommandBuffer(immediate_command._command_buffer, &begin_info);
+	auto imm_cmd = static_cast<lvk_command_buffer>(imm_command._command_buffer);
+
+	vkBeginCommandBuffer(imm_command._command_buffer, &begin_info);
 	
 	function(imm_cmd);
 	
-	vkEndCommandBuffer(immediate_command._command_buffer);
+	vkEndCommandBuffer(imm_command._command_buffer);
 	
 	VkSubmitInfo submit_info = {
 		.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 		
 		.commandBufferCount = 1,
-		.pCommandBuffers = &immediate_command._command_buffer,
+		.pCommandBuffers = &imm_command._command_buffer,
 	};
+
+	VkResult result = vkQueueSubmit(_queue.graphics, 1, &submit_info, imm_command._fence);
 	
-	VkResult result = vkQueueSubmit(_queue.graphics, 1, &submit_info, immediate_command._fence);
+	vkWaitForFences(_device, 1, &imm_command._fence, true, LVK_TIMEOUT);
+	vkResetFences(_device, 1, &imm_command._fence);
 	
-	vkWaitForFences(_device, 1, &immediate_command._fence, true, LVK_TIMEOUT);
-	vkResetFences(_device, 1, &immediate_command._fence);
-	
-	vkResetCommandPool(_device, immediate_command._command_pool, 0);
+	vkResetCommandPool(_device, imm_command._command_pool, 0);
 	
 	return result;
 }
-
-// VkResult lvk_device::imm_buffer_copy(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkDeviceSize size) {
-// 	return this->imm_submit([&](VkCommandBuffer cmd) {
-// 		lvk_command_buffer command_buffer = static_cast<lvk_command_buffer>(cmd);
-		
-// 		command_buffer.copy_buffer_to_buffer(src_buffer, dst_buffer, {
-// 			{
-// 				.srcOffset = 0,
-// 				.dstOffset = 0,
-// 				.size = size
-// 			}
-// 		});
-// 	});
-// }
-
-// VkResult lvk_device::imm_buffer_upload(const lvk_buffer& buffer) {
-	
-// }
 
 
 // |--------------------------------------------------
@@ -325,7 +300,7 @@ VkResult lvk_device::imm_submit(std::function<void(lvk_command_buffer)> function
 // |--------------------------------------------------
 
 
-lvk_swapchain lvk_device::create_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format) {
+lvk_swapchain lvk_device::create_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format) const {
 	const auto& capabilities = _swapchain_support_details.capabilities;
 	// _swapchain_support_details.capabilities;
 
@@ -367,7 +342,7 @@ lvk_swapchain lvk_device::create_swapchain(uint32_t width, uint32_t height, VkIm
 }
 
 
-void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, uint32_t height) {
+void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, uint32_t height) const {
 	if (swapchain._images.size()) {
 		swapchain_destroy(swapchain);
 	}
@@ -482,7 +457,7 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, ui
 	dloggln("CREATED \t", "[Swapchain ImageViews]");
 }
 
-void lvk_device::swapchain_destroy(lvk_swapchain& swapchain) {
+void lvk_device::swapchain_destroy(lvk_swapchain& swapchain) const {
 	_deletor.destroy(swapchain);
 	// _deletor.destroy(swapchain._depth_image_view);
 	
@@ -506,7 +481,7 @@ VkResult lvk_device::swapchain_acquire_next_image(const lvk_swapchain& swapchain
 // |--------------------------------------------------
 
 
-lvk_pipeline_layout lvk_device::create_pipeline_layout(const VkPushConstantRange* push_constant_ranges, const uint32_t push_constant_range_count, const VkDescriptorSetLayout* descriptor_set_layouts, const uint32_t descriptor_set_layout_count) {
+lvk_pipeline_layout lvk_device::create_pipeline_layout(const VkPushConstantRange* push_constant_ranges, const uint32_t push_constant_range_count, const VkDescriptorSetLayout* descriptor_set_layouts, const uint32_t descriptor_set_layout_count) const {
 	lvk_pipeline_layout pipeline_layout = {
 		._pipeline_layout = VK_NULL_HANDLE,
 	};
@@ -537,7 +512,7 @@ lvk_pipeline_layout lvk_device::create_pipeline_layout(const VkPushConstantRange
 // ! |--------------------------------------------------
 
 
-lvk_shader_module lvk_device::create_shader_module(const char* filename) {
+lvk_shader_module lvk_device::create_shader_module(const char* filename) const {
 	lvk_shader_module shader_module = {
 		._shader_module = VK_NULL_HANDLE,
 		// ._stage = stage
@@ -565,7 +540,7 @@ lvk_shader_module lvk_device::create_shader_module(const char* filename) {
 // |--------------------------------------------------
 
 
-lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config, const VkRenderPass render_pass) {
+lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config, const VkRenderPass render_pass) const {
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE
 	};
@@ -614,7 +589,7 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipelin
 	return pipeline;
 }
 
-lvk_pipeline lvk_device::create_graphics_pipeline_dynamic(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config) {
+lvk_pipeline lvk_device::create_graphics_pipeline_dynamic(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config) const {
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE
 	};
@@ -664,7 +639,7 @@ lvk_pipeline lvk_device::create_graphics_pipeline_dynamic(const VkPipelineLayout
 	return pipeline;
 }
 
-void lvk_device::create_graphics_pipeline_array(const VkPipeline* pipeline_array, const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo* graphics_pipeline_create_info_array, uint32_t graphics_pipeline_create_info_array_size) {
+void lvk_device::create_graphics_pipeline_array(const VkPipeline* pipeline_array, const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo* graphics_pipeline_create_info_array, uint32_t graphics_pipeline_create_info_array_size) const {
 	if (vkCreateGraphicsPipelines(this->_device, VK_NULL_HANDLE, graphics_pipeline_create_info_array_size, graphics_pipeline_create_info_array, nullptr, (VkPipeline*)pipeline_array) != VK_SUCCESS) {
 		throw std::runtime_error("graphics pipeline creation failed!");
 	}
@@ -675,7 +650,7 @@ void lvk_device::create_graphics_pipeline_array(const VkPipeline* pipeline_array
 	}
 }
 
-lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo graphics_pipeline_create_info) {
+lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo graphics_pipeline_create_info) const {
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE,
 	};
@@ -685,7 +660,7 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipelin
 	return pipeline;
 }
 
-lvk_pipeline lvk_device::create_compute_pipeline(const VkPipelineLayout pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info) {
+lvk_pipeline lvk_device::create_compute_pipeline(const VkPipelineLayout pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info) const {
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE,
 	};
@@ -722,7 +697,7 @@ void lvk_device::upload(const VmaAllocation allocation, const VkDeviceSize size,
 }
 
 
-lvk_buffer lvk_device::create_buffer(const VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, const VkDeviceSize size, const void* data) {
+lvk_buffer lvk_device::create_buffer(const VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, const VkDeviceSize size, const void* data) const {
 	lvk_buffer buffer = {
 		._buffer = VK_NULL_HANDLE,
 		._allocation = VK_NULL_HANDLE,
@@ -765,35 +740,35 @@ lvk_buffer lvk_device::create_buffer(const VkBufferUsageFlags buffer_usage, VmaM
 	return buffer;
 }
 
-lvk_buffer lvk_device::create_staging_buffer(const VkDeviceSize size, const void* data) {
+lvk_buffer lvk_device::create_staging_buffer(const VkDeviceSize size, const void* data) const {
 	return create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, size, data);
 }
 
-lvk_buffer lvk_device::create_index_buffer(const VkDeviceSize size, const void* data) {
+lvk_buffer lvk_device::create_index_buffer(const VkDeviceSize size, const void* data) const {
 	return create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, size, data);
 }
 
-lvk_buffer lvk_device::create_index_buffer_static(const VkDeviceSize size, const void* data) {
+lvk_buffer lvk_device::create_index_buffer_static(const VkDeviceSize size, const void* data) const {
 	return create_buffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, size, data);
 }
 
-lvk_buffer lvk_device::create_vertex_buffer(const VkDeviceSize size, const void* data) {
+lvk_buffer lvk_device::create_vertex_buffer(const VkDeviceSize size, const void* data) const {
 	return create_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, size, data);
 }
 
-lvk_buffer lvk_device::create_vertex_buffer_static(const VkDeviceSize size, const void* data) {
+lvk_buffer lvk_device::create_vertex_buffer_static(const VkDeviceSize size, const void* data) const {
 	return create_buffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, size, data);
 }
 
-lvk_buffer lvk_device::create_uniform_buffer(const VkDeviceSize size, const void* data) {
+lvk_buffer lvk_device::create_uniform_buffer(const VkDeviceSize size, const void* data) const {
 	return create_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, size, data);
 }
 
-lvk_buffer lvk_device::create_uniform_buffer_static(const VkDeviceSize size, const void* data) {
+lvk_buffer lvk_device::create_uniform_buffer_static(const VkDeviceSize size, const void* data) const {
 	return create_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, size, data);
 }
 
-void lvk_device::upload(const lvk_buffer& buffer, const VkDeviceSize size, const void* data, lvk_buffer staging_buffer) {
+void lvk_device::upload(const lvk_buffer& buffer, const VkDeviceSize size, const void* data, lvk_buffer staging_buffer) const {
 	if (size > buffer._allocated_size) {
 		throw std::runtime_error("ERROR: required size is greater than allocated size!");
 	}
@@ -833,7 +808,7 @@ void lvk_device::upload(const lvk_buffer& buffer, const VkDeviceSize size, const
 // |--------------------------------------------------
 
 
-lvk_image lvk_device::create_image(VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memory_usage, VkExtent3D extent, VkImageType image_type) {
+lvk_image lvk_device::create_image(VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memory_usage, VkExtent3D extent, VkImageType image_type) const {
 	lvk_image image = {
 		._image = VK_NULL_HANDLE,
 		._allocation = VK_NULL_HANDLE,
@@ -892,7 +867,7 @@ lvk_image lvk_device::create_image(VkFormat format, VkImageUsageFlags usage, Vma
 // |--------------------------------------------------
 
 
-lvk_image_view lvk_device::create_image_view(const VkImage image, VkFormat format, VkImageViewType image_view_type, VkImageAspectFlags aspect_flag) {
+lvk_image_view lvk_device::create_image_view(const VkImage image, VkFormat format, VkImageViewType image_view_type, VkImageAspectFlags aspect_flag) const {
 	lvk_image_view image_view = {
 		._image_view = VK_NULL_HANDLE,
 	};
@@ -909,7 +884,7 @@ lvk_image_view lvk_device::create_image_view(const VkImage image, VkFormat forma
 	return image_view;
 }
 
-lvk_image_view lvk_device::create_image_view(const lvk_image& image, VkImageViewType image_view_type, VkImageAspectFlags aspect_flag) {
+lvk_image_view lvk_device::create_image_view(const lvk_image& image, VkImageViewType image_view_type, VkImageAspectFlags aspect_flag) const {
 	return create_image_view(image._image, image._format, image_view_type, aspect_flag);
 }
 
@@ -919,7 +894,7 @@ lvk_image_view lvk_device::create_image_view(const lvk_image& image, VkImageView
 // |--------------------------------------------------
 
 
-lvk_descriptor_set_layout lvk_device::create_descriptor_set_layout(const VkDescriptorSetLayoutBinding* bindings, const uint32_t binding_count) {
+lvk_descriptor_set_layout lvk_device::create_descriptor_set_layout(const VkDescriptorSetLayoutBinding* bindings, const uint32_t binding_count) const {
 	lvk_descriptor_set_layout descriptor_set_layout = {
 		._descriptor_set_layout = VK_NULL_HANDLE
 	};
@@ -946,7 +921,7 @@ lvk_descriptor_set_layout lvk_device::create_descriptor_set_layout(const VkDescr
 // |--------------------------------------------------
 
 
-void lvk_device::create_descriptor_set_array(const lvk_descriptor_set* descriptor_set_array, const VkDescriptorPool descriptor_pool, const VkDescriptorSetLayout* descriptor_set_layout_array, uint32_t descriptor_set_layout_array_size) {
+void lvk_device::create_descriptor_set_array(const lvk_descriptor_set* descriptor_set_array, const VkDescriptorPool descriptor_pool, const VkDescriptorSetLayout* descriptor_set_layout_array, uint32_t descriptor_set_layout_array_size) const {
 	VkDescriptorSetAllocateInfo allocate_info ={
 		.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
 
@@ -961,7 +936,7 @@ void lvk_device::create_descriptor_set_array(const lvk_descriptor_set* descripto
 	dloggln("ALLOCATED \t", descriptor_set_array->_descriptor_set, "\t [Description Set]");
 }
 
-lvk_descriptor_set lvk_device::create_descriptor_set(const VkDescriptorPool descriptor_pool, const VkDescriptorSetLayout descriptor_set_layout) {
+lvk_descriptor_set lvk_device::create_descriptor_set(const VkDescriptorPool descriptor_pool, const VkDescriptorSetLayout descriptor_set_layout) const {
 	lvk_descriptor_set descriptor_set;
 
 	create_descriptor_set_array(&descriptor_set, descriptor_pool, &descriptor_set_layout, 1);
@@ -1014,7 +989,7 @@ void lvk_device::update_descriptor_set(const lvk_descriptor_set& descriptor_set,
 // |--------------------------------------------------
 
 
-lvk_descriptor_pool lvk_device::create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count, VkDescriptorPoolCreateFlags flags) {
+lvk_descriptor_pool lvk_device::create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count, VkDescriptorPoolCreateFlags flags) const {
 	lvk_descriptor_pool descriptor_pool = {
 		._descriptor_pool = VK_NULL_HANDLE,
 	};
@@ -1048,7 +1023,7 @@ void lvk_device::clear_descriptor_pool(const lvk_descriptor_pool& descriptor_poo
 // |--------------------------------------------------
 
 
-lvk_render_pass lvk_device::create_default_render_pass(VkFormat format) {	
+lvk_render_pass lvk_device::create_default_render_pass(VkFormat format) const {
 	VkAttachmentDescription attachments[2] = {
 		{
 			.format = format,
@@ -1126,7 +1101,7 @@ lvk_render_pass lvk_device::create_default_render_pass(VkFormat format) {
 	return create_render_pass(attachments, subpasses, dependency, false);
 }
 
-lvk_render_pass lvk_device::create_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform) {
+lvk_render_pass lvk_device::create_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform) const {
 	lvk_render_pass render_pass = {
 		._render_pass = VK_NULL_HANDLE,
 	};
@@ -1161,7 +1136,7 @@ lvk_render_pass lvk_device::create_render_pass(const VkAttachmentDescription* at
 // |--------------------------------------------------
 
 
-lvk_framebuffer lvk_device::create_framebuffer(const VkRenderPass render_pass, const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count) {
+lvk_framebuffer lvk_device::create_framebuffer(const VkRenderPass render_pass, const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count) const {
 	lvk_framebuffer framebuffer = {
 		._framebuffer = VK_NULL_HANDLE,
 		._extent = extent
@@ -1199,7 +1174,7 @@ lvk_framebuffer lvk_device::create_framebuffer(const VkRenderPass render_pass, c
 // |--------------------------------------------------
 
 
-lvk_sampler lvk_device::create_sampler(VkFilter min_filter, VkFilter mag_filter, VkSamplerAddressMode sampler_addres_mode) {
+lvk_sampler lvk_device::create_sampler(VkFilter min_filter, VkFilter mag_filter, VkSamplerAddressMode sampler_addres_mode) const {
 	lvk_sampler sampler {
 		._sampler = VK_NULL_HANDLE
 	};
@@ -1225,7 +1200,7 @@ lvk_sampler lvk_device::create_sampler(VkFilter min_filter, VkFilter mag_filter,
 	return sampler;
 }
 
-lvk_image lvk_device::load_image(VkDeviceSize size, void* data, VkExtent3D extent, VkFormat format, VkImageType type) {
+lvk_image lvk_device::load_image(VkDeviceSize size, void* data, VkExtent3D extent, VkFormat format, VkImageType type) const {
 	lvk_buffer staging_buffer = create_staging_buffer(size, data);
 
 	lvk_image image = create_image(format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, extent, VK_IMAGE_TYPE_2D);
@@ -1250,7 +1225,7 @@ lvk_image lvk_device::load_image(VkDeviceSize size, void* data, VkExtent3D exten
 	return image;
 }
 
-lvk_image lvk_device::load_image_from_file(const char* filename) {
+lvk_image lvk_device::load_image_from_file(const char* filename) const {
 	int width, height, channels;
 
 	stbi_uc* image_data = stbi_load(filename, &width, &height, &channels, STBI_rgb_alpha);

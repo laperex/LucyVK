@@ -122,11 +122,10 @@ namespace lucy {
 			glm::mat4 model;
 		} mvp;
 
-		
 		SDL_Window* sdl_window = nullptr;
-		
+
 		GPUMeshBuffers upload_mesh(const std::span<Vertex>& vertices, const std::span<uint32_t>& indices);
-		
+
 		lre_frame create_frame(lvk_command_pool&);
 		void destroy_frame(lre_frame&);
 		
@@ -146,6 +145,8 @@ namespace lucy {
 
 	public:
 		void init(SDL_Window* window);
+		
+		const lvk_device& get_device();
 
 		renderer();
 

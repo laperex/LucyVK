@@ -91,27 +91,28 @@ struct lvk_deletor_deque {
 
 	// void destroy(VkDescriptorSet descriptor_set, VkDescriptorPool descriptor_pool);
 
-	void destroy(VkCommandPool command_pool);
-	void destroy(VkPipelineLayout pipeline_layout);
-	void destroy(VkPipeline pipeline);
-	void destroy(VkSwapchainKHR swapchain);
-	void destroy(VkSemaphore semaphore);
-	void destroy(VkFence fence);
-	void destroy(VkDescriptorSetLayout descriptor_set_layout);
-	void destroy(VkDescriptorPool descriptor_pool);
-	void destroy(VkFramebuffer framebuffer);
-	void destroy(VkRenderPass render_pass);
-	void destroy(VkImageView image_view);
-	void destroy(VkShaderModule shader_module);
-	void destroy(VkSampler sampler);
-	// void destroy(VkCommandBuffer command_buffer, VkCommandPool command_pool);
-	void destroy(VkCommandBuffer* command_buffer, uint32_t command_buffer_count, VkCommandPool command_pool);
-	void destroy(VkBuffer buffer, VmaAllocation allocation);
-	void destroy(const lvk_buffer& buffer);
-	void destroy(VkImage image, VmaAllocation allocation);
-	void destroy(const lvk_image& image);
+	void destroy(VkCommandPool command_pool) const;
+	void destroy(VkPipelineLayout pipeline_layout) const;
+	void destroy(VkPipeline pipeline) const;
+	void destroy(VkSwapchainKHR swapchain) const;
+	void destroy(VkSemaphore semaphore) const;
+	void destroy(VkFence fence) const;
+	void destroy(VkDescriptorSetLayout descriptor_set_layout) const;
+	void destroy(VkDescriptorPool descriptor_pool) const;
+	void destroy(VkFramebuffer framebuffer) const;
+	void destroy(VkRenderPass render_pass) const;
+	void destroy(VkImageView image_view) const;
+	void destroy(VkShaderModule shader_module) const;
+	void destroy(VkSampler sampler) const;
+	
+	void destroy(VkCommandBuffer* command_buffer, uint32_t command_buffer_count, VkCommandPool command_pool) const;
+	void destroy(VkCommandBuffer command_buffer, VkCommandPool command_pool) const;
+	void destroy(VkBuffer buffer, VmaAllocation allocation) const;
+	void destroy(const lvk_buffer& buffer) const;
+	void destroy(VkImage image, VmaAllocation allocation) const;
+	void destroy(const lvk_image& image) const;
 
 	// void destroy(VkDescriptorSet descriptor_set, VkDescriptorPool descriptor_pool);
 
-	void destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool);
+	void destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool) const;
 };

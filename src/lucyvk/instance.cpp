@@ -389,6 +389,12 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 		.allocator = device._allocator
 	};
 
+	device.imm_command._fence = device.create_fence();
+	device.imm_command._command_pool = device.create_command_pool(device._queue.graphics.index.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+	device.imm_command._command_buffer = device.create_command_buffer(device.imm_command._command_pool);
+
+	dloggln("CREATED \t", "[Immediate Commands]");
+
 	return device;
 }
 

@@ -58,19 +58,18 @@ private:
 		const uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags property_flags) const;
 	} physical_device;
 
-
 	friend lvk_instance;
 
 public:
-	VkPhysicalDevice get_physical_device();
-	VkDevice get_logical_device();
-	VkQueue get_graphics_queue();
+	VkPhysicalDevice get_physical_device() const;
+	VkDevice get_logical_device() const;
+	VkQueue get_graphics_queue() const;
 
 	void destroy();
 	
 	// DESTROYER 		---------- ---------- ---------- 
 	
-	lvk_deletor_deque create_deletor();
+	lvk_deletor_deque create_deletor() const;
 	
 	// void destroy(VkCommandPool command_pool);
 	// void destroy(VkPipelineLayout pipeline_layout);
@@ -100,9 +99,9 @@ public:
 	// SYNCHRONIZATION 		---------- ---------- ---------- ----------
 
 
-	lvk_semaphore create_semaphore();
+	lvk_semaphore create_semaphore() const;
 
-	lvk_fence create_fence(VkFenceCreateFlags flags = 0);
+	lvk_fence create_fence(VkFenceCreateFlags flags = 0) const;
 
 
 	void wait_for_fence(const lvk_fence& fence, uint64_t timeout = LVK_TIMEOUT) const;
@@ -126,15 +125,23 @@ public:
 	// COMMAND 		---------- ---------- ---------- ----------
 
 
-	lvk_command_pool create_graphics_command_pool();
-	lvk_command_pool create_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
-	void reset_command_pool(const lvk_command_pool& command_pool);
+	lvk_command_pool create_graphics_command_pool() const;
+	lvk_command_pool create_command_pool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags) const;
+	void reset_command_pool(const lvk_command_pool& command_pool) const;
 
-	lvk_command_buffer create_command_buffer(const VkCommandPool command_pool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-	void create_command_buffer_array(const lvk_command_buffer* command_buffer_array, const VkCommandPool command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+	lvk_command_buffer create_command_buffer(const VkCommandPool command_pool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY) const;
+	void create_command_buffer_array(const lvk_command_buffer* command_buffer_array, const VkCommandPool command_pool, uint32_t command_buffer_count, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY) const;
 
+private:
+	struct {
+		VkCommandPool _command_pool = VK_NULL_HANDLE;
+		VkCommandBuffer _command_buffer = VK_NULL_HANDLE;
+		VkFence _fence = VK_NULL_HANDLE;
+	} imm_command;
+
+public:
 	// lvk_immediate_command create_immediate_command();
-	VkResult imm_submit(std::function<void(lvk_command_buffer)> function);
+	VkResult imm_submit(std::function<void(lvk_command_buffer)> function) const;
 	// VkResult imm_buffer_copy(const VkBuffer src_buffer, const VkBuffer dst_buffer, const VkDeviceSize size);
 	// VkResult 
 
@@ -142,9 +149,9 @@ public:
 	// SWAPCHAIN 	---------- ---------- ---------- ----------
 
 
-	lvk_swapchain create_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format);
-	void swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, uint32_t height);
-	void swapchain_destroy(lvk_swapchain& swapchain);
+	lvk_swapchain create_swapchain(uint32_t width, uint32_t height, VkImageUsageFlags image_usage_flags, VkSurfaceFormatKHR surface_format) const;
+	void swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, uint32_t height) const;
+	void swapchain_destroy(lvk_swapchain& swapchain) const;
 	VkResult swapchain_acquire_next_image(const lvk_swapchain& swapchain, uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout = LVK_TIMEOUT) const;
 	
 	// GPU DRAW
@@ -174,28 +181,28 @@ public:
 	// SHADER		---------- ---------- ---------- ----------
 	
 
-	lvk_shader_module create_shader_module(const char* filename);
+	lvk_shader_module create_shader_module(const char* filename) const;
 	
 	
 	// PIPELINE		---------- ---------- ---------- ----------
 	
 	
-	lvk_pipeline_layout create_pipeline_layout(const VkPushConstantRange* push_constant_ranges = VK_NULL_HANDLE, const uint32_t push_constant_range_count = 0, const VkDescriptorSetLayout* descriptor_set_layouts = VK_NULL_HANDLE, const uint32_t descriptor_set_layout_count = 0);
+	lvk_pipeline_layout create_pipeline_layout(const VkPushConstantRange* push_constant_ranges = VK_NULL_HANDLE, const uint32_t push_constant_range_count = 0, const VkDescriptorSetLayout* descriptor_set_layouts = VK_NULL_HANDLE, const uint32_t descriptor_set_layout_count = 0) const;
 	
 
 
 	template <std::size_t _pcr_N, std::size_t _dsl_N> [[nodiscard, __gnu__::__always_inline__]]
-    constexpr lvk_pipeline_layout create_pipeline_layout(const VkPushConstantRange (&push_constant_ranges)[_pcr_N], const VkDescriptorSetLayout (&descriptor_set_layouts)[_dsl_N]) noexcept {
+    constexpr lvk_pipeline_layout create_pipeline_layout(const VkPushConstantRange (&push_constant_ranges)[_pcr_N], const VkDescriptorSetLayout (&descriptor_set_layouts)[_dsl_N]) const noexcept {
 		return create_pipeline_layout(push_constant_ranges, _pcr_N, descriptor_set_layouts, _dsl_N);
 	}
 	
 	template <std::size_t _pcr_N> [[nodiscard, __gnu__::__always_inline__]]
-    constexpr lvk_pipeline_layout create_pipeline_layout(const VkPushConstantRange (&push_constant_ranges)[_pcr_N]) noexcept {
+    constexpr lvk_pipeline_layout create_pipeline_layout(const VkPushConstantRange (&push_constant_ranges)[_pcr_N]) const noexcept {
 		return create_pipeline_layout(push_constant_ranges, _pcr_N, VK_NULL_HANDLE, 0);
 	}
 	
 	template <std::size_t _dsl_N> [[nodiscard, __gnu__::__always_inline__]]
-    constexpr lvk_pipeline_layout create_pipeline_layout(const VkDescriptorSetLayout (&descriptor_set_layouts)[_dsl_N]) noexcept {
+    constexpr lvk_pipeline_layout create_pipeline_layout(const VkDescriptorSetLayout (&descriptor_set_layouts)[_dsl_N]) const noexcept {
 		return create_pipeline_layout(VK_NULL_HANDLE, 0, descriptor_set_layouts, _dsl_N);
 	}
 
@@ -214,7 +221,7 @@ public:
 	// 	const VkPipelineColorBlendStateCreateInfo color_blend_state,
 	// 	const VkPipelineDynamicStateCreateInfo dynamic_state,
 	// 	const VkRenderPass render_pass
-	// ) noexcept {
+	// ) const noexcept {
 	// 	return create_graphics_pipeline(
 	// 		pipeline_layout,
 	// 		shader_stages,
@@ -248,13 +255,13 @@ public:
 	// 	const VkRenderPass render_pass
 	// );
 
-	lvk_pipeline create_graphics_pipeline(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config, const VkRenderPass render_pass);
-	lvk_pipeline create_graphics_pipeline_dynamic(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config);
+	lvk_pipeline create_graphics_pipeline(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config, const VkRenderPass render_pass) const;
+	lvk_pipeline create_graphics_pipeline_dynamic(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config) const;
 
-	void create_graphics_pipeline_array(const VkPipeline* pipeline_array, const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo* graphics_pipeline_create_info_array, uint32_t graphics_pipeline_create_info_array_size);
-	lvk_pipeline create_graphics_pipeline(const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo graphics_pipeline_create_info);
+	void create_graphics_pipeline_array(const VkPipeline* pipeline_array, const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo* graphics_pipeline_create_info_array, uint32_t graphics_pipeline_create_info_array_size) const;
+	lvk_pipeline create_graphics_pipeline(const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo graphics_pipeline_create_info) const;
 
-	lvk_pipeline create_compute_pipeline(const VkPipelineLayout pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info);
+	lvk_pipeline create_compute_pipeline(const VkPipelineLayout pipeline_layout, const VkPipelineShaderStageCreateInfo stage_info) const;
 	
 
 	// BUFFER	---------- ---------- ---------- ----------
@@ -263,79 +270,79 @@ public:
 	void upload(const VmaAllocation allocation, const VkDeviceSize size, const void* data) const;
 
 	
-	lvk_buffer create_buffer(const VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, const VkDeviceSize size, const void* data = nullptr);
+	lvk_buffer create_buffer(const VkBufferUsageFlags buffer_usage, VmaMemoryUsage memory_usage, const VkDeviceSize size, const void* data = nullptr) const;
 	
 	
-	lvk_buffer create_staging_buffer(const VkDeviceSize size, const void* data = nullptr);
+	lvk_buffer create_staging_buffer(const VkDeviceSize size, const void* data = nullptr) const;
 	
 	
-	lvk_buffer create_index_buffer(const VkDeviceSize size, const void* data = nullptr);
-	lvk_buffer create_index_buffer_static(const VkDeviceSize size, const void* data = nullptr);
+	lvk_buffer create_index_buffer(const VkDeviceSize size, const void* data = nullptr) const;
+	lvk_buffer create_index_buffer_static(const VkDeviceSize size, const void* data = nullptr) const;
 
 	template <typename T>
-	lvk_buffer create_index_buffer(const std::vector<T>& data) {
+	lvk_buffer create_index_buffer(const std::vector<T>& data) const {
 		return create_index_buffer(data.size() * sizeof(T), data.data());
 	}
 	template <typename T>
-	lvk_buffer create_index_buffer_static(const std::vector<T>& data) {
+	lvk_buffer create_index_buffer_static(const std::vector<T>& data) const {
 		return create_index_buffer_static(data.size() * sizeof(T), data.data());
 	}
 	
 	
-	lvk_buffer create_vertex_buffer(const VkDeviceSize size, const void* data = nullptr);
-	lvk_buffer create_vertex_buffer_static(const VkDeviceSize size, const void* data);
+	lvk_buffer create_vertex_buffer(const VkDeviceSize size, const void* data = nullptr) const;
+	lvk_buffer create_vertex_buffer_static(const VkDeviceSize size, const void* data) const;
 
 	template <typename T>
-	lvk_buffer create_vertex_buffer(const std::vector<T>& data) {
+	lvk_buffer create_vertex_buffer(const std::vector<T>& data) const {
 		return create_vertex_buffer(data.size() * sizeof(T), data.data());
 	}
 
 	template <typename T, std::size_t N> [[nodiscard, __gnu__::__always_inline__]]
-	constexpr lvk_buffer create_vertex_buffer(const T (&data)[N]) noexcept {
+	constexpr lvk_buffer create_vertex_buffer(const T (&data)[N]) const noexcept{
 		return create_vertex_buffer(sizeof(T) * N, data);
 	}
 
 
-	lvk_buffer create_uniform_buffer(const VkDeviceSize size, const void* data = nullptr);
-	lvk_buffer create_uniform_buffer_static(const VkDeviceSize size, const void* data);
+	lvk_buffer create_uniform_buffer(const VkDeviceSize size, const void* data = nullptr) const;
+	lvk_buffer create_uniform_buffer_static(const VkDeviceSize size, const void* data) const;
 
 	template <typename T> [[nodiscard, __gnu__::__always_inline__]]
-	constexpr lvk_buffer create_uniform_buffer(const T* data = nullptr) noexcept {
+	constexpr lvk_buffer create_uniform_buffer(const T* data = nullptr) const noexcept{
 		return create_uniform_buffer(sizeof(T), data);
 	}
 
-	void upload(const lvk_buffer& buffer, const VkDeviceSize size, const void* data = nullptr, lvk_buffer staging_buffer = {});
+	void upload(const lvk_buffer& buffer, const VkDeviceSize size, const void* data = nullptr, lvk_buffer staging_buffer = {}) const;
 	template <typename T>
-	inline void upload(const lvk_buffer& buffer, const T& data) {
+	inline void upload(const lvk_buffer& buffer, const T& data) const {
 		upload(buffer, sizeof(T), &data);
 	}
 
 	// IMAGE
 
-	lvk_image create_image(VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memory_usage, VkExtent3D extent, VkImageType image_type);
+	lvk_image create_image(VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memory_usage, VkExtent3D extent, VkImageType image_type) const;
 	
 
 	// IMAGE_VIEW	---------- ---------- ---------- ----------
 	
-	lvk_image_view create_image_view(const VkImage image, VkFormat format, VkImageViewType image_view_type, VkImageAspectFlags aspect_flag);
-	lvk_image_view create_image_view(const lvk_image& image, VkImageViewType image_view_type, VkImageAspectFlags aspect_flag);
+	lvk_image_view create_image_view(const VkImage image, VkFormat format, VkImageViewType image_view_type, VkImageAspectFlags aspect_flag) const;
+	lvk_image_view create_image_view(const lvk_image& image, VkImageViewType image_view_type, VkImageAspectFlags aspect_flag) const;
 
 
 	// DESCRIPTOR_SET_LAYOUT   ---------- ---------- ----------
 
 
-	lvk_descriptor_set_layout create_descriptor_set_layout(const VkDescriptorSetLayoutBinding* bindings, const uint32_t binding_count);
+	lvk_descriptor_set_layout create_descriptor_set_layout(const VkDescriptorSetLayoutBinding* bindings, const uint32_t binding_count) const;
 
 	template <std::size_t _dsl_N> [[nodiscard, __gnu__::__always_inline__]]
-	constexpr lvk_descriptor_set_layout create_descriptor_set_layout(const VkDescriptorSetLayoutBinding (&bindings)[_dsl_N]) noexcept {
+	constexpr lvk_descriptor_set_layout create_descriptor_set_layout(const VkDescriptorSetLayoutBinding (&bindings)[_dsl_N]) const noexcept {
 		return create_descriptor_set_layout(bindings, _dsl_N);
 	}
 	
 	
 	// DESCRIPTOR_SET		   ---------- ---------- ----------
 
-	void create_descriptor_set_array(const lvk_descriptor_set* descriptor_set_array, const VkDescriptorPool descriptor_pool, const VkDescriptorSetLayout* descriptor_set_layout_array, uint32_t descriptor_set_layout_array_size);
-	lvk_descriptor_set create_descriptor_set(const VkDescriptorPool descriptor_pool, const VkDescriptorSetLayout descriptor_set_layout);
+	void create_descriptor_set_array(const lvk_descriptor_set* descriptor_set_array, const VkDescriptorPool descriptor_pool, const VkDescriptorSetLayout* descriptor_set_layout_array, uint32_t descriptor_set_layout_array_size) const;
+	lvk_descriptor_set create_descriptor_set(const VkDescriptorPool descriptor_pool, const VkDescriptorSetLayout descriptor_set_layout) const;
 	
 	void update_descriptor_set(const lvk_descriptor_set& descriptor_set, uint32_t binding, const lvk_buffer* buffer, VkDescriptorType type, const std::size_t offset = 0) const;
 	void update_descriptor_set(const lvk_descriptor_set& descriptor_set, uint32_t binding, const lvk_image_view* image_view, const lvk_sampler& sampler, VkImageLayout image_layout, VkDescriptorType type, const std::size_t offset = 0) const;
@@ -345,10 +352,10 @@ public:
 
 	// DESCRIPTOR_POOL		   ---------- ---------- ----------
 
-	lvk_descriptor_pool create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count, VkDescriptorPoolCreateFlags flags = 0);
+	lvk_descriptor_pool create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize* descriptor_pool_sizes, const uint32_t descriptor_pool_sizes_count, VkDescriptorPoolCreateFlags flags = 0) const;
 
 	template <std::size_t _dps_N> [[nodiscard, __gnu__::__always_inline__]]
-	constexpr lvk_descriptor_pool create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize (&descriptor_pool_sizes)[_dps_N], VkDescriptorPoolCreateFlags flags = 0) noexcept {
+	constexpr lvk_descriptor_pool create_descriptor_pool(const uint32_t max_descriptor_sets, const VkDescriptorPoolSize (&descriptor_pool_sizes)[_dps_N], VkDescriptorPoolCreateFlags flags = 0) const noexcept {
 		return create_descriptor_pool(max_descriptor_sets, descriptor_pool_sizes, _dps_N, flags);
 	}
 
@@ -359,11 +366,11 @@ public:
 	// RENDERPASS	---------- ---------- ---------- ----------
 
 
-	lvk_render_pass create_default_render_pass(VkFormat format);
-	lvk_render_pass create_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform = false);
+	lvk_render_pass create_default_render_pass(VkFormat format) const;
+	lvk_render_pass create_render_pass(const VkAttachmentDescription* attachment, uint32_t attachment_count, const VkSubpassDescription* subpass, const uint32_t subpass_count, const VkSubpassDependency* dependency, const uint32_t dependency_count, bool enable_transform = false) const;
 	// TODO: why ???
 	template <std::size_t _ad_N, std::size_t _sdn_N, std::size_t _sdc_N> [[nodiscard, __gnu__::__always_inline__]]
-	constexpr lvk_render_pass create_render_pass(const VkAttachmentDescription (&attachment)[_ad_N], const VkSubpassDescription (&subpass)[_sdn_N], const VkSubpassDependency (&dependency)[_sdc_N], bool enable_transform = false) noexcept {
+	constexpr lvk_render_pass create_render_pass(const VkAttachmentDescription (&attachment)[_ad_N], const VkSubpassDescription (&subpass)[_sdn_N], const VkSubpassDependency (&dependency)[_sdc_N], bool enable_transform = false) const noexcept {
 		return create_render_pass(attachment, _ad_N, subpass, _sdn_N, dependency, _sdc_N);
 	}
 	
@@ -371,10 +378,10 @@ public:
 	// FRAMEBUFFER	---------- ---------- ---------- ----------
 	
 	
-	lvk_framebuffer create_framebuffer(const VkRenderPass render_pass, const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count);
+	lvk_framebuffer create_framebuffer(const VkRenderPass render_pass, const VkExtent2D extent, const VkImageView* image_views, const uint32_t image_views_count) const;
 	
 	template <std::size_t _iv_N> [[nodiscard, __gnu__::__always_inline__]]
-	constexpr lvk_framebuffer create_framebuffer(const VkRenderPass render_pass, const VkExtent2D extent, const VkImageView (&image_views)[_iv_N]) noexcept {
+	constexpr lvk_framebuffer create_framebuffer(const VkRenderPass render_pass, const VkExtent2D extent, const VkImageView (&image_views)[_iv_N]) const noexcept {
 		return create_framebuffer(render_pass, extent, image_views, _iv_N);
 	}
 
@@ -382,7 +389,7 @@ public:
 	// SAMPLER	---------- ---------- ---------- ----------
 
 
-	lvk_sampler create_sampler(VkFilter min_filter, VkFilter mag_filter, VkSamplerAddressMode sampler_addres_mode);
+	lvk_sampler create_sampler(VkFilter min_filter, VkFilter mag_filter, VkSamplerAddressMode sampler_addres_mode) const;
 	
 	// 	 ---------- ---------- ---------- ---------- ----------
 
@@ -416,7 +423,7 @@ public:
 
 	VkResult submit2(const VkSubmitInfo2* submit_info2, const uint32_t submit_info2_count, const VkFence fence) const;
 	template <std::size_t _si2_N> [[nodiscard, __gnu__::__always_inline__]]
-	constexpr VkResult submit2(const VkSubmitInfo2 (&submit_info2)[_si2_N], const lvk_fence* fence) noexcept {
+	constexpr VkResult submit2(const VkSubmitInfo2 (&submit_info2)[_si2_N], const lvk_fence* fence) const noexcept {
 		return submit2(submit_info2, _si2_N, fence);
 	}
 
@@ -431,6 +438,6 @@ public:
 	
 	// LOADER
 	
-	lvk_image load_image(VkDeviceSize size, void* data, VkExtent3D extent, VkFormat format, VkImageType type = VK_IMAGE_TYPE_2D);
-	lvk_image load_image_from_file(const char* filename);
+	lvk_image load_image(VkDeviceSize size, void* data, VkExtent3D extent, VkFormat format, VkImageType type = VK_IMAGE_TYPE_2D) const;
+	lvk_image load_image_from_file(const char* filename) const;
 };

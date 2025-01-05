@@ -259,10 +259,10 @@ void lucy::renderer::draw_background(lre_frame& frame) {
 
 void lucy::renderer::draw_main(lre_frame& frame) {
 	const auto& cmd = frame.command_buffer;
-	
+
 	cmd.set_viewport(lvk::info::viewport(0, 0, swapchain._extent.width, swapchain._extent.height, 0.0, 1.0));
 	cmd.set_scissor(lvk::info::scissor(0, 0, swapchain._extent.width, swapchain._extent.height));
-	
+
 	cmd.begin_rendering(
 		{
 			.width = frame.draw_image._extent.width,

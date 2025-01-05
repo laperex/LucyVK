@@ -46,37 +46,37 @@ void lvk_deletor_deque::flush() {
 }
 
 
-void lvk_deletor_deque::destroy(VkCommandPool command_pool) {
+void lvk_deletor_deque::destroy(VkCommandPool command_pool) const {
 	vkDestroyCommandPool(device, command_pool, VK_NULL_HANDLE);
 	dloggln("DESTROYED \t", command_pool, "\t [CommandPool]");
 }
 
 
-void lvk_deletor_deque::destroy(VkPipelineLayout pipeline_layout) {
+void lvk_deletor_deque::destroy(VkPipelineLayout pipeline_layout) const {
 	vkDestroyPipelineLayout(device, pipeline_layout, VK_NULL_HANDLE);
 	dloggln("DESTROYED \t", pipeline_layout, "\t [PipelineLayout]");
 }
 
 
-void lvk_deletor_deque::destroy(VkPipeline pipeline) {
+void lvk_deletor_deque::destroy(VkPipeline pipeline) const {
 	vkDestroyPipeline(device, pipeline, VK_NULL_HANDLE);
 	dloggln("DESTROYED \t", pipeline, "\t [Pipeline]");
 }
 
 
-void lvk_deletor_deque::destroy(VkSwapchainKHR swapchain) {
+void lvk_deletor_deque::destroy(VkSwapchainKHR swapchain) const {
 	vkDestroySwapchainKHR(device, swapchain, VK_NULL_HANDLE);
 	dloggln("DESTROYED \t", swapchain, "\t [SwapchainKHR]");
 }
 
 
-void lvk_deletor_deque::destroy(VkSemaphore semaphore) {
+void lvk_deletor_deque::destroy(VkSemaphore semaphore) const {
 	vkDestroySemaphore(device, semaphore, VK_NULL_HANDLE);
 	dloggln("DESTROYED \t", semaphore, "\t [Semaphore]");
 }
 
 
-void lvk_deletor_deque::destroy(VkFence fence) {
+void lvk_deletor_deque::destroy(VkFence fence) const {
 	vkDestroyFence(device, fence, VK_NULL_HANDLE);
 	dloggln("DESTROYED \t", fence, "\t [Fence]");
 }
@@ -84,12 +84,12 @@ void lvk_deletor_deque::destroy(VkFence fence) {
 
 
 
-// void lvk_deletor_deque::destroy(VkDescriptorSet descriptor_set, VkDescriptorPool descriptor_pool) {
+// void lvk_deletor_deque::destroy(VkDescriptorSet descriptor_set, VkDescriptorPool descriptor_pool) const {
 // 	vkFreeDescriptorSets(device, descriptor_pool, 1, &descriptor_set);
 // 	dloggln("DESTROYED \t", descriptor_set, "\t [DescriptionSet]");
 // }
 
-void lvk_deletor_deque::destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool) {
+void lvk_deletor_deque::destroy(VkDescriptorSet* descriptor_set, uint32_t descriptor_set_count, VkDescriptorPool descriptor_pool) const {
 	assert(descriptor_set_count);
 
 	vkFreeDescriptorSets(device, descriptor_pool, descriptor_set_count, descriptor_set);
@@ -97,32 +97,32 @@ void lvk_deletor_deque::destroy(VkDescriptorSet* descriptor_set, uint32_t descri
 }
 
 
-void lvk_deletor_deque::destroy(VkDescriptorSetLayout descriptor_set_layout) {
+void lvk_deletor_deque::destroy(VkDescriptorSetLayout descriptor_set_layout) const {
 	vkDestroyDescriptorSetLayout(device, descriptor_set_layout, VK_NULL_HANDLE);
 	dloggln("DESTROYED \t", descriptor_set_layout, "\t [DescriptorSetLayout]");
 }
 
 
-void lvk_deletor_deque::destroy(VkDescriptorPool descriptor_pool) {
+void lvk_deletor_deque::destroy(VkDescriptorPool descriptor_pool) const {
 	vkDestroyDescriptorPool(device, descriptor_pool, VK_NULL_HANDLE);
 	dloggln("DESTROYED \t", descriptor_pool, "\t [DescriptorPool]");
 }
 
 
-void lvk_deletor_deque::destroy(VkFramebuffer framebuffer) {
+void lvk_deletor_deque::destroy(VkFramebuffer framebuffer) const {
 	dloggln("[ERR] \t", framebuffer, "\t [Framebuffer]");
 	vkDestroyFramebuffer(device, framebuffer, VK_NULL_HANDLE);
 	dloggln("DESTROYED \t", framebuffer, "\t [Framebuffer]");
 }
 
 
-void lvk_deletor_deque::destroy(VkRenderPass render_pass) {
+void lvk_deletor_deque::destroy(VkRenderPass render_pass) const {
 	vkDestroyRenderPass(device, render_pass, VK_NULL_HANDLE);
 	dloggln("DESTROYED \t", render_pass, "\t [RenderPass]");
 }
 
 
-void lvk_deletor_deque::destroy(VkImageView image_view) {
+void lvk_deletor_deque::destroy(VkImageView image_view) const {
 	if (image_view == VK_NULL_HANDLE) { return; }
 
 	vkDestroyImageView(device, image_view, VK_NULL_HANDLE);
@@ -130,44 +130,48 @@ void lvk_deletor_deque::destroy(VkImageView image_view) {
 }
 
 
-void lvk_deletor_deque::destroy(VkShaderModule shader_module) {
+void lvk_deletor_deque::destroy(VkShaderModule shader_module) const {
 	vkDestroyShaderModule(device, shader_module, VK_NULL_HANDLE);
 	dloggln("DESTROYED \t", shader_module, "\t [ShaderModule]");
 }
 
 
-void lvk_deletor_deque::destroy(VkSampler sampler) {
+void lvk_deletor_deque::destroy(VkSampler sampler) const {
 	vkDestroySampler(device, sampler, VK_NULL_HANDLE);
 	dloggln("DESTROYED \t", sampler, "\t [Sampler]");
 }
 
 
-// void lvk_deletor_deque::destroy(VkCommandBuffer command_buffer, VkCommandPool command_pool) {
+// void lvk_deletor_deque::destroy(VkCommandBuffer command_buffer, VkCommandPool command_pool) const {
 // 	vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
 // 	dloggln("DESTROYED \t", command_buffer, "\t [CommandBuffer]");
 // }
 
-void lvk_deletor_deque::destroy(VkCommandBuffer* command_buffer, uint32_t command_buffer_count, VkCommandPool command_pool) {
+void lvk_deletor_deque::destroy(VkCommandBuffer* command_buffer, uint32_t command_buffer_count, VkCommandPool command_pool) const {
 	assert(command_buffer_count);
 
 	vkFreeCommandBuffers(device, command_pool, command_buffer_count, command_buffer);
 	dloggln("DESTROYED \t", command_buffer[0], "\t [CommandBuffer]");
 }
 
-void lvk_deletor_deque::destroy(VkBuffer buffer, VmaAllocation allocation) {
+void lvk_deletor_deque::destroy(VkCommandBuffer command_buffer, VkCommandPool command_pool) const {
+	destroy(&command_buffer, 1, command_pool);
+}
+
+void lvk_deletor_deque::destroy(VkBuffer buffer, VmaAllocation allocation) const {
 	vmaDestroyBuffer(allocator, buffer, allocation);
 	dloggln("DESTROYED \t", buffer, "\t [Buffer]");
 }
 
-void lvk_deletor_deque::destroy(const lvk_buffer& buffer) {
+void lvk_deletor_deque::destroy(const lvk_buffer& buffer) const {
 	destroy(buffer, buffer._allocation);
 }
 
-void lvk_deletor_deque::destroy(VkImage image, VmaAllocation allocation) {
+void lvk_deletor_deque::destroy(VkImage image, VmaAllocation allocation) const {
 	vmaDestroyImage(allocator, image, allocation);
 	dloggln("DESTROYED \t", image, "\t [Image]");
 }
 
-void lvk_deletor_deque::destroy(const lvk_image& image) {
+void lvk_deletor_deque::destroy(const lvk_image& image) const {
 	destroy(image, image._allocation);
 }
