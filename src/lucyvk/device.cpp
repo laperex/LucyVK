@@ -590,12 +590,17 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipelin
 	return pipeline;
 }
 
-lvk_pipeline lvk_device::create_graphics_pipeline_dynamic(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config) const {
+lvk_pipeline lvk_device::create_graphics_pipeline_dynamic(const VkPipelineLayout pipeline_layout, lvk::config::graphics_pipeline& config) const {
 	lvk_pipeline pipeline = {
 		._pipeline = VK_NULL_HANDLE
 	};
 	
 	assert(config.rendering_info.sType == VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR);
+	
+	if (config.color_blend_attachments.size()) {
+		config.color_blend_state.pAttachments = config.color_blend_attachments.data();
+		config.color_blend_state.attachmentCount = config.color_blend_attachments.size();
+	}
 	
 	VkPipelineDynamicStateCreateInfo dynamic_state = {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,

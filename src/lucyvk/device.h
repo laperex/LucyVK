@@ -258,7 +258,7 @@ public:
 	// );
 
 	lvk_pipeline create_graphics_pipeline(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config, const VkRenderPass render_pass) const;
-	lvk_pipeline create_graphics_pipeline_dynamic(const VkPipelineLayout pipeline_layout, const lvk::config::graphics_pipeline& config) const;
+	lvk_pipeline create_graphics_pipeline_dynamic(const VkPipelineLayout pipeline_layout, lvk::config::graphics_pipeline& config) const;
 
 	void create_graphics_pipeline_array(const VkPipeline* pipeline_array, const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo* graphics_pipeline_create_info_array, uint32_t graphics_pipeline_create_info_array_size) const;
 	lvk_pipeline create_graphics_pipeline(const VkPipelineLayout pipeline_layout, VkGraphicsPipelineCreateInfo graphics_pipeline_create_info) const;

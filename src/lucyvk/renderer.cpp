@@ -155,14 +155,10 @@ void lucy::renderer::init_pipeline() {
 
 		.depth_stencil_state = lvk::info::depth_stencil_state(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL),
 
-		.color_blend_state = {
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-
-			.logicOpEnable = VK_FALSE,
-			.logicOp = VK_LOGIC_OP_COPY,
-
-			.attachmentCount = 1,
-			.pAttachments = &color_blend_attachment_state,
+		.color_blend_state = lvk::info::color_blend_state(),
+		
+		.color_blend_attachments = {
+			lvk::info::color_blend_attachment_additive()
 		},
 
 		// TODO: Abstraction [Temporary Structs for Storage only with std::vector]

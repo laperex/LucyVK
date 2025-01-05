@@ -30,6 +30,8 @@ namespace lvk::info {
 	VkPipelineMultisampleStateCreateInfo multisample_state();
 
 	VkPipelineColorBlendAttachmentState color_blend_attachment();
+	VkPipelineColorBlendAttachmentState color_blend_attachment_additive();
+	VkPipelineColorBlendAttachmentState color_blend_attachment_alphablend();
 
 	VkPipelineColorBlendStateCreateInfo color_blend_state(const VkPipelineColorBlendAttachmentState* attachments = nullptr, const uint32_t attachment_count = 0, const bool logic_op_enable = false, const VkLogicOp logic_op = VK_LOGIC_OP_COPY);
 	template <std::size_t _pcbas_N>  [[nodiscard, __gnu__::__always_inline__]]

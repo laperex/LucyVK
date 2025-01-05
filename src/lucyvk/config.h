@@ -20,7 +20,9 @@ namespace lvk::config {
 		VkPipelineRasterizationStateCreateInfo rasterization_state;
 		VkPipelineMultisampleStateCreateInfo multisample_state;
 		VkPipelineDepthStencilStateCreateInfo depth_stencil_state;
+		
 		VkPipelineColorBlendStateCreateInfo color_blend_state;
+		std::vector<VkPipelineColorBlendAttachmentState> color_blend_attachments;
 		
 		VkPipelineViewportStateCreateInfo viewport_state;
 		std::vector<VkDynamicState> dynamic_state_array;
