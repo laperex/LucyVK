@@ -1,6 +1,9 @@
 #include "lucyvk/device.h"
 #include "lucyvk/create_info.h"
 // #include "lucyvk/types.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 #include <string>
 
 #include "lucyvk/functions.h"
@@ -365,14 +368,9 @@ lvk_swapchain lvk_device::create_swapchain(uint32_t width, uint32_t height, VkIm
 
 
 void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, uint32_t height) {
-	if (swapchain._image_count) {
+	if (swapchain._images.size()) {
 		swapchain_destroy(swapchain);
 	}
-
-	// if (swapchain._swapchain != VK_NULL_HANDLE) {
-	// 	vkDestroySwapchainKHR(_device, swapchain._swapchain, VK_NULL_HANDLE);
-	// 	dloggln("Swapchain Destroyed");
-	// }
 
 	swapchain._extent.width = width;
 	swapchain._extent.height = height;
@@ -459,21 +457,21 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, ui
 	// 	swapchain._image_views = new VkImageView[swapchain._image_count];
 	// 	swapchain._framebuffers = new VkFramebuffer[swapchain._image_count];
 	// }
+	uint32_t _image_count;
+	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &_image_count, VK_NULL_HANDLE);
 
-	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, VK_NULL_HANDLE);
-
-	swapchain._images.resize(swapchain._image_count);
-	swapchain._image_views.resize(swapchain._image_count);
+	swapchain._images.resize(_image_count);
+	swapchain._image_views.resize(_image_count);
 	//! swapchain._framebuffers.resize(swapchain._image_count);
 
-	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &swapchain._image_count, swapchain._images.data());
+	vkGetSwapchainImagesKHR(this->_device, swapchain._swapchain, &_image_count, swapchain._images.data());
 
-	swapchain._depth_image = create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
-	swapchain._depth_image_view = create_image_view(swapchain._depth_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT);
+	// swapchain._depth_image = create_image(VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VMA_MEMORY_USAGE_GPU_ONLY, { swapchain._extent.width, swapchain._extent.height, 1 }, VK_IMAGE_TYPE_2D);
+	// swapchain._depth_image_view = create_image_view(swapchain._depth_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_DEPTH_BIT);
 
 	// destroyer.push(swapchain);
 
-	for (size_t i = 0; i < swapchain._image_count; i++) {
+	for (size_t i = 0; i < _image_count; i++) {
 		swapchain._image_views[i] = create_image_view(swapchain._images[i], swapchain._surface_format.format, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT);
 	
 		//! swapchain._framebuffers[i] = create_framebuffer(render_pass, swapchain._extent, {
@@ -486,16 +484,16 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, ui
 
 void lvk_device::swapchain_destroy(lvk_swapchain& swapchain) {
 	_deletor.destroy(swapchain);
-	_deletor.destroy(swapchain._depth_image_view);
+	// _deletor.destroy(swapchain._depth_image_view);
 	
 	swapchain._swapchain = VK_NULL_HANDLE;
 
-	for (int i = 0; i < swapchain._image_count; i++) {
-		_deletor.destroy(swapchain._image_views[i]);
+	for (auto& image_view: swapchain._image_views) {
+		_deletor.destroy(image_view);
 		//! _deletor.destroy(swapchain._framebuffers[i]);
 	}
 
-	_deletor.destroy(swapchain._depth_image, swapchain._depth_image._allocation);
+	// _deletor.destroy(swapchain._depth_image, swapchain._depth_image._allocation);
 }
 
 VkResult lvk_device::swapchain_acquire_next_image(const lvk_swapchain& swapchain, uint32_t* index, VkSemaphore semaphore, VkFence fence, const uint64_t timeout) const {
@@ -573,6 +571,16 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipelin
 	};
 
 	assert(render_pass != VK_NULL_HANDLE);
+	
+	VkPipelineDynamicStateCreateInfo dynamic_state = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+		
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+
+		.dynamicStateCount = static_cast<uint32_t>(config.dynamic_state_array.size()),
+		.pDynamicStates = config.dynamic_state_array.data()
+	};
 
 	VkGraphicsPipelineCreateInfo pipeline_info = {
 		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -589,7 +597,7 @@ lvk_pipeline lvk_device::create_graphics_pipeline(const VkPipelineLayout pipelin
 		.pMultisampleState = &config.multisample_state,
 		.pDepthStencilState = &config.depth_stencil_state,
 		.pColorBlendState = &config.color_blend_state,
-		.pDynamicState = &config.dynamic_state,
+		.pDynamicState = &dynamic_state,
 		.layout = pipeline_layout,
 		.renderPass = render_pass,
 		.subpass = 0,
@@ -613,6 +621,16 @@ lvk_pipeline lvk_device::create_graphics_pipeline_dynamic(const VkPipelineLayout
 	
 	assert(config.rendering_info.sType == VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR);
 	
+	VkPipelineDynamicStateCreateInfo dynamic_state = {
+		.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+		
+		.pNext = VK_NULL_HANDLE,
+		.flags = 0,
+
+		.dynamicStateCount = static_cast<uint32_t>(config.dynamic_state_array.size()),
+		.pDynamicStates = config.dynamic_state_array.data()
+	};
+
 	VkGraphicsPipelineCreateInfo pipeline_info = {
 		.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 
@@ -628,7 +646,9 @@ lvk_pipeline lvk_device::create_graphics_pipeline_dynamic(const VkPipelineLayout
 		.pMultisampleState = &config.multisample_state,
 		.pDepthStencilState = &config.depth_stencil_state,
 		.pColorBlendState = &config.color_blend_state,
-		.pDynamicState = &config.dynamic_state,
+
+		.pDynamicState = &dynamic_state,
+
 		.layout = pipeline_layout,
 		.renderPass = VK_NULL_HANDLE,
 		.subpass = 0,
@@ -1205,7 +1225,7 @@ lvk_sampler lvk_device::create_sampler(VkFilter min_filter, VkFilter mag_filter,
 	return sampler;
 }
 
-lvk_image lvk_device::load_image(VkDeviceSize size, void* data, VkExtent3D extent, VkImageType type, VkFormat format) {
+lvk_image lvk_device::load_image(VkDeviceSize size, void* data, VkExtent3D extent, VkFormat format, VkImageType type) {
 	lvk_buffer staging_buffer = create_staging_buffer(size, data);
 
 	lvk_image image = create_image(format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, extent, VK_IMAGE_TYPE_2D);
@@ -1226,6 +1246,31 @@ lvk_image lvk_device::load_image(VkDeviceSize size, void* data, VkExtent3D exten
 	});
 
 	_deletor.destroy(staging_buffer);
+
+	return image;
+}
+
+lvk_image lvk_device::load_image_from_file(const char* filename) {
+	int width, height, channels;
+
+	stbi_uc* image_data = stbi_load(filename, &width, &height, &channels, STBI_rgb_alpha);
+
+	if (!image_data) {
+		dloggln("Failed to load texture file ", filename);
+		return { ._image = VK_NULL_HANDLE };
+	}
+
+	VkFormat image_format = VK_FORMAT_R8G8B8A8_SRGB;
+	VkDeviceSize image_size = width * height * 4;
+	VkExtent3D image_extent = {
+		.width = static_cast<uint32_t>(width),
+		.height = static_cast<uint32_t>(height),
+		.depth = 1,
+	};
+
+	lvk_image image = load_image(image_size, image_data, image_extent, image_format);
+
+	stbi_image_free(image_data);
 
 	return image;
 }

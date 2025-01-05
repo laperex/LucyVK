@@ -13,8 +13,8 @@ namespace lvk::info {
 
 	VkPipelineShaderStageCreateInfo shader_stage(VkShaderStageFlagBits flag, VkShaderModule shader_module, const char* main = "main", const VkSpecializationInfo* specialization = nullptr);
 
-	VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription* binding_description = {}, uint32_t binding_description_count = 0, const VkVertexInputAttributeDescription* attribute_description = {}, uint32_t attribute_description_count = 0);
-	VkPipelineVertexInputStateCreateInfo vertex_input_state(const std::vector<VkVertexInputBindingDescription>& binding_description = {}, const std::vector<VkVertexInputAttributeDescription>& attribute_description = {});
+	VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription* binding_description, uint32_t binding_description_count, const VkVertexInputAttributeDescription* attribute_description, uint32_t attribute_description_count);
+	VkPipelineVertexInputStateCreateInfo vertex_input_state(const std::vector<VkVertexInputBindingDescription>& binding_description, const std::vector<VkVertexInputAttributeDescription>& attribute_description);
 	template <std::size_t _b_N, std::size_t _a_N>  [[nodiscard, __gnu__::__always_inline__]]
 	constexpr VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription (&bindings)[_b_N], const VkVertexInputAttributeDescription (&attributes)[_a_N]) noexcept {
 		return vertex_input_state(bindings, _b_N, attributes, _a_N);

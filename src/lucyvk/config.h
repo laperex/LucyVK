@@ -7,6 +7,10 @@
 
 
 namespace lvk::config {
+	struct compute_pipeline {
+		
+	};
+
 	struct graphics_pipeline {
 		std::vector<VkPipelineShaderStageCreateInfo> shader_stage_array;
 
@@ -19,8 +23,12 @@ namespace lvk::config {
 		VkPipelineColorBlendStateCreateInfo color_blend_state;
 		
 		VkPipelineViewportStateCreateInfo viewport_state;
-		VkPipelineDynamicStateCreateInfo dynamic_state;
+		std::vector<VkDynamicState> dynamic_state_array;
 
 		VkPipelineRenderingCreateInfoKHR rendering_info;
+	};
+	
+	struct graphics_pipeline_properties {
+		std::vector<VkPipelineShaderStageCreateInfo> shader_stages;
 	};
 }

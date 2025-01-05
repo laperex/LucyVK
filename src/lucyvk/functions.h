@@ -16,4 +16,6 @@ namespace lvk {
 
 	const char* to_string(const VkBufferUsageFlagBits usage);
 	const char* to_string(const VkPresentModeKHR mode);
+	
+	void load_image_data(const char* filename);
 }

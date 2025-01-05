@@ -11,7 +11,7 @@
 // #include "lucyvk/types.h"
 #include "lucyvk/command.h"
 #include "lucyvk/config.h"
-#include "lucyvk/mesh.h"
+// #include "lucyvk/mesh.h"
 
 
 
@@ -431,5 +431,6 @@ public:
 	
 	// LOADER
 	
-	lvk_image load_image(VkDeviceSize size, void* data, VkExtent3D extent, VkImageType type = VK_IMAGE_TYPE_2D, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB);
+	lvk_image load_image(VkDeviceSize size, void* data, VkExtent3D extent, VkFormat format, VkImageType type = VK_IMAGE_TYPE_2D);
+	lvk_image load_image_from_file(const char* filename);
 };

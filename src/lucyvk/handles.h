@@ -191,16 +191,12 @@ struct lvk_swapchain {
 
 	VkSurfaceFormatKHR _surface_format;
 	VkPresentModeKHR _present_mode;
-	VkImageUsageFlags _image_usage;
 
-	uint32_t _image_count;
+	VkImageUsageFlags _image_usage;
 	std::vector<VkImage> _images;
 	std::vector<VkImageView> _image_views;
 
 	//! not required in dynamic mode
 	//! std::vector<VkFramebuffer> _framebuffers;
-
-	VkImageView _depth_image_view;
-	lvk_image _depth_image;
 	
 };
