@@ -13,6 +13,7 @@ namespace lvk::info {
 
 	VkPipelineShaderStageCreateInfo shader_stage(VkShaderStageFlagBits flag, VkShaderModule shader_module, const char* main = "main", const VkSpecializationInfo* specialization = nullptr);
 
+	VkPipelineVertexInputStateCreateInfo vertex_input_state();
 	VkPipelineVertexInputStateCreateInfo vertex_input_state(const VkVertexInputBindingDescription* binding_description, uint32_t binding_description_count, const VkVertexInputAttributeDescription* attribute_description, uint32_t attribute_description_count);
 	VkPipelineVertexInputStateCreateInfo vertex_input_state(const std::vector<VkVertexInputBindingDescription>& binding_description, const std::vector<VkVertexInputAttributeDescription>& attribute_description);
 	template <std::size_t _b_N, std::size_t _a_N>  [[nodiscard, __gnu__::__always_inline__]]
@@ -20,7 +21,7 @@ namespace lvk::info {
 		return vertex_input_state(bindings, _b_N, attributes, _a_N);
 	}
 	
-	VkPipelineInputAssemblyStateCreateInfo input_assembly_state(const VkPrimitiveTopology topology, bool primitive_restart_enable);
+	VkPipelineInputAssemblyStateCreateInfo input_assembly_state(const VkPrimitiveTopology topology, bool primitive_restart_enable = VK_FALSE);
 	
 	VkPipelineRasterizationStateCreateInfo rasterization_state(const VkPolygonMode polygon_mode, const VkCullModeFlags cull_mode, const VkFrontFace front_face, float line_width = 1.0, const bool depth_clamp_enable = false, const bool discard_rasterizer = false, const bool depth_bias_enable = false, const float depth_bias_constant_factor = 0, float depth_bias_clamp = 0, float depth_bias_slope_factor = 0);
 	VkPipelineRasterizationStateCreateInfo rasterization_state(const VkPolygonMode polygon_mode);
@@ -95,6 +96,6 @@ namespace lvk::info {
 	VkRect2D scissor(int32_t x, int32_t y, uint32_t width, uint32_t height);
 	VkViewport viewport(float x, float y, float width, float height, float min_depth, float max_depth);
 	
-	VkRenderingAttachmentInfo rendering_attachment_info(VkImageView image_view, VkImageLayout image_layout, VkClearValue* clear_value = VK_NULL_HANDLE);
+	VkRenderingAttachmentInfo rendering_attachment_info(VkImageView image_view, VkImageLayout image_layout, VkAttachmentLoadOp load_op = VK_ATTACHMENT_LOAD_OP_LOAD);
 	VkRenderingAttachmentInfo rendering_attachment_info(VkImageView image_view, VkImageLayout image_layout, VkClearValue clear_value);
 }

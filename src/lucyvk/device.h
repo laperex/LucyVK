@@ -61,8 +61,10 @@ private:
 	friend lvk_instance;
 
 public:
+	// lvk_device(): _device(VK_NULL_HANDLE) {}
+
 	VkPhysicalDevice get_physical_device() const;
-	VkDevice get_logical_device() const;
+	const VkDevice get_logical_device() const;
 	VkQueue get_graphics_queue() const;
 
 	void destroy();

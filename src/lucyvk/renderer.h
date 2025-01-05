@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lucylm/math.hpp"
+// #include "lucylm/math.hpp"
 
 // #include "lucyvk/mesh.h"
 #include "lucyvk/command.h"
@@ -11,7 +11,11 @@
 // #include "lucyvk/memory.h"
 // #include "lucyvk/synchronization.h"
 // #include "lucyvk/types.h"
+#include <filesystem>
+#include <memory>
 #include <vector>
+
+#include <glm/gtc/quaternion.hpp>
 // #include "lucyvk/render_pass.h"
 // #include "lucyvk/swapchain.h"
 // #include "lucyvk/pipeline_manager.h"
@@ -31,6 +35,9 @@ struct lre_frame {
 
 	lvk_image draw_image = {};
 	lvk_image_view draw_image_view = {};
+	
+	lvk_image depth_image = {};
+	lvk_image_view depth_image_view = {};
 
 	lvk_deletor_deque deletion_queue;
 };
@@ -61,12 +68,12 @@ struct Vertex {
 struct GPUMeshBuffers {
     lvk_buffer index_buffer;
     lvk_buffer vertex_buffer;
-    VkDeviceAddress vertexBufferAddress;
+    VkDeviceAddress vertex_buffer_address;
 };
 
 
 struct GeoSurface {
-    uint32_t startIndex;
+    uint32_t start_index;
     uint32_t count;
 };
 
@@ -74,9 +81,13 @@ struct MeshAsset {
     std::string name;
 
     std::vector<GeoSurface> surfaces;
-    GPUMeshBuffers meshBuffers;
+    GPUMeshBuffers mesh_buffers;
 };
 
+struct GPUDrawPushConstants {
+    glm::mat4 world_matrix;
+    VkDeviceAddress vertex_buffer;
+};
 
 
 namespace lucy {
@@ -84,10 +95,22 @@ namespace lucy {
 		lre_draw_property draw_property = {};
 		lre_frame frame_array[FRAMES_IN_FLIGHT] = {};
 
+		std::vector<std::shared_ptr<MeshAsset>> test_meshes;
 
 		lvk_instance instance;
 		lvk_device device;
 		lvk_swapchain swapchain;
+		
+		
+		// ----------------------------------------------
+
+		
+		GPUMeshBuffers rectangle;
+		lvk_pipeline mesh_pipeline;
+		lvk_pipeline_layout mesh_pipeline_layout;
+
+		void init_pipeline();
+		GPUMeshBuffers init_sample_rectangle();
 
 
 		// ----------------------------------------------
@@ -123,15 +146,14 @@ namespace lucy {
 
 
 		lre_frame create_frame(lvk_command_pool&);
-		void destroy_frame(lre_frame&);
+		void destroy_frame_images(lre_frame&);
 		
-		void init_pipeline();
 
 		void init_imgui(SDL_Window* sdl_window);
 		void draw_imgui(lre_frame& frame);
 
 		void draw_background(lre_frame& frame);
-		void draw_main(lre_frame& frame);
+		void draw_geometry(lre_frame& frame);
 		
 		bool resize_requested = false;
 
@@ -152,6 +174,8 @@ namespace lucy {
 		void fn_imgui(const std::function<void(lre_frame&, lvk_device&)>&&);
 		void fn_record(const std::function<void(lre_frame&, lvk_device&)>&&);
 		void fn_(const std::function<void(lre_frame&, lvk_device&)>&&);
+		
+		std::optional<std::vector<std::shared_ptr<MeshAsset>>> load_GLTF(std::filesystem::path filePath);
 		
 		void destroy();
 	};

@@ -38,11 +38,19 @@ void lvk_command_buffer::bind_pipeline(const VkPipelineBindPoint pipeline_bind_p
 	vkCmdBindPipeline(_command_buffer, pipeline_bind_point, pipeline);
 }
 
+void lvk_command_buffer::bind_graphics_pipeline(const VkPipeline pipeline) const {
+	bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+}
+
+void lvk_command_buffer::bind_compute_pipeline(const VkPipeline pipeline) const {
+	bind_pipeline(VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+}
+
 void lvk_command_buffer::bind_descriptor_set(const VkPipelineBindPoint pipeline_bind_point, const VkPipelineLayout pipeline_layout, const lvk_descriptor_set* descriptor_set, const uint32_t descriptor_set_count, uint32_t first_set) const {
 	vkCmdBindDescriptorSets(_command_buffer, pipeline_bind_point, pipeline_layout, first_set, descriptor_set_count, &descriptor_set->_descriptor_set, 0, VK_NULL_HANDLE);
 }
 
-void lvk_command_buffer::bind_index_buffer(const VkBuffer index_buffer, const VkIndexType index_type, const VkDeviceSize offset) const {
+void lvk_command_buffer::bind_index_buffer(const VkBuffer index_buffer, const VkDeviceSize offset, const VkIndexType index_type) const {
 	vkCmdBindIndexBuffer(_command_buffer, index_buffer, offset, index_type);
 }
 
@@ -110,6 +118,10 @@ void lvk_command_buffer::begin_rendering(VkExtent2D extent,
 	};
 
 	vkCmdBeginRendering(_command_buffer, &render_info);
+}
+
+void lvk_command_buffer::push_constants(const VkPipelineLayout pipeline_layout, const VkShaderStageFlags shader_stage, const uint32_t offset, const uint32_t size, const void* data) const {
+	vkCmdPushConstants(_command_buffer, pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, size, data);
 }
 
 void lvk_command_buffer::end_rendering() const {

@@ -45,6 +45,8 @@ struct lvk_command_buffer {
 	}
 
 	void bind_pipeline(const VkPipelineBindPoint pipeline_bind_point, const VkPipeline pipeline) const;
+	void bind_graphics_pipeline(const VkPipeline pipeline) const;
+	void bind_compute_pipeline(const VkPipeline pipeline) const;
 
 	void bind_descriptor_set(const VkPipelineBindPoint pipeline_bind_point, const VkPipelineLayout pipeline_layout, const lvk_descriptor_set* descriptor_set, const uint32_t descriptor_set_count, uint32_t first_set = 0) const;
 
@@ -53,7 +55,7 @@ struct lvk_command_buffer {
 		return bind_descriptor_set(pipeline_bind_point, pipeline_layout, descriptor_set, _ds_N, first_set);
 	}
 	
-	void bind_index_buffer(const VkBuffer index_buffer, const VkIndexType index_type, const VkDeviceSize offset = 0) const;
+	void bind_index_buffer(const VkBuffer index_buffer, const VkDeviceSize offset, const VkIndexType index_type) const;
 	
 	void bind_vertex_buffers(const VkBuffer* vertex_buffers, const VkDeviceSize* offset_array, const uint32_t vertex_buffers_count, const uint32_t first_binding = 0) const;
 	template <std::size_t _b_m> [[__gnu__::__always_inline__]]
@@ -101,8 +103,22 @@ struct lvk_command_buffer {
 
 	void begin_rendering(VkExtent2D extent, const VkRenderingAttachmentInfo* color_attachment_array, uint32_t color_attachment_array_size, const VkRenderingAttachmentInfo* depth_attachment, const VkRenderingAttachmentInfo* stencil_attachment) const;
 	template <std::size_t _rai_N> [[__gnu__::__always_inline__]]
-	constexpr void begin_rendering(VkExtent2D extent, const VkRenderingAttachmentInfo (&color_attachment_array)[_rai_N], const VkRenderingAttachmentInfo* depth_attachment = nullptr, const VkRenderingAttachmentInfo* stencil_attachment = nullptr) const noexcept {
-		begin_rendering(extent, color_attachment_array, _rai_N, depth_attachment, stencil_attachment);
+	constexpr void begin_rendering(VkExtent2D extent, const VkRenderingAttachmentInfo (&color_attachment_array)[_rai_N], const VkRenderingAttachmentInfo depth_attachment, const VkRenderingAttachmentInfo stencil_attachment) const noexcept {
+		begin_rendering(extent, color_attachment_array, _rai_N, &depth_attachment, &stencil_attachment);
+	}
+	template <std::size_t _rai_N> [[__gnu__::__always_inline__]]
+	constexpr void begin_rendering(VkExtent2D extent, const VkRenderingAttachmentInfo (&color_attachment_array)[_rai_N], const VkRenderingAttachmentInfo depth_attachment) const noexcept {
+		begin_rendering(extent, color_attachment_array, _rai_N, &depth_attachment, VK_NULL_HANDLE);
+	}
+	template <std::size_t _rai_N> [[__gnu__::__always_inline__]]
+	constexpr void begin_rendering(VkExtent2D extent, const VkRenderingAttachmentInfo (&color_attachment_array)[_rai_N]) const noexcept {
+		begin_rendering(extent, color_attachment_array, _rai_N, VK_NULL_HANDLE, VK_NULL_HANDLE);
+	}
+	
+	void push_constants(const VkPipelineLayout pipeline_layout, const VkShaderStageFlags shader_stage, const uint32_t offset, const uint32_t size, const void* data) const;
+	template <typename T>
+	void push_constants(const VkPipelineLayout pipeline_layout, const VkShaderStageFlags shader_stage, const uint32_t offset, const T& data) const {
+		push_constants(pipeline_layout, shader_stage, offset, sizeof(T), &data);
 	}
 
 	void end_rendering() const;

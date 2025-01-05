@@ -64,7 +64,7 @@ static bool CheckValidationLayerSupport() {
 
 lvk_instance::~lvk_instance()
 {
-	
+
 }
 
 lvk_instance lvk_instance::initialize(const char* name, SDL_Window* sdl_window, bool enable_validation_layers, std::vector<const char*> layers, std::vector<const char*> extensions) {
@@ -73,16 +73,16 @@ lvk_instance lvk_instance::initialize(const char* name, SDL_Window* sdl_window, 
 		._surfaceKHR = VK_NULL_HANDLE,
 		._debug_messenger = VK_NULL_HANDLE,
 	};
-	
+
 	VkApplicationInfo app_info = {
 		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-		
+
 		.pApplicationName = name,
 		.applicationVersion = VK_MAKE_VERSION(1, 0, 1),
-		
+
 		.pEngineName = name,
 		.engineVersion = VK_MAKE_VERSION(1, 1, 7),
-		
+
 		.apiVersion = VK_API_VERSION_1_3
 	};
 
@@ -90,17 +90,17 @@ lvk_instance lvk_instance::initialize(const char* name, SDL_Window* sdl_window, 
 	SDL_Vulkan_GetInstanceExtensions(sdl_window, &requiredExtensionCount, nullptr);
 	std::vector<const char*> requiredExtensionArray(requiredExtensionCount);
 	SDL_Vulkan_GetInstanceExtensions(sdl_window, &requiredExtensionCount, requiredExtensionArray.data());
-	
+
 	uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
     std::vector<VkExtensionProperties> availableExtensionArray(extensionCount);
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensionArray.data());
-	
+
 	VkDebugUtilsMessengerCreateInfoEXT debug_create_info = {
 		VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
 		nullptr,
 		0,
-		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | 
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
 			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
 		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
 			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
@@ -108,9 +108,9 @@ lvk_instance lvk_instance::initialize(const char* name, SDL_Window* sdl_window, 
 		debug_callback,
 		nullptr
 	};
-	
+
 	// instance.layers = config->layers;
-	
+
 	VkInstanceCreateInfo create_info = {
     	.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
     	.pApplicationInfo = &app_info,
@@ -122,7 +122,7 @@ lvk_instance lvk_instance::initialize(const char* name, SDL_Window* sdl_window, 
 		}
 
 		create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debug_create_info;
-		
+
 		layers.push_back("VK_LAYER_KHRONOS_validation");
 
 		requiredExtensionArray.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -148,7 +148,7 @@ lvk_instance lvk_instance::initialize(const char* name, SDL_Window* sdl_window, 
 			}
 		}
     }
-	
+
 	// requiredExtensionArray.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
 	create_info.enabledLayerCount = std::size(layers);
@@ -181,7 +181,7 @@ void lvk_instance::destroy() {
         DestroyDebugUtilsMessengerEXT(_instance, _debug_messenger, VK_NULL_HANDLE);
 		dloggln("DebugUtilMessenger Destroyed");
 	}
-	
+
 	vkDestroySurfaceKHR(_instance, _surfaceKHR, VK_NULL_HANDLE);
 	dloggln("SurfaceKHR Destroyed");
 
@@ -224,7 +224,7 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 
 	// 	._surfaceKHR = _surfaceKHR,
 	// };
-	
+
 	device._surfaceKHR = _surfaceKHR;
 
 	{
@@ -236,7 +236,7 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 		device.physical_device._physical_device = (function == nullptr) ?
 			lvk::default_physical_device(available_devices, this):
 			function(available_devices, this);
-		
+
 		if (device.physical_device._physical_device == nullptr) {
 			throw std::runtime_error("failed to find suitable PhysicalDevice!");
 		}
@@ -248,7 +248,7 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 			vkGetPhysicalDeviceQueueFamilyProperties(device.physical_device, &queue_family_count, VK_NULL_HANDLE);
 			std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
 			vkGetPhysicalDeviceQueueFamilyProperties(device.physical_device, &queue_family_count, queue_families.data());
-			
+
 			for (int i = 0; i < queue_families.size() && device._queue == false; i++) {
 				VkBool32 presentSupport = false;
 				vkGetPhysicalDeviceSurfaceSupportKHR(device.physical_device, i, _surfaceKHR, &presentSupport);
@@ -256,7 +256,7 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 				if (queue_families[i].queueCount > 0 && presentSupport) {
 					device._queue.present.index = i;
 				}
-				
+
 				if (queue_families[i].queueCount > 0 && queue_families[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
 					device._queue.compute.index = i;
 				}
@@ -270,7 +270,7 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 				}
 			}
 		}
-		
+
 		// device._swapchain_support_details = lvk::query_swapchain_support_details(device.physical_device._physical_device, this->_surfaceKHR);
 		{
 			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device.physical_device, _surfaceKHR, &device._swapchain_support_details.capabilities);
@@ -293,11 +293,11 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 
 		vkGetPhysicalDeviceFeatures(device.physical_device._physical_device, &device.physical_device._features);
 		vkGetPhysicalDeviceProperties(device.physical_device._physical_device, &device.physical_device._properties);
-		
+
 		dloggln("Created:\t", device.physical_device._physical_device, "\t [Physical Device] - ", device.physical_device._properties.deviceName);
 	}
-	
-	
+
+
 	std::set<uint32_t> unique_queue_indices = {
 		device._queue.graphics.index.value(),
 		device._queue.present.index.value(),
@@ -317,30 +317,33 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 			.pQueuePriorities = &priority
 		};
     }
-	
-	VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamic_rendering_feature {
-		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
+
+	VkPhysicalDeviceVulkan13Features vk_13_features = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
 		.pNext = VK_NULL_HANDLE,
+
+		.synchronization2 = VK_TRUE,
 		.dynamicRendering = VK_TRUE,
 	};
-	
-	VkPhysicalDeviceSynchronization2FeaturesKHR sync2_features = {
-		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
-		.pNext = &dynamic_rendering_feature,
-		.synchronization2 = VK_TRUE,
+
+	VkPhysicalDeviceVulkan12Features vk_12_features = {
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+		.pNext = &vk_13_features,
+
+		.descriptorIndexing = VK_TRUE,
+		.bufferDeviceAddress = VK_TRUE,
 	};
-	
+
 	VkDeviceCreateInfo create_info = {
 		.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-		
-		.pNext = &sync2_features,
-		
+		.pNext = &vk_12_features,
+
 		.queueCreateInfoCount = static_cast<uint32_t>(unique_queue_indices.size()),
 		.pQueueCreateInfos = queue_create_info_array,
-		
+
 		.enabledExtensionCount = static_cast<uint32_t>(std::size(extensions)),
 		.ppEnabledExtensionNames = extensions.data(),
-		
+
 		.pEnabledFeatures = &device.physical_device._features
 	};
 
@@ -371,11 +374,12 @@ lvk_device lvk_instance::create_device(std::vector<const char*> extensions, lvk:
 			dloggln("Created:\t", queue, "\t [Transfer Queue]");
 		}
 	}
-	
+
 	delete [] queue_create_info_array;
-	
-	
+
+
 	VmaAllocatorCreateInfo allocator_create_info = {
+		.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
 		.physicalDevice = device.physical_device,
 		.device = device,
 		.instance = _instance,

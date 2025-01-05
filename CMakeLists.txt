@@ -29,8 +29,11 @@ target_link_libraries(main
 	$<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
 )
 
-find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
-
+find_package(fmt CONFIG REQUIRED)
+target_link_libraries(main PRIVATE fmt::fmt-header-only)
+	
+find_package(fastgltf CONFIG REQUIRED)
+target_link_libraries(main PRIVATE fastgltf::fastgltf)
 
 find_package(imgui CONFIG REQUIRED)
 target_link_libraries(main PRIVATE imgui::imgui)
@@ -71,6 +74,8 @@ set(OpenCV_DIR "${VCPKG_INSTALLED_DIR}/x64-linux/share/opencv2")
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 target_link_libraries(main PRIVATE ${OpenCV_LIBS})
+
+find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
 
 #==============================================================================
 # COMPILE SHADERS

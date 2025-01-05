@@ -2,7 +2,7 @@
 #include "lucyio/logger.h"
 
 void lucy::camera::initialization() {
-	position = { 0, 0, -200 };
+	position = { 0, 0, -20 };
 	c_near = 0.1;
 	c_far = 2000.f;
 }

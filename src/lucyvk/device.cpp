@@ -80,7 +80,7 @@ VkPhysicalDevice lvk_device::get_physical_device() const {
 	return physical_device._physical_device;
 }
 
-VkDevice lvk_device::get_logical_device() const {
+const VkDevice lvk_device::get_logical_device() const {
 	return _device;
 }
 
@@ -352,19 +352,21 @@ void lvk_device::swapchain_recreate(lvk_swapchain& swapchain, uint32_t width, ui
 	const auto& present_modes = this->_swapchain_support_details.present_modes;
 	const auto& capabilities = this->_swapchain_support_details.capabilities;
 	
-	VkSwapchainPresentScalingCreateInfoEXT present_scaling {
-		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT,
+	// VkSwapchainPresentScalingCreateInfoEXT present_scaling {
+	// 	.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT,
 		
-		.pNext = VK_NULL_HANDLE,
+	// 	.pNext = VK_NULL_HANDLE,
 		
-		.scalingBehavior = VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT,
-		.presentGravityX = VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT,
-		.presentGravityY = VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT,
-	};
+	// 	.scalingBehavior = VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT,
+	// 	.presentGravityX = VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT,
+	// 	.presentGravityY = VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT,
+	// };
 	
 	VkSwapchainCreateInfoKHR create_info = {
 		.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-		.pNext = &present_scaling,
+		.pNext = VK_NULL_HANDLE,
+		// .pNext = &present_scaling,
+
 		.flags = 0,
 		.surface = _surfaceKHR,
 
@@ -707,11 +709,11 @@ lvk_buffer lvk_device::create_buffer(const VkBufferUsageFlags buffer_usage, VmaM
 		// ._is_static = memory_usage == VMA_MEMORY_USAGE_GPU_ONLY ? VK_TRUE: VK_FALSE
 	};
 	
-	VkBufferCreateInfo bufferInfo = {
+	VkBufferCreateInfo buffer_info = {
 		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		.size = size,
 		.usage = buffer_usage,
-		
+
 		// TODO: Logical Device Implementation does not support seperate presentation and graphics queue (VK_SHARING_MODE_CONCURRENT) yet
 		.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 
@@ -719,12 +721,13 @@ lvk_buffer lvk_device::create_buffer(const VkBufferUsageFlags buffer_usage, VmaM
 		// .pQueueFamilyIndices = queue_family_indices
 	};
 
-	VmaAllocationCreateInfo vmaallocInfo = {
-		.usage = memory_usage
+	VmaAllocationCreateInfo vma_alloc_info = {
+		.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
+		.usage = memory_usage,
 	};
 
 	//allocate the buffer
-	if (vmaCreateBuffer(_allocator, &bufferInfo, &vmaallocInfo, &buffer._buffer, &buffer._allocation, nullptr) != VK_SUCCESS) {
+	if (vmaCreateBuffer(_allocator, &buffer_info, &vma_alloc_info, &buffer._buffer, &buffer._allocation, nullptr) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create buffer!");
 	}
 

@@ -13,7 +13,7 @@ layout (location = 0) out vec4 outFragColor;
 void main()
 {
 	//return color
-	vec3 color = texture(samplerCOlor, inUV).rgb;
-	// vec3 color = inColor;
+	// vec3 color = texture(samplerCOlor, inUV).rgb;
+	vec3 color = inColor;
 	outFragColor = vec4(color, 1.0f);
 }

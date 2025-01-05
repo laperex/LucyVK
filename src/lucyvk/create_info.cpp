@@ -59,6 +59,10 @@ VkPipelineShaderStageCreateInfo lvk::info::shader_stage(VkShaderStageFlagBits fl
 	};
 }
 
+VkPipelineVertexInputStateCreateInfo lvk::info::vertex_input_state() {
+	return vertex_input_state(nullptr, 0, nullptr, 0);
+}
+
 VkPipelineVertexInputStateCreateInfo lvk::info::vertex_input_state(const VkVertexInputBindingDescription* binding_description, uint32_t binding_description_count, const VkVertexInputAttributeDescription* attribute_description, uint32_t attribute_description_count) {
 	return {
 		.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -350,22 +354,32 @@ VkViewport lvk::info::viewport(float x, float y, float width, float height, floa
 	};
 }
 
-VkRenderingAttachmentInfo lvk::info::rendering_attachment_info(VkImageView image_view, VkImageLayout image_layout, VkClearValue* clear_value) {
+VkRenderingAttachmentInfo lvk::info::rendering_attachment_info(VkImageView image_view, VkImageLayout image_layout, VkAttachmentLoadOp load_op) {
 	return {
 		.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
 
 		.imageView = image_view,
 		.imageLayout = image_layout,
 		
-		.loadOp = (clear_value != VK_NULL_HANDLE) ? VK_ATTACHMENT_LOAD_OP_CLEAR: VK_ATTACHMENT_LOAD_OP_LOAD,
+		.loadOp = load_op,
 		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
 
-		.clearValue = (clear_value != VK_NULL_HANDLE) ? *clear_value: VkClearValue{}
+		.clearValue = {}
 	};
 }
 
 VkRenderingAttachmentInfo lvk::info::rendering_attachment_info(VkImageView image_view, VkImageLayout image_layout, VkClearValue clear_value) {
-	return rendering_attachment_info(image_view, image_layout, &clear_value);
+	return {
+		.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+
+		.imageView = image_view,
+		.imageLayout = image_layout,
+		
+		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+
+		.clearValue = clear_value
+	};
 }
 
 VkCommandBufferSubmitInfo lvk::info::command_buffer_submit(const lvk_command_buffer* command_buffer) {
