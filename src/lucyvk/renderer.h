@@ -5,6 +5,7 @@
 // #include "lucyvk/mesh.h"
 #include "lucyvk/command.h"
 #include "lucyvk/device.h"
+#include "lucyvk/descriptors.h"
 #include "lucyvk/handles.h"
 #include "lucyvk/instance.h"
 #include "lucyvk/functions.h"
@@ -38,6 +39,8 @@ struct lre_frame {
 	
 	lvk_image depth_image = {};
 	lvk_image_view depth_image_view = {};
+	
+	lvk_descriptor_allocator_growable descriptor_allocator;
 
 	lvk_deletor_deque deletion_queue;
 };
@@ -89,6 +92,15 @@ struct GPUDrawPushConstants {
     VkDeviceAddress vertex_buffer;
 };
 
+struct GPUSceneData {
+    glm::mat4 view;
+    glm::mat4 proj;
+    glm::mat4 viewproj;
+    glm::vec4 ambientColor;
+    glm::vec4 sunlightDirection; // w for sun power
+    glm::vec4 sunlightColor;
+};
+
 
 namespace lucy {
 	class renderer {
@@ -104,7 +116,10 @@ namespace lucy {
 		
 		// ----------------------------------------------
 
-		
+		GPUSceneData sceneData;
+		lvk_descriptor_set_layout gpu_descriptor_set_layout;
+		lvk_buffer gpu_scene_data_buffer;
+
 		GPUMeshBuffers rectangle;
 		lvk_pipeline mesh_pipeline;
 		lvk_pipeline_layout mesh_pipeline_layout;
@@ -112,10 +127,7 @@ namespace lucy {
 		void init_pipeline();
 		GPUMeshBuffers init_sample_rectangle();
 
-
 		// ----------------------------------------------
-
-		lvk_descriptor_pool descriptor_pool;
 	
 		lvk_deletor_deque deletor;
 

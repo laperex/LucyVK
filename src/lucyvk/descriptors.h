@@ -12,18 +12,22 @@ public:
 		float ratio;
 	};
 
+
 private:
+	const lvk_device* device;
+
 	std::vector<PoolSizeRatio> ratios;
 	std::vector<lvk_descriptor_pool> full_pools;
 	std::vector<lvk_descriptor_pool> ready_pools;
 	uint32_t sets_per_pool;
 
-	lvk_device& device;
-
 	lvk_descriptor_pool get_pool();
 	lvk_descriptor_pool create_pool(uint32_t set_count, std::span<PoolSizeRatio> pool_ratios);
 
 public:
+	lvk_descriptor_allocator_growable(const lvk_device& device): device(&device) {}
+	lvk_descriptor_allocator_growable(): device(VK_NULL_HANDLE) {}
+
 	void init(uint32_t initial_sets, std::span<PoolSizeRatio> pool_ratios);
 	void clear_pools();
 	void destroy_pools();
@@ -40,11 +44,16 @@ public:
 
 
 struct lvk_descriptor_writer {
+private:
 	std::deque<VkDescriptorImageInfo> image_infos;
 	std::deque<VkDescriptorBufferInfo> buffer_infos;
 	std::vector<VkWriteDescriptorSet> writes;
 
-	lvk_device& device;
+	const lvk_device* device;
+
+public:
+	lvk_descriptor_writer(const lvk_device& device): device(&device) {}
+	lvk_descriptor_writer(): device(VK_NULL_HANDLE) {}
 
 	void write_image(int binding, VkImageView image, VkSampler sampler, VkImageLayout layout, VkDescriptorType type);
 	void write_buffer(int binding, VkBuffer buffer, size_t size, size_t offset, VkDescriptorType type);

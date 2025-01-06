@@ -110,6 +110,8 @@ lre_frame lucy::renderer::create_frame(lvk_command_pool& command_pool) {
 		.render_semaphore = deletor.push(device.create_semaphore()),
 
 		.command_buffer = deletor.push(device.create_command_buffer(command_pool), command_pool),
+
+		.descriptor_allocator = { device },
 	};
 }
 
@@ -388,23 +390,20 @@ void lucy::renderer::init(SDL_Window* window) {
 
 	for (auto& frame: frame_array) {
 		frame = create_frame(command_pool);
-	}
-	
-	uint32_t max_descriptor_sets = 100;
+		
+		std::vector<lvk_descriptor_allocator_growable::PoolSizeRatio> frame_sizes = { 
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4 },
+		};
 
-	descriptor_pool = deletor.push(device.create_descriptor_pool(max_descriptor_sets, {
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
-		{ VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
-		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 100 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 100 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
-		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 100 },
-	}));
+		frame.descriptor_allocator.init(1000, frame_sizes);
+	
+		deletor.push_fn([&]() {
+			frame.descriptor_allocator.destroy_pools();
+		});
+	}
 
 	draw_property = {
 		.color_format_array = { VK_FORMAT_R16G16B16A16_SFLOAT },
@@ -413,6 +412,7 @@ void lucy::renderer::init(SDL_Window* window) {
 
 	init_pipeline();
 	rectangle = init_sample_rectangle();
+
 	deletor.push(rectangle.vertex_buffer);
 	deletor.push(rectangle.index_buffer);
 
@@ -424,17 +424,35 @@ void lucy::renderer::init(SDL_Window* window) {
 
 	// device.update_descriptor_set(global_descriptor, 2, &load_image_view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);
 	
+	gpu_descriptor_set_layout = deletor.push(device.create_descriptor_set_layout({
+		lvk::info::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
+	}));
+
 	test_meshes = load_GLTF("/home/laperex/Programming/C++/LucyVK/assets/basicmesh.glb").value();
+
 	for (auto& mesh: test_meshes) {
 		deletor.push(mesh->mesh_buffers.index_buffer);
 		deletor.push(mesh->mesh_buffers.vertex_buffer);
 	}
+
+	gpu_scene_data_buffer = deletor.push(device.create_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, sizeof(GPUSceneData)));
 
 	set_model(glm::mat4(1.0f));
 }
 
 void lucy::renderer::record(lre_frame& frame) {
 	const auto& cmd = frame.command_buffer;
+	
+	//write the buffer
+	GPUSceneData* scene_uniform_data = (GPUSceneData*)gpu_scene_data_buffer._allocation->GetMappedData();
+	*scene_uniform_data = sceneData;
+
+	//create a descriptor set that binds that buffer and update it
+	VkDescriptorSet global_descriptor = frame.descriptor_allocator.allocate(gpu_descriptor_set_layout);
+
+	lvk_descriptor_writer writer = { device };
+	writer.write_buffer(0, gpu_scene_data_buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	writer.update_set(global_descriptor);
 
 	if (device.swapchain_acquire_next_image(swapchain, &frame.swapchain_image_index, frame.present_semaphore, VK_NULL_HANDLE) == VK_ERROR_OUT_OF_DATE_KHR) {
 		resize_requested = true;

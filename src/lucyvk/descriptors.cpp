@@ -30,7 +30,7 @@ lvk_descriptor_pool lvk_descriptor_allocator_growable::create_pool(uint32_t set_
 		});
 	}
 
-	return device.create_descriptor_pool(set_count, pool_sizes.data(), pool_sizes.size());
+	return device->create_descriptor_pool(set_count, pool_sizes.data(), pool_sizes.size());
 }
 
 void lvk_descriptor_allocator_growable::init(uint32_t max_sets, std::span<PoolSizeRatio> pool_ratios) {
@@ -49,10 +49,10 @@ void lvk_descriptor_allocator_growable::init(uint32_t max_sets, std::span<PoolSi
 
 void lvk_descriptor_allocator_growable::clear_pools() {
     for (auto p: ready_pools) {
-        vkResetDescriptorPool(device.get_logical_device(), p, 0);
+        vkResetDescriptorPool(device->get_logical_device(), p, 0);
     }
     for (auto p: full_pools) {
-        vkResetDescriptorPool(device.get_logical_device(), p, 0);
+        vkResetDescriptorPool(device->get_logical_device(), p, 0);
         ready_pools.push_back(p);
     }
     full_pools.clear();
@@ -60,11 +60,11 @@ void lvk_descriptor_allocator_growable::clear_pools() {
 
 void lvk_descriptor_allocator_growable::destroy_pools() {
 	for (auto p: ready_pools) {
-		vkDestroyDescriptorPool(device.get_logical_device(), p, nullptr);
+		vkDestroyDescriptorPool(device->get_logical_device(), p, nullptr);
 	}
     ready_pools.clear();
 	for (auto p: full_pools) {
-		vkDestroyDescriptorPool(device.get_logical_device(), p, nullptr);
+		vkDestroyDescriptorPool(device->get_logical_device(), p, nullptr);
     }
     full_pools.clear();
 }
@@ -83,7 +83,7 @@ lvk_descriptor_set lvk_descriptor_allocator_growable::allocate(VkDescriptorSetLa
 	};
 
 	VkDescriptorSet descriptor_set = VK_NULL_HANDLE;
-	VkResult result = vkAllocateDescriptorSets(device.get_logical_device(), &alloc_info, &descriptor_set);
+	VkResult result = vkAllocateDescriptorSets(device->get_logical_device(), &alloc_info, &descriptor_set);
 
     //allocation failed. Try again
     if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL) {
@@ -92,7 +92,7 @@ lvk_descriptor_set lvk_descriptor_allocator_growable::allocate(VkDescriptorSetLa
         pool_to_use = get_pool();
         alloc_info.descriptorPool = pool_to_use;
 
-       vkAllocateDescriptorSets(device.get_logical_device(), &alloc_info, &descriptor_set);
+       vkAllocateDescriptorSets(device->get_logical_device(), &alloc_info, &descriptor_set);
     }
 
     ready_pools.push_back(pool_to_use);
@@ -113,8 +113,8 @@ void lvk_descriptor_writer::write_image(int binding, VkImageView image, VkSample
 	VkWriteDescriptorSet write = {
 		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 
-		.dstBinding = static_cast<uint32_t>(binding),
 		.dstSet = VK_NULL_HANDLE, //left empty for now until we need to write it
+		.dstBinding = static_cast<uint32_t>(binding),
 
 		.descriptorCount = 1,
 		.descriptorType = type,
@@ -137,8 +137,8 @@ void lvk_descriptor_writer::write_buffer(int binding, VkBuffer buffer, size_t si
 	VkWriteDescriptorSet write = {
 		.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 
-		.dstBinding = static_cast<uint32_t>(binding),
 		.dstSet = VK_NULL_HANDLE, //left empty for now until we need to write it
+		.dstBinding = static_cast<uint32_t>(binding),
 
 		.descriptorCount = 1,
 		.descriptorType = type,
@@ -160,5 +160,5 @@ void lvk_descriptor_writer::update_set(VkDescriptorSet set) {
         write.dstSet = set;
     }
 
-    vkUpdateDescriptorSets(device.get_logical_device(), (uint32_t)writes.size(), writes.data(), 0, nullptr);
+    vkUpdateDescriptorSets(device->get_logical_device(), (uint32_t)writes.size(), writes.data(), 0, nullptr);
 }
