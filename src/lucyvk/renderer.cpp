@@ -1,3 +1,5 @@
+#define VMA_IMPLEMENTATION
+
 #include "stb_image.h"
 #include <iostream>
 // #include <vk_loader.h>
@@ -15,14 +17,6 @@
 #include <fmt/core.h>
 #include "lucyvk/create_info.h"
 #include <fastgltf/core.hpp>
-// #include "lucyvk/shaders.h"
-
-// #define STB_IMAGE_IMPLEMENTATION
-// #include <stb_image.h>
-
-// #define VMA_IMPLEMENTATION
-#define VMA_IMPLEMENTATION
-#include "vk_mem_alloc.h"
 
 #include <assimp/Importer.hpp>
 
@@ -423,6 +417,46 @@ void lucy::renderer::init(SDL_Window* window) {
 	// lvk_sampler sampler = deletor.push(device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT));
 
 	// device.update_descriptor_set(global_descriptor, 2, &load_image_view, sampler, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0);
+	
+	{
+		//3 default textures, white, grey, black. 1 pixel each
+		uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
+		// white_image = create_image((void*)&white, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
+		white_image = device.create_image(
+			VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+			VMA_MEMORY_USAGE_GPU_ONLY, VkExtent3D{1, 1, 1}, VK_IMAGE_TYPE_2D
+		);
+
+		uint32_t grey = glm::packUnorm4x8(glm::vec4(0.66f, 0.66f, 0.66f, 1));
+		// grey_image = create_image((void*)&grey, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
+		grey_image = device.create_image(
+			VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+			VMA_MEMORY_USAGE_GPU_ONLY, VkExtent3D{1, 1, 1}, VK_IMAGE_TYPE_2D
+		);
+
+		uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
+		black_image = device.create_image(
+			VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+			VMA_MEMORY_USAGE_GPU_ONLY, VkExtent3D{1, 1, 1}, VK_IMAGE_TYPE_2D
+		);
+
+		//checkerboard image
+		uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
+		std::array<uint32_t, 16 * 16> pixels; //for 16x16 checkerboard texture
+		for (int x = 0; x < 16; x++) {
+			for (int y = 0; y < 16; y++) {
+				pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta: black;
+			}
+		}
+
+		error_checkerboard_image = device.create_image(
+			VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+			VMA_MEMORY_USAGE_GPU_ONLY, VkExtent3D{16, 16, 1}, VK_IMAGE_TYPE_2D
+		);
+
+		default_sampler_linear = device.create_sampler(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+		default_sampler_nearest = device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+	}
 	
 	gpu_descriptor_set_layout = deletor.push(device.create_descriptor_set_layout({
 		lvk::info::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),

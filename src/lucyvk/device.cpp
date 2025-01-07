@@ -1,3 +1,5 @@
+#define VMA_IMPLEMENTATION
+
 #include "lucyvk/device.h"
 #include "lucyvk/create_info.h"
 // #include "lucyvk/types.h"
@@ -14,9 +16,6 @@
 #include "lucyio/logger.h"
 #include <set>
 #include <stdexcept>
-
-
-#include "vk_mem_alloc.h"
 
 
 // |--------------------------------------------------
@@ -807,6 +806,41 @@ void lvk_device::upload(const lvk_buffer& buffer, const VkDeviceSize size, const
 	} else {
 		upload(buffer._allocation, size, data);
 	}
+}
+
+void lvk_device::upload(const lvk_image& image, const void* data) const {
+	size_t data_size = image._extent.depth * image._extent.width * image._extent.height * 4;
+	lvk_buffer staging = create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, data_size);
+
+	memcpy(staging._allocation->GetMappedData(), data, data_size);
+
+	// AllocatedImage new_image = create_image(image._extent, format, usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, mipmapped);
+
+	immediate_submit([&](lvk_command_buffer cmd) {
+		cmd.transition_image2(image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+		VkBufferImageCopy copy_region = {
+			.bufferOffset = 0,
+			.bufferRowLength = 0,
+			.bufferImageHeight = 0,
+
+			.imageSubresource = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.mipLevel = 0,
+				.baseArrayLayer = 0,
+				.layerCount = 1,
+			},
+			
+			.imageExtent = image._extent,
+		};
+
+		// copy the buffer into the image
+		vkCmdCopyBufferToImage(cmd, staging, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
+
+		cmd.transition_image2(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	});
+
+	_deletor.destroy(staging);
 }
 
 

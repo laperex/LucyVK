@@ -11,7 +11,6 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "lucyvk/handles.h"
-#include "vk_mem_alloc.h"
 #include "lucytl/linked_list.h"
 
 

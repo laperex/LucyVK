@@ -123,6 +123,14 @@ namespace lucy {
 		GPUMeshBuffers rectangle;
 		lvk_pipeline mesh_pipeline;
 		lvk_pipeline_layout mesh_pipeline_layout;
+		
+		lvk_image white_image;
+		lvk_image black_image;
+		lvk_image grey_image;
+		lvk_image error_checkerboard_image;
+
+		lvk_sampler default_sampler_linear;
+		lvk_sampler default_sampler_nearest;
 
 		void init_pipeline();
 		GPUMeshBuffers init_sample_rectangle();

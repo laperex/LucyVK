@@ -321,6 +321,8 @@ public:
 
 	// IMAGE
 
+	void upload(const lvk_image& image, const void* data) const;
+
 	lvk_image create_image(VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memory_usage, VkExtent3D extent, VkImageType image_type) const;
 	
 
