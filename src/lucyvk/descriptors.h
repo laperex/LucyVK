@@ -7,7 +7,7 @@
 
 struct lvk_descriptor_allocator_growable {
 public:
-	struct PoolSizeRatio {
+	struct lvk_pool_size_ratio {
 		VkDescriptorType type;
 		float ratio;
 	};
@@ -16,19 +16,19 @@ public:
 private:
 	const lvk_device* device;
 
-	std::vector<PoolSizeRatio> ratios;
+	std::vector<lvk_pool_size_ratio> ratios;
 	std::vector<lvk_descriptor_pool> full_pools;
 	std::vector<lvk_descriptor_pool> ready_pools;
 	uint32_t sets_per_pool;
 
 	lvk_descriptor_pool get_pool();
-	lvk_descriptor_pool create_pool(uint32_t set_count, std::span<PoolSizeRatio> pool_ratios);
+	lvk_descriptor_pool create_pool(uint32_t set_count, std::span<lvk_pool_size_ratio> pool_ratios);
 
 public:
 	lvk_descriptor_allocator_growable(const lvk_device& device): device(&device) {}
 	lvk_descriptor_allocator_growable(): device(VK_NULL_HANDLE) {}
 
-	void init(uint32_t initial_sets, std::span<PoolSizeRatio> pool_ratios);
+	void init(uint32_t initial_sets, std::span<lvk_pool_size_ratio> pool_ratios);
 	void clear_pools();
 	void destroy_pools();
 

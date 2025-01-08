@@ -392,7 +392,7 @@ void lucy::renderer::init(SDL_Window* window) {
 	for (auto& frame: frame_array) {
 		frame = create_frame(command_pool);
 		
-		std::vector<lvk_descriptor_allocator_growable::PoolSizeRatio> frame_sizes = {
+		std::vector<lvk_descriptor_allocator_growable::lvk_pool_size_ratio> frame_sizes = {
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3 },
@@ -439,7 +439,6 @@ void lucy::renderer::init(SDL_Window* window) {
 			}
 		}
 		error_checkerboard_image = deletor.push(device.load_image2(pixels.data(), VkExtent3D{ 16, 16, 1 }, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TYPE_2D));
-		// error_checkerboard_image = deletor.push(device.load_image(pixels.data(), VkExtent3D{ 16, 16, 1 }));
 		error_checkerboard_image_view = deletor.push(device.create_image_view(error_checkerboard_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT));
 
 		default_sampler_linear = deletor.push(device.create_sampler(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT));

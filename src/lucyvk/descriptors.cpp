@@ -20,10 +20,10 @@ lvk_descriptor_pool lvk_descriptor_allocator_growable::get_pool() {
     return new_pool;
 }
 
-lvk_descriptor_pool lvk_descriptor_allocator_growable::create_pool(uint32_t set_count, std::span<PoolSizeRatio> pool_ratios) {
+lvk_descriptor_pool lvk_descriptor_allocator_growable::create_pool(uint32_t set_count, std::span<lvk_pool_size_ratio> pool_ratios) {
 	std::vector<VkDescriptorPoolSize> pool_sizes = {};
 
-	for (PoolSizeRatio ratio: pool_ratios) {
+	for (lvk_pool_size_ratio ratio: pool_ratios) {
 		pool_sizes.push_back({
 			.type = ratio.type,
 			.descriptorCount = uint32_t(ratio.ratio * set_count)
@@ -33,7 +33,7 @@ lvk_descriptor_pool lvk_descriptor_allocator_growable::create_pool(uint32_t set_
 	return device->create_descriptor_pool(set_count, pool_sizes.data(), pool_sizes.size());
 }
 
-void lvk_descriptor_allocator_growable::init(uint32_t max_sets, std::span<PoolSizeRatio> pool_ratios) {
+void lvk_descriptor_allocator_growable::init(uint32_t max_sets, std::span<lvk_pool_size_ratio> pool_ratios) {
     ratios.clear();
 
     for (auto r: pool_ratios) {

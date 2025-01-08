@@ -102,6 +102,7 @@ struct GPUSceneData {
 };
 
 
+
 namespace lucy {
 	class renderer {
 		lre_draw_property draw_property = {};
