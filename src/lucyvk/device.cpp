@@ -1,10 +1,13 @@
-#define VMA_IMPLEMENTATION
 
+#define VMA_IMPLEMENTATION
+#include <vk_mem_alloc.h>
+// #include "lvk_mem_alloc.h"
+
+#define STB_IMAGE_IMPLEMENTATION
 #include "lucyvk/device.h"
 #include "lucyvk/create_info.h"
 // #include "lucyvk/types.h"
 
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <string>
 
@@ -843,6 +846,10 @@ void lvk_device::upload(const lvk_image& image, const void* data) const {
 	_deletor.destroy(staging);
 }
 
+void* lvk_device::get_device_address(const lvk_buffer& buffer) const {
+	return buffer._allocation->GetMappedData();
+}
+
 
 // |--------------------------------------------------
 // ----------------> IMAGE
@@ -1247,23 +1254,50 @@ lvk_image lvk_device::load_image(VkDeviceSize size, void* data, VkExtent3D exten
 	lvk_image image = create_image(format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY, extent, VK_IMAGE_TYPE_2D);
 
 	immediate_submit([&](lvk_command_buffer command_buffer) {
-		VkImageMemoryBarrier image_barrier = lvk::info::image_memory_barrier(image, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, lvk::info::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT));
+		// VkImageMemoryBarrier image_barrier = lvk::info::image_memory_barrier(image, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, lvk::info::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT));
 
-		command_buffer.pipeline_barrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, image_barrier);
-		command_buffer.copy_buffer_to_image(staging_buffer, image, image._extent);
+		// command_buffer.pipeline_barrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, image_barrier);
+		// command_buffer.copy_buffer_to_image(staging_buffer, image, image._extent);
 
-		image_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		image_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		// image_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		// image_barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		image_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		image_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		// image_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		// image_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-		command_buffer.pipeline_barrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, image_barrier);
+		// command_buffer.pipeline_barrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, image_barrier);
+
+		command_buffer.transition_image2(image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+		command_buffer.copy_buffer_to_image(staging_buffer, image, extent);
+
+		command_buffer.transition_image2(image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	});
 
 	_deletor.destroy(staging_buffer);
 
 	return image;
+}
+
+lvk_image lvk_device::load_image2(void* data, VkExtent3D extent, VkFormat format, VkImageUsageFlags usage, VkImageType type) const {
+	VkDeviceSize size = extent.depth * extent.height * extent.width * 4;
+	lvk_buffer staging = create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, size);
+
+	memcpy(get_device_address(staging), data, size);
+
+	lvk_image new_image = create_image(format, usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_GPU_ONLY, extent, VK_IMAGE_TYPE_2D);
+
+	immediate_submit([&](lvk_command_buffer cmd) {
+		cmd.transition_image2(new_image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+		cmd.copy_buffer_to_image(staging, new_image, extent);
+
+		cmd.transition_image2(new_image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	});
+
+	_deletor.destroy(staging);
+	
+	return new_image;
 }
 
 lvk_image lvk_device::load_image_from_file(const char* filename) const {
@@ -1290,3 +1324,4 @@ lvk_image lvk_device::load_image_from_file(const char* filename) const {
 
 	return image;
 }
+

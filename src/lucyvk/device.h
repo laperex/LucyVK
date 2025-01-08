@@ -268,7 +268,7 @@ public:
 
 	// BUFFER	---------- ---------- ---------- ----------
 	
-	
+	void* get_device_address(const lvk_buffer& buffer) const;	
 	void upload(const VmaAllocation allocation, const VkDeviceSize size, const void* data) const;
 
 	
@@ -443,5 +443,10 @@ public:
 	// LOADER
 	
 	lvk_image load_image(VkDeviceSize size, void* data, VkExtent3D extent, VkFormat format, VkImageType type = VK_IMAGE_TYPE_2D) const;
+
 	lvk_image load_image_from_file(const char* filename) const;
+
+	void load_image(VkDeviceSize size, void* data, VkExtent3D extent, VkFormat format, VkImageUsageFlags usage, VkImageType type) const;
+
+	lvk_image load_image2(void* data, VkExtent3D extent, VkFormat format, VkImageUsageFlags usage, VkImageType type) const;
 };

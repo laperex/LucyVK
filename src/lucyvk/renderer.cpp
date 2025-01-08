@@ -1,5 +1,3 @@
-#define VMA_IMPLEMENTATION
-
 #include "stb_image.h"
 #include <iostream>
 // #include <vk_loader.h>
@@ -63,7 +61,7 @@ GPUMeshBuffers lucy::renderer::upload_mesh(const std::span<Vertex>& vertices, co
 
 	lvk_buffer staging = device.create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY, vertex_buffer_size + index_buffer_size);
 
-	void* data = staging._allocation->GetMappedData();
+	void* data = device.get_device_address(staging);
 
 	// copy vertex buffer
 	memcpy(data, vertices.data(), vertex_buffer_size);
@@ -126,14 +124,9 @@ void lucy::renderer::destroy_frame_images(lre_frame& frame) {
 
 
 void lucy::renderer::init_pipeline() {
-	
 	lvk_shader_module vertex_shader = device.create_shader_module("./shaders/colored_triangle_mesh.vert.spv");
-	lvk_shader_module fragment_shader = device.create_shader_module("./shaders/colored_triangle.frag.spv");
+	lvk_shader_module fragment_shader = device.create_shader_module("./shaders/tex_image.frag.spv");
 
-	VkPipelineColorBlendAttachmentState color_blend_attachment_state = {
-		.blendEnable = VK_FALSE,
-		.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
-	};
 
 	lvk::config::graphics_pipeline config = {
 		.shader_stage_array = {
@@ -154,7 +147,7 @@ void lucy::renderer::init_pipeline() {
 		.color_blend_state = lvk::info::color_blend_state(),
 		
 		.color_blend_attachments = {
-			lvk::info::color_blend_attachment_additive()
+			lvk::info::color_blend_attachment()
 		},
 
 		// TODO: Abstraction [Temporary Structs for Storage only with std::vector]
@@ -201,6 +194,9 @@ void lucy::renderer::init_pipeline() {
 				.offset = 0,
 				.size = sizeof(GPUDrawPushConstants)
 			}
+		},
+		{
+			single_image_descriptor_set_layout
 		}
 	));
 
@@ -340,6 +336,17 @@ void lucy::renderer::draw_geometry(lre_frame& frame) {
 	);
 
 	cmd.bind_pipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, mesh_pipeline);
+	{
+		lvk_descriptor_set image_set = frame.descriptor_allocator.allocate(single_image_descriptor_set_layout);
+		{
+			lvk_descriptor_writer writer = { device };
+			writer.write_image(0, error_checkerboard_image_view, default_sampler_nearest, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+			writer.update_set(image_set);
+		}
+
+		cmd.bind_descriptor_set(VK_PIPELINE_BIND_POINT_GRAPHICS, mesh_pipeline_layout, { image_set });
+	}
 
 	GPUDrawPushConstants push_constants;
 	glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -5));
@@ -385,7 +392,7 @@ void lucy::renderer::init(SDL_Window* window) {
 	for (auto& frame: frame_array) {
 		frame = create_frame(command_pool);
 		
-		std::vector<lvk_descriptor_allocator_growable::PoolSizeRatio> frame_sizes = { 
+		std::vector<lvk_descriptor_allocator_growable::PoolSizeRatio> frame_sizes = {
 			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 3 },
 			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 3 },
 			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3 },
@@ -404,14 +411,6 @@ void lucy::renderer::init(SDL_Window* window) {
 		.depth_format = VK_FORMAT_D32_SFLOAT
 	};
 
-	init_pipeline();
-	rectangle = init_sample_rectangle();
-
-	deletor.push(rectangle.vertex_buffer);
-	deletor.push(rectangle.index_buffer);
-
-	init_imgui(sdl_window);
-
 	// lvk_image load_image = deletor.push(device.load_image_from_file("/home/laperex/Programming/C++/LucyVK/assets/buff einstein.jpg"));
 	// lvk_image_view load_image_view = deletor.push(device.create_image_view(load_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT));
 	// lvk_sampler sampler = deletor.push(device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT));
@@ -422,23 +421,14 @@ void lucy::renderer::init(SDL_Window* window) {
 		//3 default textures, white, grey, black. 1 pixel each
 		uint32_t white = glm::packUnorm4x8(glm::vec4(1, 1, 1, 1));
 		// white_image = create_image((void*)&white, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
-		white_image = device.create_image(
-			VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-			VMA_MEMORY_USAGE_GPU_ONLY, VkExtent3D{1, 1, 1}, VK_IMAGE_TYPE_2D
-		);
+		white_image = deletor.push(device.load_image2((void*)&white, VkExtent3D{1, 1, 1}, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TYPE_2D));
 
 		uint32_t grey = glm::packUnorm4x8(glm::vec4(0.66f, 0.66f, 0.66f, 1));
 		// grey_image = create_image((void*)&grey, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT);
-		grey_image = device.create_image(
-			VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-			VMA_MEMORY_USAGE_GPU_ONLY, VkExtent3D{1, 1, 1}, VK_IMAGE_TYPE_2D
-		);
+		grey_image = deletor.push(device.load_image2((void*)&grey, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TYPE_2D));
 
 		uint32_t black = glm::packUnorm4x8(glm::vec4(0, 0, 0, 0));
-		black_image = device.create_image(
-			VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-			VMA_MEMORY_USAGE_GPU_ONLY, VkExtent3D{1, 1, 1}, VK_IMAGE_TYPE_2D
-		);
+		black_image = deletor.push(device.load_image2((void*)&black, VkExtent3D{ 1, 1, 1 }, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TYPE_2D));
 
 		//checkerboard image
 		uint32_t magenta = glm::packUnorm4x8(glm::vec4(1, 0, 1, 1));
@@ -448,18 +438,20 @@ void lucy::renderer::init(SDL_Window* window) {
 				pixels[y * 16 + x] = ((x % 2) ^ (y % 2)) ? magenta: black;
 			}
 		}
+		error_checkerboard_image = deletor.push(device.load_image2(pixels.data(), VkExtent3D{ 16, 16, 1 }, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_TYPE_2D));
+		// error_checkerboard_image = deletor.push(device.load_image(pixels.data(), VkExtent3D{ 16, 16, 1 }));
+		error_checkerboard_image_view = deletor.push(device.create_image_view(error_checkerboard_image, VK_IMAGE_VIEW_TYPE_2D, VK_IMAGE_ASPECT_COLOR_BIT));
 
-		error_checkerboard_image = device.create_image(
-			VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-			VMA_MEMORY_USAGE_GPU_ONLY, VkExtent3D{16, 16, 1}, VK_IMAGE_TYPE_2D
-		);
-
-		default_sampler_linear = device.create_sampler(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
-		default_sampler_nearest = device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+		default_sampler_linear = deletor.push(device.create_sampler(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT));
+		default_sampler_nearest = deletor.push(device.create_sampler(VK_FILTER_NEAREST, VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT));
 	}
 	
 	gpu_descriptor_set_layout = deletor.push(device.create_descriptor_set_layout({
 		lvk::info::descriptor_set_layout_binding(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1),
+	}));
+	
+	single_image_descriptor_set_layout = deletor.push(device.create_descriptor_set_layout({
+		lvk::info::descriptor_set_layout_binding(0, VK_SHADER_STAGE_FRAGMENT_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1),
 	}));
 
 	test_meshes = load_GLTF("/home/laperex/Programming/C++/LucyVK/assets/basicmesh.glb").value();
@@ -468,6 +460,15 @@ void lucy::renderer::init(SDL_Window* window) {
 		deletor.push(mesh->mesh_buffers.index_buffer);
 		deletor.push(mesh->mesh_buffers.vertex_buffer);
 	}
+
+
+	init_pipeline();
+	rectangle = init_sample_rectangle();
+
+	deletor.push(rectangle.vertex_buffer);
+	deletor.push(rectangle.index_buffer);
+
+	init_imgui(sdl_window);
 
 	gpu_scene_data_buffer = deletor.push(device.create_buffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU, sizeof(GPUSceneData)));
 
@@ -478,8 +479,8 @@ void lucy::renderer::record(lre_frame& frame) {
 	const auto& cmd = frame.command_buffer;
 	
 	//write the buffer
-	GPUSceneData* scene_uniform_data = (GPUSceneData*)gpu_scene_data_buffer._allocation->GetMappedData();
-	*scene_uniform_data = sceneData;
+	GPUSceneData* scene_uniform_data = (GPUSceneData*)device.get_device_address(gpu_scene_data_buffer);
+	*scene_uniform_data = scene_data;
 
 	//create a descriptor set that binds that buffer and update it
 	VkDescriptorSet global_descriptor = frame.descriptor_allocator.allocate(gpu_descriptor_set_layout);
@@ -487,6 +488,7 @@ void lucy::renderer::record(lre_frame& frame) {
 	lvk_descriptor_writer writer = { device };
 	writer.write_buffer(0, gpu_scene_data_buffer, sizeof(GPUSceneData), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 	writer.update_set(global_descriptor);
+
 
 	if (device.swapchain_acquire_next_image(swapchain, &frame.swapchain_image_index, frame.present_semaphore, VK_NULL_HANDLE) == VK_ERROR_OUT_OF_DATE_KHR) {
 		resize_requested = true;

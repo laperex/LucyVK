@@ -192,7 +192,7 @@ void lvk_command_buffer::copy_image_to_image2(VkImage source, VkImage destinatio
 	vkCmdCopyImage2(_command_buffer, &copy_info);
 }
 
-void lvk_command_buffer::copy_buffer_to_image(VkBuffer source, VkImage destination, VkExtent3D region) const {
+void lvk_command_buffer::copy_buffer_to_image(VkBuffer source, VkImage destination, VkExtent3D extent) const {
 	VkBufferImageCopy copy_region = {
 		.bufferOffset = 0,
 		.bufferRowLength = 0,
@@ -204,7 +204,7 @@ void lvk_command_buffer::copy_buffer_to_image(VkBuffer source, VkImage destinati
 			.baseArrayLayer = 0,
 			.layerCount = 1,
 		},
-		.imageExtent = region,
+		.imageExtent = extent,
 	};
 
 	// copy the buffer into the image

@@ -116,8 +116,11 @@ namespace lucy {
 		
 		// ----------------------------------------------
 
-		GPUSceneData sceneData;
+		GPUSceneData scene_data;
+
 		lvk_descriptor_set_layout gpu_descriptor_set_layout;
+		lvk_descriptor_set_layout single_image_descriptor_set_layout;
+		
 		lvk_buffer gpu_scene_data_buffer;
 
 		GPUMeshBuffers rectangle;
@@ -128,6 +131,7 @@ namespace lucy {
 		lvk_image black_image;
 		lvk_image grey_image;
 		lvk_image error_checkerboard_image;
+		lvk_image_view error_checkerboard_image_view;
 
 		lvk_sampler default_sampler_linear;
 		lvk_sampler default_sampler_nearest;

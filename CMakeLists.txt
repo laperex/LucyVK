@@ -13,11 +13,15 @@ file(GLOB_RECURSE TARGET_SRC "src/*.cpp" "src/*.c")
 
 add_executable(main ${TARGET_SRC})
 
-cmake_minimum_required(VERSION 3.7)
+# cmake_minimum_required(VERSION 3.7)
 
 include_directories(${Vulkan_INCLUDE_DIRS})
 find_package(Vulkan REQUIRED COMPONENTS glslc)
 target_link_libraries(main PRIVATE ${Vulkan_LIBRARIES})
+
+find_package(Vulkan) # https://cmake.org/cmake/help/latest/module/FindVulkan.html, CMake 3.21+
+find_package(VulkanMemoryAllocator CONFIG REQUIRED)
+target_link_libraries(main PRIVATE Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
 
 # find_package(SDL2 REQUIRED)
 # # include_directories(${SDL2_INCLUDE_DIRS})

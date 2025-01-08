@@ -47,6 +47,7 @@ struct lvk_descriptor_writer {
 private:
 	std::deque<VkDescriptorImageInfo> image_infos;
 	std::deque<VkDescriptorBufferInfo> buffer_infos;
+
 	std::vector<VkWriteDescriptorSet> writes;
 
 	const lvk_device* device;
